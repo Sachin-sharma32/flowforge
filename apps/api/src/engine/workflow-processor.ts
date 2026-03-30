@@ -1,0 +1,226 @@
+import { Execution } from '../models/execution.model';
+import { Workflow } from '../models/workflow.model';
+import { StepFactory } from './step-factory';
+import { ExecutionService } from '../services/execution.service';
+import { EventBus } from '../infrastructure/event-bus';
+import { EventTypes } from '../domain/events';
+import { StepContext } from '../domain/interfaces/step-handler.interface';
+import { logger } from '../infrastructure/logger';
+
+// Register all handlers
+import { HttpRequestHandler } from './handlers/http-request.handler';
+import { ConditionHandler } from './handlers/condition.handler';
+import { TransformHandler } from './handlers/transform.handler';
+import { DelayHandler } from './handlers/delay.handler';
+import { SendEmailHandler } from './handlers/send-email.handler';
+import { SlackMessageHandler } from './handlers/slack-message.handler';
+
+StepFactory.register('http_request', HttpRequestHandler);
+StepFactory.register('condition', ConditionHandler);
+StepFactory.register('transform', TransformHandler);
+StepFactory.register('delay', DelayHandler);
+StepFactory.register('send_email', SendEmailHandler);
+StepFactory.register('slack_message', SlackMessageHandler);
+
+export class WorkflowProcessor {
+  private executionService = new ExecutionService();
+  private eventBus = EventBus.getInstance();
+
+  async process(executionId: string): Promise<void> {
+    const execution = await Execution.findById(executionId);
+    if (!execution) {
+      logger.error({ executionId }, 'Execution not found');
+      return;
+    }
+
+    const workflow = await Workflow.findById(execution.workflowId);
+    if (!workflow) {
+      logger.error({ workflowId: execution.workflowId }, 'Workflow not found');
+      return;
+    }
+
+    // Mark execution as running
+    execution.status = 'running';
+    execution.startedAt = new Date();
+    await execution.save();
+
+    this.eventBus.publish(EventTypes.EXECUTION_STARTED, {
+      executionId: execution._id.toString(),
+      workspaceId: execution.workspaceId.toString(),
+      workflowId: execution.workflowId.toString(),
+    });
+
+    // Build step graph for traversal
+    const stepMap = new Map(workflow.steps.map((s) => [s.id, s]));
+    const variables: Record<string, string> = {};
+    workflow.variables.forEach((v) => {
+      variables[v.key] = v.value;
+    });
+
+    // Find entry points (steps not targeted by any connection)
+    const targetedSteps = new Set<string>();
+    for (const step of workflow.steps) {
+      for (const conn of step.connections) {
+        targetedSteps.add(conn.targetStepId);
+      }
+    }
+    const entrySteps = workflow.steps.filter((s) => !targetedSteps.has(s.id));
+
+    if (entrySteps.length === 0 && workflow.steps.length > 0) {
+      // Fallback: use first step
+      entrySteps.push(workflow.steps[0]);
+    }
+
+    try {
+      // Process from each entry point
+      let lastOutput: Record<string, unknown> = execution.trigger.payload || {};
+
+      for (const entryStep of entrySteps) {
+        lastOutput = await this.executeStep(
+          entryStep.id,
+          stepMap,
+          execution._id.toString(),
+          workflow._id.toString(),
+          execution.workspaceId.toString(),
+          variables,
+          lastOutput,
+        );
+      }
+
+      // Mark execution as completed
+      const completedAt = new Date();
+      execution.status = 'completed';
+      execution.completedAt = completedAt;
+      execution.durationMs = completedAt.getTime() - execution.startedAt!.getTime();
+      await execution.save();
+
+      this.eventBus.publish(EventTypes.EXECUTION_COMPLETED, {
+        executionId: execution._id.toString(),
+        workspaceId: execution.workspaceId.toString(),
+        status: 'completed',
+        durationMs: execution.durationMs,
+      });
+    } catch (error) {
+      const completedAt = new Date();
+      execution.status = 'failed';
+      execution.completedAt = completedAt;
+      execution.durationMs = completedAt.getTime() - (execution.startedAt?.getTime() || completedAt.getTime());
+      await execution.save();
+
+      this.eventBus.publish(EventTypes.EXECUTION_FAILED, {
+        executionId: execution._id.toString(),
+        workspaceId: execution.workspaceId.toString(),
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      logger.error({ executionId, error }, 'Workflow execution failed');
+    }
+  }
+
+  private async executeStep(
+    stepId: string,
+    stepMap: Map<string, (typeof Workflow.prototype.steps)[0]>,
+    executionId: string,
+    workflowId: string,
+    workspaceId: string,
+    variables: Record<string, string>,
+    input: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const stepDef = stepMap.get(stepId);
+    if (!stepDef) {
+      logger.warn({ stepId }, 'Step definition not found, skipping');
+      return input;
+    }
+
+    const startedAt = new Date();
+
+    // Update step status to running
+    await this.executionService.updateStepStatus(executionId, stepId, {
+      status: 'running',
+      input,
+      startedAt,
+    });
+
+    this.eventBus.publish(EventTypes.STEP_STARTED, {
+      executionId,
+      workspaceId,
+      stepId,
+      stepType: stepDef.type,
+    });
+
+    // Execute the step using the factory
+    const handler = StepFactory.create(stepDef.type);
+    const context: StepContext = {
+      stepId,
+      executionId,
+      workflowId,
+      workspaceId,
+      config: stepDef.config,
+      input,
+      variables,
+    };
+
+    const result = await handler.execute(context);
+    const completedAt = new Date();
+    const durationMs = completedAt.getTime() - startedAt.getTime();
+
+    if (result.success) {
+      await this.executionService.updateStepStatus(executionId, stepId, {
+        status: 'completed',
+        output: result.output,
+        completedAt,
+        durationMs,
+      });
+
+      this.eventBus.publish(EventTypes.STEP_COMPLETED, {
+        executionId,
+        workspaceId,
+        stepId,
+        output: result.output,
+        durationMs,
+      });
+
+      // Determine next steps based on connections
+      let nextOutput = { ...input, ...result.output };
+
+      for (const connection of stepDef.connections) {
+        // For condition nodes, follow the matching branch
+        if (stepDef.type === 'condition') {
+          const branch = (result.output as { branch?: string }).branch;
+          if (connection.label !== branch) continue;
+        }
+
+        // Execute the connected step
+        nextOutput = await this.executeStep(
+          connection.targetStepId,
+          stepMap,
+          executionId,
+          workflowId,
+          workspaceId,
+          variables,
+          nextOutput,
+        );
+      }
+
+      return nextOutput;
+    } else {
+      await this.executionService.updateStepStatus(executionId, stepId, {
+        status: 'failed',
+        error: result.error,
+        completedAt,
+        durationMs,
+      });
+
+      this.eventBus.publish(EventTypes.STEP_FAILED, {
+        executionId,
+        workspaceId,
+        stepId,
+        error: result.error,
+        durationMs,
+      });
+
+      throw new Error(`Step "${stepDef.name}" failed: ${result.error}`);
+    }
+  }
+}
