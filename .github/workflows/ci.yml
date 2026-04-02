@@ -36,11 +36,11 @@ jobs:
         env:
           JWT_SECRET: test-jwt-secret-key-for-ci-pipeline
           NODE_ENV: test
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - uses: codecov/codecov-action@v4
         with:
-          name: coverage
-          path: apps/api/coverage/
+          file: ./apps/api/coverage/clover.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     runs-on: ubuntu-latest
