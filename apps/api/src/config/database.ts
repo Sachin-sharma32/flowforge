@@ -5,6 +5,7 @@ import { logger } from '../infrastructure/logger';
 export async function connectDatabase(): Promise<typeof mongoose> {
   try {
     const conn = await mongoose.connect(config.MONGODB_URI);
+    console.log('testing');
     logger.info(`MongoDB connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
