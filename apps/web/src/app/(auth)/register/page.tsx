@@ -46,7 +46,9 @@ export default function RegisterPage() {
               </div>
             )}
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">Name</label>
+              <label htmlFor="name" className="text-sm font-medium">
+                Name
+              </label>
               <Input
                 id="name"
                 placeholder="Your name"
@@ -56,7 +58,9 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
               <Input
                 id="email"
                 type="email"
@@ -67,7 +71,9 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">Password</label>
+              <label htmlFor="password" className="text-sm font-medium">
+                Password
+              </label>
               <Input
                 id="password"
                 type="password"
@@ -90,6 +96,7 @@ export default function RegisterPage() {
           </p>
         </CardContent>
       </Card>
+      <input required name="phone" type="tel" pattern="[1-10]{10}" />
     </div>
   );
 }

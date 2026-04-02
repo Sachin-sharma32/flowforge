@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\Admin\\flowforge\\node_modules\\next\\dist\\bin\\next",
+        "dev",
+        "--dir",
+        "C:\\Users\\Admin\\flowforge\\apps\\web"
+      ],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}
