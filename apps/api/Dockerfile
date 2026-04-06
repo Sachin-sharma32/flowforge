@@ -2,16 +2,17 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY apps/api/package.json ./apps/api/package.json
+RUN npm ci --workspace=apps/api --workspace=packages/shared
+
 COPY packages/shared ./packages/shared
-RUN cd packages/shared && npm install && npm run build
+RUN npm run build --workspace=packages/shared
 
-COPY apps/api/package.json apps/api/tsconfig.json ./
-RUN node -e "const p=require('./package.json'); delete p.dependencies['@flowforge/shared']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2))" && \
-    npm install && \
-    ln -s /app/packages/shared node_modules/@flowforge/shared
-
-COPY apps/api/src ./src
-RUN npm run build
+COPY apps/api/tsconfig.json ./apps/api/
+COPY apps/api/src ./apps/api/src
+RUN npm run build --workspace=apps/api
 
 # Stage 2: Production
 FROM node:20-alpine AS production
@@ -19,12 +20,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY apps/api/package.json ./
-RUN node -e "const p=require('./package.json'); delete p.dependencies['@flowforge/shared']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2))" && \
-    npm install --omit=dev
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY apps/api/package.json ./apps/api/package.json
+RUN npm ci --workspace=apps/api --workspace=packages/shared --omit=dev
 
-COPY --from=builder /app/packages/shared ./node_modules/@flowforge/shared
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/packages/shared ./packages/shared
+COPY --from=builder /app/apps/api/dist ./dist
 
 EXPOSE 4000
 
