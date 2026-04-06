@@ -6,8 +6,8 @@ COPY packages/shared ./packages/shared
 RUN cd packages/shared && npm install && npm run build
 
 COPY apps/api/package.json apps/api/tsconfig.json ./
-RUN npm install --install-strategy=nested --ignore-scripts && \
-    rm -rf node_modules/@flowforge/shared && \
+RUN node -e "const p=require('./package.json'); delete p.dependencies['@flowforge/shared']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2))" && \
+    npm install && \
     ln -s /app/packages/shared node_modules/@flowforge/shared
 
 COPY apps/api/src ./src
@@ -20,8 +20,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY apps/api/package.json ./
-RUN npm install --omit=dev --install-strategy=nested --ignore-scripts || true
-RUN rm -rf node_modules/@flowforge
+RUN node -e "const p=require('./package.json'); delete p.dependencies['@flowforge/shared']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2))" && \
+    npm install --omit=dev
 
 COPY --from=builder /app/packages/shared ./node_modules/@flowforge/shared
 COPY --from=builder /app/dist ./dist
