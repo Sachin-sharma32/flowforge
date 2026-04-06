@@ -2,11 +2,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package.json tsconfig.json ./
-COPY ../../packages/shared ./packages/shared
+COPY apps/api/package.json apps/api/tsconfig.json ./
+COPY packages/shared ./packages/shared
 RUN npm install
 
-COPY src ./src
+COPY apps/api/src ./src
 RUN npm run build
 
 # Stage 2: Production
@@ -15,7 +15,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY package.json ./
+COPY apps/api/package.json ./
 RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
