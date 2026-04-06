@@ -7,6 +7,7 @@
     "apps/*"
   ],
   "scripts": {
+    "predev": "kill-port 3000 && kill-port 4000",
     "dev": "concurrently -n \"shared,api,web\" -c \"magenta,blue,green\" \"npm run dev -w @flowforge/shared\" \"npm run dev -w @flowforge/api\" \"npm run dev -w @flowforge/web\"",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
+    "kill-port": "^2.0.1",
     "lint-staged": "^16.4.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
