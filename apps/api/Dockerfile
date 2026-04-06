@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY apps/api/package.json ./apps/api/package.json
-RUN npm ci --workspace=apps/api --workspace=packages/shared
+RUN npm ci --workspace=apps/api --workspace=packages/shared --ignore-scripts
 
 COPY packages/shared ./packages/shared
 RUN npm run build --workspace=packages/shared
@@ -23,7 +23,7 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY apps/api/package.json ./apps/api/package.json
-RUN npm ci --workspace=apps/api --workspace=packages/shared --omit=dev
+RUN npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --ignore-scripts
 
 COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/apps/api/dist ./dist
