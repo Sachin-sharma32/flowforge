@@ -1,5 +1,5 @@
 import { Workflow, IWorkflowDocument } from '../models/workflow.model';
-import { NotFoundError, ForbiddenError } from '../domain/errors';
+import { NotFoundError } from '../domain/errors';
 import { CreateWorkflowInput, UpdateWorkflowInput } from '@flowforge/shared';
 
 export interface WorkflowQuery {
