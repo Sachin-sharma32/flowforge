@@ -3,7 +3,9 @@ import { codeInspectorPlugin } from 'code-inspector-plugin';
 const nextConfig = {
   transpilePackages: ['@flowforge/shared'],
   webpack: (config, { dev, isServer }) => {
-    config.plugins.push(codeInspectorPlugin({ bundler: 'webpack' }));
+    if (dev && !isServer) {
+      config.plugins.push(codeInspectorPlugin({ bundler: 'webpack' }));
+    }
     return config;
   },
 };

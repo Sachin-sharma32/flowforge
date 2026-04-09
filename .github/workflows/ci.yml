@@ -34,7 +34,7 @@ jobs:
       - run: npm run build --workspace=packages/shared
       - run: npm test --workspace=apps/api -- --coverage --passWithNoTests
         env:
-          JWT_SECRET: test-jwt-secret-key-for-ci-pipeline
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           NODE_ENV: test
       - uses: codecov/codecov-action@v4
         with:
@@ -51,6 +51,4 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run build --workspace=packages/shared
-      - run: npm run build --workspace=apps/api
-      - run: npm run build --workspace=apps/web
+      - run: npm run build --workspaces --if-present
