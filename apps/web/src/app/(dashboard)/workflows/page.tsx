@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -34,65 +35,85 @@ export default function WorkflowsPage() {
   }, [currentWorkspace?.id, debouncedSearch, fetchWorkflows]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div
+        className="flex items-center justify-between stagger-fade-in"
+        style={{ animationDelay: '0ms' }}
+      >
         <div>
-          <h1 className="text-3xl font-bold">Workflows</h1>
-          <p className="text-muted-foreground">Create and manage automation workflows</p>
+          <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+            Workflows
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Create and manage automation workflows
+          </p>
         </div>
         <Button onClick={() => router.push('/workflows/new')}>
           <Plus className="mr-2 h-4 w-4" /> New Workflow
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="stagger-fade-in flex items-center gap-4" style={{ animationDelay: '80ms' }}>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors" />
           <Input
             placeholder="Search workflows..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-10"
           />
         </div>
       </div>
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 w-2/3 rounded bg-muted" />
-                <div className="mt-2 h-3 w-1/3 rounded bg-muted" />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Card key={i} noHover className="overflow-hidden">
+              <CardContent className="space-y-4 p-6">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+                <div className="flex items-center gap-2 pt-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : workflows.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <GitBranch className="mb-4 h-12 w-12 text-muted-foreground" />
+        <Card noHover className="stagger-fade-in" style={{ animationDelay: '160ms' }}>
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <div className="relative mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
+              <div className="absolute inset-0 rounded-2xl bg-primary/5 blur-2xl" />
+              <GitBranch className="relative h-9 w-9 text-primary" strokeWidth={2} />
+            </div>
             <h3 className="text-lg font-semibold">No workflows yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Create your first workflow to start automating tasks.
             </p>
-            <Button className="mt-4" onClick={() => router.push('/workflows/new')}>
+            <Button className="mt-5" onClick={() => router.push('/workflows/new')}>
               <Plus className="mr-2 h-4 w-4" /> Create Workflow
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {workflows.map((workflow: any) => (
+          {workflows.map((workflow: any, i) => (
             <Card
               key={workflow.id || workflow._id}
-              className="cursor-pointer transition-shadow hover:shadow-md"
+              style={{ animationDelay: `${160 + i * 60}ms` }}
+              className="stagger-fade-in group cursor-pointer overflow-hidden"
               onClick={() => router.push(`/workflows/${workflow.id || workflow._id}`)}
             >
+              {/* Top accent bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{workflow.name}</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold tracking-tight transition-colors group-hover:text-primary">
+                      {workflow.name}
+                    </h3>
                     <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                       {workflow.description || 'No description'}
                     </p>
@@ -101,7 +122,7 @@ export default function WorkflowsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                       onClick={(e) => {
                         e.stopPropagation();
                         setOpenMenu(
@@ -114,9 +135,9 @@ export default function WorkflowsPage() {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                     {openMenu === (workflow.id || workflow._id) && (
-                      <div className="absolute right-0 top-8 z-10 w-40 rounded-md border bg-card p-1 shadow-lg">
+                      <div className="absolute right-0 top-9 z-10 w-44 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-border/60 bg-popover/95 p-1 shadow-soft-lg backdrop-blur-xl">
                         <button
-                          className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (currentWorkspace)
@@ -124,10 +145,10 @@ export default function WorkflowsPage() {
                             setOpenMenu(null);
                           }}
                         >
-                          <Copy className="h-3 w-3" /> Duplicate
+                          <Copy className="h-3.5 w-3.5" /> Duplicate
                         </button>
                         <button
-                          className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-destructive hover:bg-accent"
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (currentWorkspace)
@@ -135,7 +156,7 @@ export default function WorkflowsPage() {
                             setOpenMenu(null);
                           }}
                         >
-                          <Trash2 className="h-3 w-3" /> Delete
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
                         </button>
                       </div>
                     )}
@@ -149,7 +170,7 @@ export default function WorkflowsPage() {
                     {workflow.steps?.length || 0} steps
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-3 text-xs text-muted-foreground">
                   Updated {formatDate(workflow.updatedAt)}
                 </p>
               </CardContent>

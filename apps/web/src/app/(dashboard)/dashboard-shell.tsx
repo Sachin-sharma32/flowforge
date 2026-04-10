@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { PageTransition } from '@/components/ui/page-transition';
 import { fetchProfile } from '@/stores/auth-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 import type { RootState, AppDispatch } from '@/stores/store';
@@ -31,18 +32,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!mounted) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="app-background flex h-screen items-center justify-center">
+        <div className="relative">
+          <div className="absolute inset-0 animate-pulse-ring rounded-full" />
+          <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="app-background relative flex h-screen overflow-hidden">
+      {/* Subtle dot grid texture */}
+      <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto px-6 py-8">
+          <PageTransition className="mx-auto max-w-7xl">{children}</PageTransition>
+        </main>
       </div>
     </div>
   );
