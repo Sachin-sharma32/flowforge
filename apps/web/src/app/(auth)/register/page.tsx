@@ -96,7 +96,6 @@ export default function RegisterPage() {
           </p>
         </CardContent>
       </Card>
-      <input required name="phone" type="tel" pattern="[1-10]{10}" />
     </div>
   );
 }
