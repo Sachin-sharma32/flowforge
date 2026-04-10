@@ -13,6 +13,7 @@ export const updateWorkspaceSchema = z.object({
     .optional(),
 });
 
+// 'owner' is excluded — ownership is assigned at workspace creation only, not via invite/role-update
 export const inviteMemberSchema = z.object({
   email: z.string().email('Invalid email address'),
   role: z.enum(['admin', 'editor', 'viewer']),

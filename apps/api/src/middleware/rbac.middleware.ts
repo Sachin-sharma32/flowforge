@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { hasPermission, PermissionType, RoleType } from '@flowforge/shared';
 import { ForbiddenError, NotFoundError } from '../domain/errors';
 import { Workspace } from '../models/workspace.model';
@@ -28,15 +29,18 @@ export function requirePermission(permission: PermissionType) {
         return;
       }
 
+      if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
+        next(new NotFoundError('Invalid workspace ID'));
+        return;
+      }
+
       const workspace = await Workspace.findById(workspaceId);
       if (!workspace) {
         next(new NotFoundError('Workspace not found'));
         return;
       }
 
-      const member = workspace.members.find(
-        (m) => m.userId.toString() === userId,
-      );
+      const member = workspace.members.find((m) => m.userId.toString() === userId);
       if (!member) {
         next(new ForbiddenError('You are not a member of this workspace'));
         return;

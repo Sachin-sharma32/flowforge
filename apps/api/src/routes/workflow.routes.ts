@@ -9,11 +9,7 @@ export const workflowRoutes = Router({ mergeParams: true });
 
 workflowRoutes.use(authenticate);
 
-workflowRoutes.get(
-  '/',
-  requirePermission(Permissions.VIEW_EXECUTIONS),
-  WorkflowController.list,
-);
+workflowRoutes.get('/', requirePermission(Permissions.VIEW_WORKFLOWS), WorkflowController.list);
 workflowRoutes.post(
   '/',
   requirePermission(Permissions.CREATE_WORKFLOW),
@@ -22,7 +18,7 @@ workflowRoutes.post(
 );
 workflowRoutes.get(
   '/:id',
-  requirePermission(Permissions.VIEW_EXECUTIONS),
+  requirePermission(Permissions.VIEW_WORKFLOWS),
   WorkflowController.getById,
 );
 workflowRoutes.patch(

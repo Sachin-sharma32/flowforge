@@ -8,11 +8,7 @@ export const executionRoutes = Router({ mergeParams: true });
 
 executionRoutes.use(authenticate);
 
-executionRoutes.get(
-  '/',
-  requirePermission(Permissions.VIEW_EXECUTIONS),
-  ExecutionController.list,
-);
+executionRoutes.get('/', requirePermission(Permissions.VIEW_EXECUTIONS), ExecutionController.list);
 executionRoutes.get(
   '/stats',
   requirePermission(Permissions.VIEW_EXECUTIONS),
@@ -25,6 +21,6 @@ executionRoutes.get(
 );
 executionRoutes.post(
   '/:id/cancel',
-  requirePermission(Permissions.EXECUTE_WORKFLOW),
+  requirePermission(Permissions.CANCEL_EXECUTION),
   ExecutionController.cancel,
 );
