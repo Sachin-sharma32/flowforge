@@ -7,12 +7,14 @@ interface ExecutionState {
   currentExecution: IExecution | null;
   stats: IExecutionStats | null;
   isLoading: boolean;
+  error: string | null;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 
   fetchExecutions: (workspaceId: string, params?: Record<string, string>) => Promise<void>;
   fetchExecution: (workspaceId: string, executionId: string) => Promise<void>;
   fetchStats: (workspaceId: string) => Promise<void>;
   cancelExecution: (workspaceId: string, executionId: string) => Promise<void>;
+  clearError: () => void;
 
   // Real-time updates
   onStepUpdate: (data: Record<string, unknown>) => void;
@@ -24,25 +26,28 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
   currentExecution: null,
   stats: null,
   isLoading: false,
+  error: null,
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
 
   fetchExecutions: async (workspaceId, params) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions`, { params });
       set({ executions: data.data, pagination: data.pagination, isLoading: false });
-    } catch {
-      set({ isLoading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch executions';
+      set({ isLoading: false, error: message });
     }
   },
 
   fetchExecution: async (workspaceId, executionId) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions/${executionId}`);
       set({ currentExecution: data.data, isLoading: false });
-    } catch {
-      set({ isLoading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch execution';
+      set({ isLoading: false, error: message });
     }
   },
 
@@ -50,7 +55,9 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats`);
       set({ stats: data.data });
-    } catch {}
+    } catch (err) {
+      console.error('Failed to fetch execution stats:', err);
+    }
   },
 
   cancelExecution: async (workspaceId, executionId) => {
@@ -58,13 +65,20 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     get().fetchExecution(workspaceId, executionId);
   },
 
+  clearError: () => set({ error: null }),
+
   onStepUpdate: (data) => {
     const { currentExecution } = get();
     if (!currentExecution || currentExecution.id !== data.executionId) return;
 
     const updatedSteps = currentExecution.steps.map((step) =>
       step.stepId === data.stepId
-        ? { ...step, status: data.status as string, output: data.output as Record<string, unknown>, durationMs: data.durationMs as number }
+        ? {
+            ...step,
+            status: data.status as string,
+            output: data.output as Record<string, unknown>,
+            durationMs: data.durationMs as number,
+          }
         : step,
     );
 

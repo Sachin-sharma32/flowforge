@@ -13,18 +13,21 @@ interface WorkspaceState {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   isLoading: boolean;
+  error: string | null;
 
   fetchWorkspaces: () => Promise<void>;
   setCurrentWorkspace: (workspace: Workspace) => void;
+  clearError: () => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   workspaces: [],
   currentWorkspace: null,
   isLoading: false,
+  error: null,
 
   fetchWorkspaces: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const { data } = await api.get('/workspaces');
       const workspaces = data.data;
@@ -33,10 +36,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         currentWorkspace: workspaces[0] || null,
         isLoading: false,
       });
-    } catch {
-      set({ isLoading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch workspaces';
+      set({ isLoading: false, error: message });
     }
   },
 
   setCurrentWorkspace: (workspace) => set({ currentWorkspace: workspace }),
+  clearError: () => set({ error: null }),
 }));
