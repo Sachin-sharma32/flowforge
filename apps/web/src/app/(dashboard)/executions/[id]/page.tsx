@@ -11,6 +11,7 @@ import { useExecutionStore } from '@/stores/execution-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 import type { IExecution } from '@flowforge/shared';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
+import { getSocket } from '@/lib/socket-client';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, XCircle } from 'lucide-react';
 
@@ -29,12 +30,16 @@ export default function ExecutionDetailPage() {
     }
   }, [currentWorkspace?.id, executionId, fetchExecution]);
 
-  // Poll for updates when running
+  // Poll as fallback only when socket is disconnected and execution is running
   useEffect(() => {
     if (currentExecution?.status !== 'running' || !currentWorkspace?.id) return;
+
+    const socket = getSocket();
+    if (socket.connected) return; // Socket handles real-time updates
+
     const interval = setInterval(() => {
       fetchExecution(currentWorkspace.id, executionId);
-    }, 2000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [currentExecution?.status, currentWorkspace?.id, executionId, fetchExecution]);
 
