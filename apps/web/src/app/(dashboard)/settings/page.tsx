@@ -1,14 +1,40 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWorkspaceStore } from '@/stores/workspace-store';
+import { api } from '@/lib/api-client';
 import { Settings, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
-  const { currentWorkspace } = useWorkspaceStore();
+  const { currentWorkspace, fetchWorkspaces } = useWorkspaceStore();
+  const [name, setName] = useState(currentWorkspace?.name || '');
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  const handleSave = async () => {
+    if (!currentWorkspace?.id || !name.trim()) return;
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      await api.patch(`/workspaces/${currentWorkspace.id}`, { name: name.trim() });
+      await fetchWorkspaces();
+      setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
+    } catch (err) {
+      setSaveMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to save settings',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -27,7 +53,7 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Workspace Name</label>
-            <Input defaultValue={currentWorkspace?.name || ''} />
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Webhook Secret</label>
@@ -40,7 +66,16 @@ export default function SettingsPage() {
               Use this secret to verify incoming webhook requests.
             </p>
           </div>
-          <Button>Save Changes</Button>
+          {saveMessage && (
+            <p
+              className={`text-sm ${saveMessage.type === 'error' ? 'text-destructive' : 'text-green-600'}`}
+            >
+              {saveMessage.text}
+            </p>
+          )}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </CardContent>
       </Card>
 

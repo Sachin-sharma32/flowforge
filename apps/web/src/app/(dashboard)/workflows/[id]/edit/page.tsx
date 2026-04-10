@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Canvas } from '@/components/workflow/workflow-builder/canvas';
 import { useWorkflowStore } from '@/stores/workflow-store';
@@ -14,6 +14,7 @@ export default function WorkflowEditPage() {
   const workflowId = params.id as string;
   const { currentWorkspace } = useWorkspaceStore();
   const { currentWorkflow, fetchWorkflow, updateWorkflow, isLoading } = useWorkflowStore();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
@@ -23,7 +24,12 @@ export default function WorkflowEditPage() {
 
   const handleSave = async (steps: unknown[]) => {
     if (!currentWorkspace?.id) return;
-    await updateWorkflow(currentWorkspace.id, workflowId, { steps });
+    setSaveError(null);
+    try {
+      await updateWorkflow(currentWorkspace.id, workflowId, { steps });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save workflow');
+    }
   };
 
   if (isLoading || !currentWorkflow) {
@@ -45,6 +51,9 @@ export default function WorkflowEditPage() {
           <p className="text-xs text-muted-foreground">Visual Workflow Editor</p>
         </div>
       </div>
+      {saveError && (
+        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{saveError}</div>
+      )}
       <div className="flex-1 mt-3">
         <Canvas
           workflow={{

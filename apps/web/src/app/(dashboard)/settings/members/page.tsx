@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkspaceStore } from '@/stores/workspace-store';
+import { api } from '@/lib/api-client';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
@@ -17,11 +18,32 @@ const roleColors: Record<string, 'default' | 'success' | 'warning' | 'secondary'
 };
 
 export default function MembersPage() {
-  const { currentWorkspace } = useWorkspaceStore();
+  const { currentWorkspace, fetchWorkspaces } = useWorkspaceStore();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
+  const [inviting, setInviting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const members = currentWorkspace?.members || [];
+
+  const handleInvite = async () => {
+    if (!currentWorkspace?.id || !email.trim()) return;
+    setInviting(true);
+    setMessage(null);
+    try {
+      await api.post(`/workspaces/${currentWorkspace.id}/members`, { email: email.trim(), role });
+      setEmail('');
+      await fetchWorkspaces();
+      setMessage({ type: 'success', text: 'Member invited successfully' });
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to invite member',
+      });
+    } finally {
+      setInviting(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -43,7 +65,7 @@ export default function MembersPage() {
             <UserPlus className="h-5 w-5" /> Invite Member
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <div className="flex gap-3">
             <Input
               placeholder="Email address"
@@ -60,8 +82,17 @@ export default function MembersPage() {
               <option value="editor">Editor</option>
               <option value="viewer">Viewer</option>
             </select>
-            <Button>Invite</Button>
+            <Button onClick={handleInvite} disabled={inviting || !email.trim()}>
+              {inviting ? 'Inviting...' : 'Invite'}
+            </Button>
           </div>
+          {message && (
+            <p
+              className={`text-sm ${message.type === 'error' ? 'text-destructive' : 'text-green-600'}`}
+            >
+              {message.text}
+            </p>
+          )}
         </CardContent>
       </Card>
 
