@@ -8,7 +8,14 @@ import {
 interface TransformMapping {
   source: string;
   target: string;
-  transform?: 'uppercase' | 'lowercase' | 'trim' | 'number' | 'boolean' | 'json_parse' | 'stringify';
+  transform?:
+    | 'uppercase'
+    | 'lowercase'
+    | 'trim'
+    | 'number'
+    | 'boolean'
+    | 'json_parse'
+    | 'stringify';
 }
 
 export class TransformHandler implements IStepHandler {
@@ -24,7 +31,9 @@ export class TransformHandler implements IStepHandler {
       // Apply field mappings
       for (const mapping of mappings) {
         const value = this.resolveField(mapping.source, context.input);
-        const transformed = mapping.transform ? this.applyTransform(value, mapping.transform) : value;
+        const transformed = mapping.transform
+          ? this.applyTransform(value, mapping.transform)
+          : value;
         this.setField(output, mapping.target, transformed);
       }
 
@@ -67,14 +76,26 @@ export class TransformHandler implements IStepHandler {
   private applyTransform(value: unknown, transform: string): unknown {
     const str = String(value ?? '');
     switch (transform) {
-      case 'uppercase': return str.toUpperCase();
-      case 'lowercase': return str.toLowerCase();
-      case 'trim': return str.trim();
-      case 'number': return Number(value);
-      case 'boolean': return Boolean(value);
-      case 'json_parse': return JSON.parse(str);
-      case 'stringify': return JSON.stringify(value);
-      default: return value;
+      case 'uppercase':
+        return str.toUpperCase();
+      case 'lowercase':
+        return str.toLowerCase();
+      case 'trim':
+        return str.trim();
+      case 'number':
+        return Number(value);
+      case 'boolean':
+        return Boolean(value);
+      case 'json_parse':
+        try {
+          return JSON.parse(str);
+        } catch {
+          throw new Error(`Invalid JSON for json_parse transform: ${str.slice(0, 100)}`);
+        }
+      case 'stringify':
+        return JSON.stringify(value);
+      default:
+        return value;
     }
   }
 

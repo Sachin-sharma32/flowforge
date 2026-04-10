@@ -8,7 +8,12 @@ import { logger } from '../../infrastructure/logger';
 
 export class SendEmailHandler implements IStepHandler {
   async execute(context: StepContext): Promise<StepResult> {
-    const { to, subject, body, from = 'noreply@flowforge.dev' } = context.config as {
+    const {
+      to,
+      subject,
+      body,
+      from = 'noreply@flowforge.dev',
+    } = context.config as {
       to: string;
       subject: string;
       body: string;
@@ -26,13 +31,16 @@ export class SendEmailHandler implements IStepHandler {
 
       // In production, integrate with SendGrid/SES
       // For demo purposes, log the email
-      logger.info({
-        action: 'send_email',
-        to,
-        subject: resolvedSubject,
-        from,
-        executionId: context.executionId,
-      }, 'Email sent (simulated)');
+      logger.info(
+        {
+          action: 'send_email',
+          to,
+          subject: resolvedSubject,
+          from,
+          executionId: context.executionId,
+        },
+        'Email sent (simulated)',
+      );
 
       return {
         success: true,
@@ -58,8 +66,16 @@ export class SendEmailHandler implements IStepHandler {
     const cfg = config as Record<string, unknown>;
 
     if (!cfg.to || typeof cfg.to !== 'string') errors.push('Recipient (to) is required');
-    if (!cfg.subject || typeof cfg.subject !== 'string') errors.push('Subject is required');
-    if (!cfg.body || typeof cfg.body !== 'string') errors.push('Body is required');
+    if (!cfg.subject || typeof cfg.subject !== 'string') {
+      errors.push('Subject is required');
+    } else if ((cfg.subject as string).length > 1000) {
+      errors.push('Subject must be under 1000 characters');
+    }
+    if (!cfg.body || typeof cfg.body !== 'string') {
+      errors.push('Body is required');
+    } else if ((cfg.body as string).length > 102400) {
+      errors.push('Body must be under 100KB');
+    }
 
     return { valid: errors.length === 0, errors };
   }

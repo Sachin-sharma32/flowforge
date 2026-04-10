@@ -24,11 +24,20 @@ export class SlackMessageHandler implements IStepHandler {
       const payload: Record<string, unknown> = { text: resolvedMessage };
       if (channel) payload.channel = channel;
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      let response: Response;
+      try {
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const text = await response.text();
@@ -39,11 +48,14 @@ export class SlackMessageHandler implements IStepHandler {
         };
       }
 
-      logger.info({
-        action: 'slack_message',
-        channel,
-        executionId: context.executionId,
-      }, 'Slack message sent');
+      logger.info(
+        {
+          action: 'slack_message',
+          channel,
+          executionId: context.executionId,
+        },
+        'Slack message sent',
+      );
 
       return {
         success: true,

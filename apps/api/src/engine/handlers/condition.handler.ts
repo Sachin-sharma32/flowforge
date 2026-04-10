@@ -5,7 +5,14 @@ import {
   ValidationResult,
 } from '../../domain/interfaces/step-handler.interface';
 
-type Operator = 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'exists' | 'not_exists';
+type Operator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'greater_than'
+  | 'less_than'
+  | 'exists'
+  | 'not_exists';
 
 export class ConditionHandler implements IStepHandler {
   async execute(context: StepContext): Promise<StepResult> {
@@ -54,10 +61,20 @@ export class ConditionHandler implements IStepHandler {
         return fieldValue !== compareValue;
       case 'contains':
         return typeof fieldValue === 'string' && fieldValue.includes(String(compareValue));
-      case 'greater_than':
-        return Number(fieldValue) > Number(compareValue);
-      case 'less_than':
-        return Number(fieldValue) < Number(compareValue);
+      case 'greater_than': {
+        const a = Number(fieldValue);
+        const b = Number(compareValue);
+        if (isNaN(a) || isNaN(b))
+          throw new Error(`Cannot compare non-numeric values: ${fieldValue} > ${compareValue}`);
+        return a > b;
+      }
+      case 'less_than': {
+        const a = Number(fieldValue);
+        const b = Number(compareValue);
+        if (isNaN(a) || isNaN(b))
+          throw new Error(`Cannot compare non-numeric values: ${fieldValue} < ${compareValue}`);
+        return a < b;
+      }
       case 'exists':
         return fieldValue !== undefined && fieldValue !== null;
       case 'not_exists':

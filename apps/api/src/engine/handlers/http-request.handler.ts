@@ -7,7 +7,13 @@ import {
 
 export class HttpRequestHandler implements IStepHandler {
   async execute(context: StepContext): Promise<StepResult> {
-    const { url, method = 'GET', headers = {}, body, timeout = 30000 } = context.config as {
+    const {
+      url,
+      method = 'GET',
+      headers = {},
+      body,
+      timeout = 30000,
+    } = context.config as {
       url: string;
       method?: string;
       headers?: Record<string, string>;
@@ -35,14 +41,17 @@ export class HttpRequestHandler implements IStepHandler {
         signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
-
+      // Keep timeout active through response body parsing
       let responseBody: unknown;
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        responseBody = await response.json();
-      } else {
-        responseBody = await response.text();
+      try {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          responseBody = await response.json();
+        } else {
+          responseBody = await response.text();
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
 
       return {
