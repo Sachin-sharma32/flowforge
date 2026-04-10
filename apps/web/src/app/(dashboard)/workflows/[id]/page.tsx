@@ -56,8 +56,11 @@ export default function WorkflowDetailPage() {
             <h1 className="text-3xl font-bold">{currentWorkflow.name}</h1>
             <Badge
               variant={
-                currentWorkflow.status === 'active' ? 'success' :
-                currentWorkflow.status === 'paused' ? 'warning' : 'secondary'
+                currentWorkflow.status === 'active'
+                  ? 'success'
+                  : currentWorkflow.status === 'paused'
+                    ? 'warning'
+                    : 'secondary'
               }
             >
               {currentWorkflow.status}
@@ -66,15 +69,24 @@ export default function WorkflowDetailPage() {
           <p className="text-muted-foreground">{currentWorkflow.description || 'No description'}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => duplicateWorkflow(currentWorkspace!.id, workflowId)}>
+          <Button
+            variant="outline"
+            onClick={() => currentWorkspace && duplicateWorkflow(currentWorkspace.id, workflowId)}
+          >
             <Copy className="mr-2 h-4 w-4" /> Duplicate
           </Button>
           {currentWorkflow.status === 'active' ? (
-            <Button variant="outline" onClick={() => pauseWorkflow(currentWorkspace!.id, workflowId)}>
+            <Button
+              variant="outline"
+              onClick={() => currentWorkspace && pauseWorkflow(currentWorkspace.id, workflowId)}
+            >
               <Pause className="mr-2 h-4 w-4" /> Pause
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => activateWorkflow(currentWorkspace!.id, workflowId)}>
+            <Button
+              variant="outline"
+              onClick={() => currentWorkspace && activateWorkflow(currentWorkspace.id, workflowId)}
+            >
               <Play className="mr-2 h-4 w-4" /> Activate
             </Button>
           )}
@@ -122,7 +134,9 @@ export default function WorkflowDetailPage() {
           </CardHeader>
           <CardContent>
             {currentWorkflow.steps.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No steps defined. Open the editor to add steps.</p>
+              <p className="text-sm text-muted-foreground">
+                No steps defined. Open the editor to add steps.
+              </p>
             ) : (
               <div className="space-y-2">
                 {currentWorkflow.steps.map((step, i) => (

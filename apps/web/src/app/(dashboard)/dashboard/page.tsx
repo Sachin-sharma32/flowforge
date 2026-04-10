@@ -11,13 +11,14 @@ import { formatDate, formatDuration } from '@/lib/utils';
 import { Activity, CheckCircle2, XCircle, Clock, GitBranch, Zap } from 'lucide-react';
 
 const statusBadge = (status: string) => {
-  const variants: Record<string, 'success' | 'destructive' | 'warning' | 'default' | 'secondary'> = {
-    completed: 'success',
-    failed: 'destructive',
-    running: 'warning',
-    pending: 'secondary',
-    cancelled: 'default',
-  };
+  const variants: Record<string, 'success' | 'destructive' | 'warning' | 'default' | 'secondary'> =
+    {
+      completed: 'success',
+      failed: 'destructive',
+      running: 'warning',
+      pending: 'secondary',
+      cancelled: 'default',
+    };
   return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
 };
 
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!currentWorkspace?.id) return;
     fetchWorkflows(currentWorkspace.id);
-    fetchExecutions(currentWorkspace.id, { limit: '5' } as any);
+    fetchExecutions(currentWorkspace.id, { limit: '5' });
     fetchStats(currentWorkspace.id);
   }, [currentWorkspace?.id, fetchWorkflows, fetchExecutions, fetchStats]);
 

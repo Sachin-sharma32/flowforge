@@ -9,6 +9,7 @@ import { ExecutionTimeline } from '@/components/execution/execution-timeline';
 import { LiveIndicator } from '@/components/execution/live-indicator';
 import { useExecutionStore } from '@/stores/execution-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
+import type { IExecution } from '@flowforge/shared';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, XCircle } from 'lucide-react';
@@ -58,9 +59,13 @@ export default function ExecutionDetailPage() {
             <h1 className="text-3xl font-bold">Execution Detail</h1>
             <Badge
               variant={
-                currentExecution.status === 'completed' ? 'success' :
-                currentExecution.status === 'failed' ? 'destructive' :
-                isRunning ? 'warning' : 'default'
+                currentExecution.status === 'completed'
+                  ? 'success'
+                  : currentExecution.status === 'failed'
+                    ? 'destructive'
+                    : isRunning
+                      ? 'warning'
+                      : 'default'
               }
             >
               {currentExecution.status}
@@ -71,7 +76,7 @@ export default function ExecutionDetailPage() {
         {isRunning && (
           <Button
             variant="destructive"
-            onClick={() => cancelExecution(currentWorkspace!.id, executionId)}
+            onClick={() => currentWorkspace && cancelExecution(currentWorkspace.id, executionId)}
           >
             <XCircle className="mr-2 h-4 w-4" /> Cancel
           </Button>
@@ -93,7 +98,11 @@ export default function ExecutionDetailPage() {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">
-              {currentExecution.durationMs ? formatDuration(currentExecution.durationMs) : isRunning ? 'Running...' : '—'}
+              {currentExecution.durationMs
+                ? formatDuration(currentExecution.durationMs)
+                : isRunning
+                  ? 'Running...'
+                  : '—'}
             </p>
           </CardContent>
         </Card>
@@ -116,7 +125,13 @@ export default function ExecutionDetailPage() {
         <CardContent>
           <ExecutionTimeline
             steps={currentExecution.steps}
-            workflowSteps={(currentExecution as any).workflowId?.steps}
+            workflowSteps={
+              (
+                currentExecution as IExecution & {
+                  workflowId?: { steps?: Array<{ id: string; name: string; type: string }> };
+                }
+              ).workflowId?.steps
+            }
           />
         </CardContent>
       </Card>

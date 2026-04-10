@@ -24,7 +24,8 @@ export default function WorkflowsPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const { currentWorkspace } = useWorkspaceStore();
-  const { workflows, isLoading, fetchWorkflows, deleteWorkflow, duplicateWorkflow } = useWorkflowStore();
+  const { workflows, isLoading, fetchWorkflows, deleteWorkflow, duplicateWorkflow } =
+    useWorkflowStore();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,7 +104,11 @@ export default function WorkflowsPage() {
                       className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenMenu(openMenu === (workflow.id || workflow._id) ? null : (workflow.id || workflow._id));
+                        setOpenMenu(
+                          openMenu === (workflow.id || workflow._id)
+                            ? null
+                            : workflow.id || workflow._id,
+                        );
                       }}
                     >
                       <MoreVertical className="h-4 w-4" />
@@ -114,7 +119,8 @@ export default function WorkflowsPage() {
                           className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
                           onClick={(e) => {
                             e.stopPropagation();
-                            duplicateWorkflow(currentWorkspace!.id, workflow.id || workflow._id);
+                            if (currentWorkspace)
+                              duplicateWorkflow(currentWorkspace.id, workflow.id || workflow._id);
                             setOpenMenu(null);
                           }}
                         >
@@ -124,7 +130,8 @@ export default function WorkflowsPage() {
                           className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-destructive hover:bg-accent"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteWorkflow(currentWorkspace!.id, workflow.id || workflow._id);
+                            if (currentWorkspace)
+                              deleteWorkflow(currentWorkspace.id, workflow.id || workflow._id);
                             setOpenMenu(null);
                           }}
                         >
