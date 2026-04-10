@@ -36,11 +36,6 @@ jobs:
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           NODE_ENV: test
-      - uses: codecov/codecov-action@v4
-        with:
-          file: ./apps/api/coverage/clover.xml
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     runs-on: ubuntu-latest
