@@ -1,9 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { WorkflowService } from '../services/workflow.service';
 import { ExecutionService } from '../services/execution.service';
+import { UnauthorizedError } from '../domain/errors';
+import { logger } from '../infrastructure/logger';
 
 const workflowService = new WorkflowService();
 const executionService = new ExecutionService();
+
+function requireUser(req: Request): { userId: string; email: string } {
+  if (!req.user) {
+    throw new UnauthorizedError('Authentication required');
+  }
+  return req.user;
+}
 
 export class WorkflowController {
   static async list(req: Request, res: Response, next: NextFunction) {
@@ -32,11 +41,8 @@ export class WorkflowController {
 
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const workflow = await workflowService.create(
-        req.body,
-        req.params.workspaceId,
-        req.user!.userId,
-      );
+      const user = requireUser(req);
+      const workflow = await workflowService.create(req.body, req.params.workspaceId, user.userId);
       res.status(201).json({ success: true, data: workflow });
     } catch (error) {
       next(error);
@@ -45,11 +51,12 @@ export class WorkflowController {
 
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = requireUser(req);
       const workflow = await workflowService.update(
         req.params.id,
         req.params.workspaceId,
         req.body,
-        req.user!.userId,
+        user.userId,
       );
       res.json({ success: true, data: workflow });
     } catch (error) {
@@ -68,10 +75,11 @@ export class WorkflowController {
 
   static async duplicate(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = requireUser(req);
       const workflow = await workflowService.duplicate(
         req.params.id,
         req.params.workspaceId,
-        req.user!.userId,
+        user.userId,
       );
       res.status(201).json({ success: true, data: workflow });
     } catch (error) {
@@ -105,10 +113,11 @@ export class WorkflowController {
         'manual',
         req.body.payload,
       );
-      // Queue for processing (will be handled by workflow processor)
       const { WorkflowProcessor } = await import('../engine/workflow-processor');
       const processor = new WorkflowProcessor();
-      processor.process(execution._id.toString()).catch(() => {});
+      processor.process(execution._id.toString()).catch((err) => {
+        logger.error({ err, executionId: execution._id.toString() }, 'Workflow processing failed');
+      });
 
       res.status(201).json({ success: true, data: execution });
     } catch (error) {

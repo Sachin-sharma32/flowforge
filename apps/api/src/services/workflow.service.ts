@@ -1,6 +1,7 @@
 import { Workflow, IWorkflowDocument } from '../models/workflow.model';
-import { NotFoundError } from '../domain/errors';
+import { NotFoundError, ValidationError } from '../domain/errors';
 import { CreateWorkflowInput, UpdateWorkflowInput } from '@flowforge/shared';
+import { StepFactory } from '../engine/step-factory';
 
 export interface WorkflowQuery {
   workspaceId: string;
@@ -40,6 +41,17 @@ export class WorkflowService {
   }
 
   async create(input: CreateWorkflowInput, workspaceId: string, userId: string) {
+    // Validate step types before persisting
+    const inputWithSteps = input as CreateWorkflowInput & { steps?: Array<{ type: string }> };
+    if (inputWithSteps.steps) {
+      const registeredTypes = StepFactory.getRegisteredTypes();
+      for (const step of inputWithSteps.steps) {
+        if (!registeredTypes.includes(step.type)) {
+          throw new ValidationError(`Unknown step type: ${step.type}`);
+        }
+      }
+    }
+
     return Workflow.create({
       ...input,
       workspaceId,

@@ -6,6 +6,7 @@ import { EventBus } from '../infrastructure/event-bus';
 import { EventTypes } from '../domain/events';
 import { StepContext } from '../domain/interfaces/step-handler.interface';
 import { logger } from '../infrastructure/logger';
+import { createRedisClient } from '../config/redis';
 
 // Register all handlers
 import { HttpRequestHandler } from './handlers/http-request.handler';
@@ -26,7 +27,35 @@ export class WorkflowProcessor {
   private executionService = new ExecutionService();
   private eventBus = EventBus.getInstance();
 
+  private async acquireLock(key: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
+    const redis = createRedisClient();
+    const lockKey = `lock:execution:${key}`;
+    const result = await redis.set(lockKey, '1', 'PX', ttlMs, 'NX');
+    if (result !== 'OK') {
+      await redis.quit();
+      return null;
+    }
+    return async () => {
+      await redis.del(lockKey);
+      await redis.quit();
+    };
+  }
+
   async process(executionId: string): Promise<void> {
+    const releaseLock = await this.acquireLock(executionId, 5 * 60 * 1000);
+    if (!releaseLock) {
+      logger.warn({ executionId }, 'Execution already being processed, skipping');
+      return;
+    }
+
+    try {
+      await this._process(executionId);
+    } finally {
+      await releaseLock();
+    }
+  }
+
+  private async _process(executionId: string): Promise<void> {
     const execution = await Execution.findById(executionId);
     if (!execution) {
       logger.error({ executionId }, 'Execution not found');
@@ -36,6 +65,16 @@ export class WorkflowProcessor {
     const workflow = await Workflow.findById(execution.workflowId);
     if (!workflow) {
       logger.error({ workflowId: execution.workflowId }, 'Workflow not found');
+      return;
+    }
+
+    if (workflow.steps.length === 0) {
+      logger.warn({ executionId, workflowId: workflow._id }, 'Workflow has no steps');
+      execution.status = 'completed';
+      execution.startedAt = new Date();
+      execution.completedAt = new Date();
+      execution.durationMs = 0;
+      await execution.save();
       return;
     }
 
@@ -104,7 +143,8 @@ export class WorkflowProcessor {
       const completedAt = new Date();
       execution.status = 'failed';
       execution.completedAt = completedAt;
-      execution.durationMs = completedAt.getTime() - (execution.startedAt?.getTime() || completedAt.getTime());
+      execution.durationMs =
+        completedAt.getTime() - (execution.startedAt?.getTime() || completedAt.getTime());
       await execution.save();
 
       this.eventBus.publish(EventTypes.EXECUTION_FAILED, {
