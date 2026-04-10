@@ -5,9 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { useExecutionStore } from '@/stores/execution-store';
-import { useWorkflowStore } from '@/stores/workflow-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchWorkflows } from '@/stores/workflow-slice';
+import {
+  fetchExecutions,
+  fetchExecutionStats,
+  fetchExecutionTimeline,
+  fetchWorkflowExecutionStats,
+} from '@/stores/execution-slice';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { formatDate, formatDuration } from '@/lib/utils';
 import {
@@ -80,37 +85,27 @@ const STATS = [
 ] as const;
 
 export default function DashboardPage() {
-  const { currentWorkspace } = useWorkspaceStore();
-  const { workflows, fetchWorkflows, isLoading: workflowsLoading } = useWorkflowStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { workflows, isLoading: workflowsLoading } = useAppSelector((state) => state.workflow);
   const {
     executions,
     stats,
     timeline,
     workflowStats,
-    fetchExecutions,
-    fetchStats,
-    fetchTimeline,
-    fetchWorkflowStats,
     isLoading: executionsLoading,
-  } = useExecutionStore();
+  } = useAppSelector((state) => state.execution);
 
   useExecutionSocket(currentWorkspace?.id);
 
   useEffect(() => {
     if (!currentWorkspace?.id) return;
-    fetchWorkflows(currentWorkspace.id);
-    fetchExecutions(currentWorkspace.id, { limit: '5' });
-    fetchStats(currentWorkspace.id);
-    fetchTimeline(currentWorkspace.id, 14);
-    fetchWorkflowStats(currentWorkspace.id);
-  }, [
-    currentWorkspace?.id,
-    fetchWorkflows,
-    fetchExecutions,
-    fetchStats,
-    fetchTimeline,
-    fetchWorkflowStats,
-  ]);
+    dispatch(fetchWorkflows({ workspaceId: currentWorkspace.id }));
+    dispatch(fetchExecutions({ workspaceId: currentWorkspace.id, params: { limit: '5' } }));
+    dispatch(fetchExecutionStats({ workspaceId: currentWorkspace.id }));
+    dispatch(fetchExecutionTimeline({ workspaceId: currentWorkspace.id, days: 14 }));
+    dispatch(fetchWorkflowExecutionStats({ workspaceId: currentWorkspace.id }));
+  }, [currentWorkspace?.id, dispatch]);
 
   const statValues: Record<string, { value: number; display: React.ReactNode }> = {
     workflows: {

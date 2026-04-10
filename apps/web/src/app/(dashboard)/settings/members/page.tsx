@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -18,7 +19,8 @@ const roleColors: Record<string, 'default' | 'success' | 'warning' | 'secondary'
 };
 
 export default function MembersPage() {
-  const { currentWorkspace, fetchWorkspaces } = useWorkspaceStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [inviting, setInviting] = useState(false);
@@ -33,7 +35,7 @@ export default function MembersPage() {
     try {
       await api.post(`/workspaces/${currentWorkspace.id}/members`, { email: email.trim(), role });
       setEmail('');
-      await fetchWorkspaces();
+      await dispatch(fetchWorkspaces()).unwrap();
       setMessage({ type: 'success', text: 'Member invited successfully' });
     } catch (err) {
       setMessage({

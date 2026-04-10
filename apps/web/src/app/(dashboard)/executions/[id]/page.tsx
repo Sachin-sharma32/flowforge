@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExecutionTimeline } from '@/components/execution/execution-timeline';
 import { LiveIndicator } from '@/components/execution/live-indicator';
-import { useExecutionStore } from '@/stores/execution-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchExecution, cancelExecution } from '@/stores/execution-slice';
 import type { IExecution } from '@flowforge/shared';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { getSocket } from '@/lib/socket-client';
@@ -19,16 +19,17 @@ export default function ExecutionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const executionId = params.id as string;
-  const { currentWorkspace } = useWorkspaceStore();
-  const { currentExecution, fetchExecution, cancelExecution, isLoading } = useExecutionStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { currentExecution, isLoading } = useAppSelector((state) => state.execution);
 
   useExecutionSocket(currentWorkspace?.id);
 
   useEffect(() => {
     if (currentWorkspace?.id && executionId) {
-      fetchExecution(currentWorkspace.id, executionId);
+      dispatch(fetchExecution({ workspaceId: currentWorkspace.id, executionId }));
     }
-  }, [currentWorkspace?.id, executionId, fetchExecution]);
+  }, [currentWorkspace?.id, executionId, dispatch]);
 
   // Poll as fallback only when socket is disconnected and execution is running
   useEffect(() => {
@@ -38,10 +39,10 @@ export default function ExecutionDetailPage() {
     if (socket.connected) return; // Socket handles real-time updates
 
     const interval = setInterval(() => {
-      fetchExecution(currentWorkspace.id, executionId);
+      dispatch(fetchExecution({ workspaceId: currentWorkspace.id, executionId }));
     }, 3000);
     return () => clearInterval(interval);
-  }, [currentExecution?.status, currentWorkspace?.id, executionId, fetchExecution]);
+  }, [currentExecution?.status, currentWorkspace?.id, executionId, dispatch]);
 
   if (isLoading || !currentExecution) {
     return (
@@ -81,7 +82,10 @@ export default function ExecutionDetailPage() {
         {isRunning && (
           <Button
             variant="destructive"
-            onClick={() => currentWorkspace && cancelExecution(currentWorkspace.id, executionId)}
+            onClick={() =>
+              currentWorkspace &&
+              dispatch(cancelExecution({ workspaceId: currentWorkspace.id, executionId }))
+            }
           >
             <XCircle className="mr-2 h-4 w-4" /> Cancel
           </Button>

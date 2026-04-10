@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
 import { Settings, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
-  const { currentWorkspace, fetchWorkspaces } = useWorkspaceStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const [name, setName] = useState(currentWorkspace?.name || '');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{
@@ -24,7 +26,7 @@ export default function SettingsPage() {
     setSaveMessage(null);
     try {
       await api.patch(`/workspaces/${currentWorkspace.id}`, { name: name.trim() });
-      await fetchWorkspaces();
+      await dispatch(fetchWorkspaces()).unwrap();
       setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
     } catch (err) {
       setSaveMessage({

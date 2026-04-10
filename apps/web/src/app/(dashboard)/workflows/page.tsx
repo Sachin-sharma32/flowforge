@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useWorkflowStore } from '@/stores/workflow-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchWorkflows, deleteWorkflow, duplicateWorkflow } from '@/stores/workflow-slice';
 import { useDebounce } from '@/hooks/use-debounce';
 import { formatDate } from '@/lib/utils';
 import { Plus, Search, GitBranch, MoreVertical, Play, Pause, Copy, Trash2 } from 'lucide-react';
@@ -24,15 +24,20 @@ export default function WorkflowsPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
-  const { currentWorkspace } = useWorkspaceStore();
-  const { workflows, isLoading, fetchWorkflows, deleteWorkflow, duplicateWorkflow } =
-    useWorkflowStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { workflows, isLoading } = useAppSelector((state) => state.workflow);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentWorkspace?.id) return;
-    fetchWorkflows(currentWorkspace.id, debouncedSearch ? { search: debouncedSearch } : undefined);
-  }, [currentWorkspace?.id, debouncedSearch, fetchWorkflows]);
+    dispatch(
+      fetchWorkflows({
+        workspaceId: currentWorkspace.id,
+        params: debouncedSearch ? { search: debouncedSearch } : undefined,
+      }),
+    );
+  }, [currentWorkspace?.id, debouncedSearch, dispatch]);
 
   return (
     <div className="space-y-8">
@@ -141,7 +146,12 @@ export default function WorkflowsPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             if (currentWorkspace)
-                              duplicateWorkflow(currentWorkspace.id, workflow.id || workflow._id);
+                              dispatch(
+                                duplicateWorkflow({
+                                  workspaceId: currentWorkspace.id,
+                                  workflowId: workflow.id || workflow._id,
+                                }),
+                              );
                             setOpenMenu(null);
                           }}
                         >
@@ -152,7 +162,12 @@ export default function WorkflowsPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             if (currentWorkspace)
-                              deleteWorkflow(currentWorkspace.id, workflow.id || workflow._id);
+                              dispatch(
+                                deleteWorkflow({
+                                  workspaceId: currentWorkspace.id,
+                                  workflowId: workflow.id || workflow._id,
+                                }),
+                              );
                             setOpenMenu(null);
                           }}
                         >

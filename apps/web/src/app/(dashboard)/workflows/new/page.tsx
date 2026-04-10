@@ -5,13 +5,23 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useWorkflowStore } from '@/stores/workflow-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { createWorkflow } from '@/stores/workflow-slice';
 import { Webhook, Clock, MousePointer } from 'lucide-react';
 
 const triggerTypes = [
-  { type: 'manual', label: 'Manual Trigger', icon: MousePointer, description: 'Trigger manually via button or API call' },
-  { type: 'webhook', label: 'Webhook', icon: Webhook, description: 'Trigger via incoming HTTP request' },
+  {
+    type: 'manual',
+    label: 'Manual Trigger',
+    icon: MousePointer,
+    description: 'Trigger manually via button or API call',
+  },
+  {
+    type: 'webhook',
+    label: 'Webhook',
+    icon: Webhook,
+    description: 'Trigger via incoming HTTP request',
+  },
   { type: 'cron', label: 'Schedule', icon: Clock, description: 'Trigger on a recurring schedule' },
 ];
 
@@ -20,8 +30,8 @@ export default function NewWorkflowPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [triggerType, setTriggerType] = useState('manual');
-  const { createWorkflow } = useWorkflowStore();
-  const { currentWorkspace } = useWorkspaceStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -30,13 +40,18 @@ export default function NewWorkflowPage() {
 
     setIsCreating(true);
     try {
-      const workflow = await createWorkflow(currentWorkspace.id, {
-        name: name.trim(),
-        description,
-        trigger: { type: triggerType, config: {} },
-        steps: [],
-      });
-      router.push(`/workflows/${workflow.id || (workflow as any)._id}/edit`);
+      const result = await dispatch(
+        createWorkflow({
+          workspaceId: currentWorkspace.id,
+          input: {
+            name: name.trim(),
+            description,
+            trigger: { type: triggerType, config: {} },
+            steps: [],
+          },
+        }),
+      ).unwrap();
+      router.push(`/workflows/${result.id || (result as any)._id}/edit`);
     } finally {
       setIsCreating(false);
     }
@@ -56,7 +71,9 @@ export default function NewWorkflowPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">Name</label>
+              <label htmlFor="name" className="text-sm font-medium">
+                Name
+              </label>
               <Input
                 id="name"
                 placeholder="e.g., Process New Orders"
@@ -66,7 +83,9 @@ export default function NewWorkflowPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium">Description</label>
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
               <Input
                 id="description"
                 placeholder="What does this workflow do?"
@@ -89,14 +108,14 @@ export default function NewWorkflowPage() {
                   type="button"
                   onClick={() => setTriggerType(trigger.type)}
                   className={`rounded-lg border p-4 text-left transition-colors ${
-                    triggerType === trigger.type
-                      ? 'border-primary bg-primary/5'
-                      : 'hover:bg-accent'
+                    triggerType === trigger.type ? 'border-primary bg-primary/5' : 'hover:bg-accent'
                   }`}
                 >
-                  <trigger.icon className={`mb-2 h-5 w-5 ${
-                    triggerType === trigger.type ? 'text-primary' : 'text-muted-foreground'
-                  }`} />
+                  <trigger.icon
+                    className={`mb-2 h-5 w-5 ${
+                      triggerType === trigger.type ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                  />
                   <p className="text-sm font-medium">{trigger.label}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{trigger.description}</p>
                 </button>

@@ -5,24 +5,25 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useExecutionStore } from '@/stores/execution-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchExecutions } from '@/stores/execution-slice';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { PlayCircle } from 'lucide-react';
 
 export default function ExecutionsPage() {
   const router = useRouter();
-  const { currentWorkspace } = useWorkspaceStore();
-  const { executions, isLoading, fetchExecutions } = useExecutionStore();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { executions, isLoading } = useAppSelector((state) => state.execution);
 
   useExecutionSocket(currentWorkspace?.id);
 
   useEffect(() => {
     if (currentWorkspace?.id) {
-      fetchExecutions(currentWorkspace.id);
+      dispatch(fetchExecutions({ workspaceId: currentWorkspace.id }));
     }
-  }, [currentWorkspace?.id, fetchExecutions]);
+  }, [currentWorkspace?.id, dispatch]);
 
   const statusVariant = (status: string) => {
     const map: Record<string, 'success' | 'destructive' | 'warning' | 'secondary' | 'default'> = {

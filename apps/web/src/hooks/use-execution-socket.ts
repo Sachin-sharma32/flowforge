@@ -2,19 +2,11 @@
 
 import { useEffect, useRef } from 'react';
 import { getSocket, connectSocket } from '@/lib/socket-client';
-import { useExecutionStore } from '@/stores/execution-store';
+import { store } from '@/stores/store';
+import { onStepUpdate, onExecutionUpdate } from '@/stores/execution-slice';
 
 export function useExecutionSocket(workspaceId: string | undefined) {
-  const onStepUpdateRef = useRef(useExecutionStore.getState().onStepUpdate);
-  const onExecutionUpdateRef = useRef(useExecutionStore.getState().onExecutionUpdate);
-
-  // Keep refs in sync without re-running the effect
-  useEffect(() => {
-    return useExecutionStore.subscribe((state) => {
-      onStepUpdateRef.current = state.onStepUpdate;
-      onExecutionUpdateRef.current = state.onExecutionUpdate;
-    });
-  }, []);
+  const dispatchRef = useRef(store.dispatch);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -24,9 +16,10 @@ export function useExecutionSocket(workspaceId: string | undefined) {
 
     socket.emit('join:workspace', workspaceId);
 
-    const handleStepUpdate = (data: Record<string, unknown>) => onStepUpdateRef.current(data);
+    const handleStepUpdate = (data: Record<string, unknown>) =>
+      dispatchRef.current(onStepUpdate(data));
     const handleExecutionUpdate = (data: Record<string, unknown>) =>
-      onExecutionUpdateRef.current(data);
+      dispatchRef.current(onExecutionUpdate(data));
 
     socket.on('step.started', handleStepUpdate);
     socket.on('step.completed', handleStepUpdate);

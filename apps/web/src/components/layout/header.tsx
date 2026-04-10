@@ -1,18 +1,17 @@
 'use client';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { logout } from '@/stores/auth-store';
-import type { RootState, AppDispatch } from '@/stores/store';
 import { LogOut, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export function Header() {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const router = useRouter();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useAppSelector((state) => state.auth.user);
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {

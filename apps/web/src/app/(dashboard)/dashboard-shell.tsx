@@ -2,19 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDispatch, useSelector } from 'react-redux';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { PageTransition } from '@/components/ui/page-transition';
 import { fetchProfile } from '@/stores/auth-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
-import type { RootState, AppDispatch } from '@/stores/store';
+import { fetchWorkspaces } from '@/stores/workspace-slice';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const router = useRouter();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { fetchWorkspaces } = useWorkspaceStore();
+  const user = useAppSelector((state) => state.auth.user);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -27,8 +25,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!user) {
       dispatch(fetchProfile());
     }
-    fetchWorkspaces();
-  }, [dispatch, router, user, fetchWorkspaces]);
+    dispatch(fetchWorkspaces());
+  }, [dispatch, router, user]);
 
   if (!mounted) {
     return (

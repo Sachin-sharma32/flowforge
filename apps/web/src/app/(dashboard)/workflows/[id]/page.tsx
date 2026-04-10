@@ -5,9 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useWorkflowStore } from '@/stores/workflow-store';
-import { useWorkspaceStore } from '@/stores/workspace-store';
-import { useExecutionStore } from '@/stores/execution-store';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import {
+  fetchWorkflow,
+  activateWorkflow,
+  pauseWorkflow,
+  duplicateWorkflow,
+  executeWorkflow,
+} from '@/stores/workflow-slice';
+import { fetchExecutions } from '@/stores/execution-slice';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, Edit, Play, Pause, Copy } from 'lucide-react';
 import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
@@ -16,25 +22,20 @@ import type { IExecutionTimelinePoint } from '@flowforge/shared';
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const workflowId = params.id as string;
-  const { currentWorkspace } = useWorkspaceStore();
-  const {
-    currentWorkflow,
-    fetchWorkflow,
-    activateWorkflow,
-    pauseWorkflow,
-    duplicateWorkflow,
-    executeWorkflow,
-    isLoading,
-  } = useWorkflowStore();
-  const { executions, fetchExecutions } = useExecutionStore();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { currentWorkflow, isLoading } = useAppSelector((state) => state.workflow);
+  const { executions } = useAppSelector((state) => state.execution);
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
-      fetchWorkflow(currentWorkspace.id, workflowId);
-      fetchExecutions(currentWorkspace.id, { workflowId, limit: '50' });
+      dispatch(fetchWorkflow({ workspaceId: currentWorkspace.id, workflowId }));
+      dispatch(
+        fetchExecutions({ workspaceId: currentWorkspace.id, params: { workflowId, limit: '50' } }),
+      );
     }
-  }, [currentWorkspace?.id, workflowId, fetchWorkflow, fetchExecutions]);
+  }, [currentWorkspace?.id, workflowId, dispatch]);
 
   // Build a 14-day timeline + summary stats from this workflow's executions
   const { workflowTimeline, workflowSummary } = useMemo(() => {
@@ -100,8 +101,12 @@ export default function WorkflowDetailPage() {
 
   const handleExecute = async () => {
     if (!currentWorkspace?.id) return;
-    const executionId = await executeWorkflow(currentWorkspace.id, workflowId);
-    router.push(`/executions/${executionId}`);
+    const result = await dispatch(
+      executeWorkflow({ workspaceId: currentWorkspace.id, workflowId }),
+    );
+    if (executeWorkflow.fulfilled.match(result)) {
+      router.push(`/executions/${result.payload}`);
+    }
   };
 
   return (
@@ -130,21 +135,30 @@ export default function WorkflowDetailPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => currentWorkspace && duplicateWorkflow(currentWorkspace.id, workflowId)}
+            onClick={() =>
+              currentWorkspace &&
+              dispatch(duplicateWorkflow({ workspaceId: currentWorkspace.id, workflowId }))
+            }
           >
             <Copy className="mr-2 h-4 w-4" /> Duplicate
           </Button>
           {currentWorkflow.status === 'active' ? (
             <Button
               variant="outline"
-              onClick={() => currentWorkspace && pauseWorkflow(currentWorkspace.id, workflowId)}
+              onClick={() =>
+                currentWorkspace &&
+                dispatch(pauseWorkflow({ workspaceId: currentWorkspace.id, workflowId }))
+              }
             >
               <Pause className="mr-2 h-4 w-4" /> Pause
             </Button>
           ) : (
             <Button
               variant="outline"
-              onClick={() => currentWorkspace && activateWorkflow(currentWorkspace.id, workflowId)}
+              onClick={() =>
+                currentWorkspace &&
+                dispatch(activateWorkflow({ workspaceId: currentWorkspace.id, workflowId }))
+              }
             >
               <Play className="mr-2 h-4 w-4" /> Activate
             </Button>
