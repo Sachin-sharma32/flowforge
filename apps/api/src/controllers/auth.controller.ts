@@ -1,7 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
+import { UnauthorizedError } from '../domain/errors';
 
 const authService = new AuthService();
+
+function requireUser(req: Request): { userId: string; email: string } {
+  if (!req.user) {
+    throw new UnauthorizedError('Authentication required');
+  }
+  return req.user;
+}
 
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
@@ -33,7 +41,8 @@ export class AuthController {
 
   static async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      await authService.logout(req.user!.userId, req.body.refreshToken);
+      const user = requireUser(req);
+      await authService.logout(user.userId, req.body.refreshToken);
       res.json({ success: true, data: { message: 'Logged out successfully' } });
     } catch (error) {
       next(error);
@@ -42,8 +51,9 @@ export class AuthController {
 
   static async me(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await authService.getProfile(req.user!.userId);
-      res.json({ success: true, data: user });
+      const user = requireUser(req);
+      const profile = await authService.getProfile(user.userId);
+      res.json({ success: true, data: profile });
     } catch (error) {
       next(error);
     }

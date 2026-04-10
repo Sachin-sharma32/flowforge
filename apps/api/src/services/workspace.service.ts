@@ -28,7 +28,10 @@ export class WorkspaceService {
       throw new ForbiddenError('Workspace limit reached for your plan');
     }
 
-    const slug = input.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    const slug = input.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-');
     return Workspace.create({
       organizationId,
       name: input.name,
@@ -59,7 +62,7 @@ export class WorkspaceService {
     const workspace = await Workspace.findById(workspaceId);
     if (!workspace) throw new NotFoundError('Workspace not found');
 
-    const user = await User.findOne({ email: input.email });
+    const user = await User.findOne({ email: input.email.toLowerCase().trim() });
     if (!user) throw new NotFoundError('User not found with that email');
 
     const existingMember = workspace.members.find(

@@ -10,22 +10,28 @@ import { JwtPayload } from '../middleware/auth.middleware';
 
 export class AuthService {
   async register(input: RegisterInput) {
-    const existingUser = await User.findOne({ email: input.email });
+    const normalizedEmail = input.email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       throw new ConflictError('Email already registered');
     }
 
     const user = await User.create({
-      email: input.email,
+      email: normalizedEmail,
       passwordHash: input.password,
       name: input.name,
     });
 
     // Create default organization and workspace
-    const slug = input.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    const slug = input.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    const uniqueSuffix = uuidv4().replace(/-/g, '').slice(0, 8);
     const org = await Organization.create({
       name: `${input.name}'s Organization`,
-      slug: `${slug}-${uuidv4().slice(0, 8)}`,
+      slug: `${slug}-${uniqueSuffix}`,
       ownerId: user._id,
     });
 
@@ -41,7 +47,7 @@ export class AuthService {
   }
 
   async login(input: LoginInput) {
-    const user = await User.findOne({ email: input.email });
+    const user = await User.findOne({ email: input.email.toLowerCase().trim() });
     if (!user) {
       throw new UnauthorizedError('Invalid email or password');
     }
@@ -56,26 +62,26 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const user = await User.findOne({
-      'refreshTokens.token': refreshToken,
-      'refreshTokens.expiresAt': { $gt: new Date() },
-    });
+    // Atomically pull the used token to prevent concurrent reuse
+    const user = await User.findOneAndUpdate(
+      {
+        'refreshTokens.token': refreshToken,
+        'refreshTokens.expiresAt': { $gt: new Date() },
+      },
+      { $pull: { refreshTokens: { token: refreshToken } } },
+      { new: true },
+    );
 
     if (!user) {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
-    // Remove used refresh token (rotation)
-    user.refreshTokens = user.refreshTokens.filter((t) => t.token !== refreshToken);
     const tokens = await this.generateTokens(user);
     return { user: user.toJSON(), tokens };
   }
 
   async logout(userId: string, refreshToken: string) {
-    await User.updateOne(
-      { _id: userId },
-      { $pull: { refreshTokens: { token: refreshToken } } },
-    );
+    await User.updateOne({ _id: userId }, { $pull: { refreshTokens: { token: refreshToken } } });
   }
 
   async getProfile(userId: string) {
