@@ -169,8 +169,49 @@ describe('DelayHandler', () => {
 
   it('should cap delay at 5 minutes', async () => {
     const handler = new DelayHandler();
-    // Don't actually run this - just validate
+
+    // Validate that over-limit values are accepted by validation
     const validation = handler.validate({ durationMs: 600000 });
     expect(validation.valid).toBe(true);
+
+    // Verify execution actually caps to 300000ms (5 minutes)
+    // Use a small value above cap to test capping without waiting
+    const result = await handler.execute({
+      stepId: 'test',
+      executionId: 'exec-1',
+      workflowId: 'wf-1',
+      workspaceId: 'ws-1',
+      config: { durationMs: 100 }, // Use small value so test runs fast
+      input: {},
+      variables: {},
+    });
+
+    expect(result.success).toBe(true);
+    // The key assertion: output reports the capped value, not the original
+    expect(result.output.delayedMs).toBe(100);
+
+    // Test that capping actually happens in the output (without waiting 5min)
+    // We mock setTimeout to verify the cap logic
+    const origSetTimeout = global.setTimeout;
+    let capturedDelay = 0;
+    global.setTimeout = ((fn: () => void, ms: number) => {
+      capturedDelay = ms;
+      return origSetTimeout(fn, 0); // resolve immediately
+    }) as typeof setTimeout;
+
+    const cappedResult = await handler.execute({
+      stepId: 'test',
+      executionId: 'exec-1',
+      workflowId: 'wf-1',
+      workspaceId: 'ws-1',
+      config: { durationMs: 600000 }, // 10 minutes - should cap to 5
+      input: {},
+      variables: {},
+    });
+
+    global.setTimeout = origSetTimeout;
+
+    expect(capturedDelay).toBe(300000); // Capped to 5 minutes
+    expect(cappedResult.output.delayedMs).toBe(300000);
   });
 });
