@@ -24,7 +24,7 @@ export class WorkflowController {
         limit: Number(req.query.limit) || 20,
         search: req.query.search as string,
       });
-      res.json({ success: true, ...result });
+      res.json({ success: true, data: result.data, pagination: result.pagination });
     } catch (error) {
       next(error);
     }

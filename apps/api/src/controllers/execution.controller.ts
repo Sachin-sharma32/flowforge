@@ -13,7 +13,7 @@ export class ExecutionController {
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 20,
       });
-      res.json({ success: true, ...result });
+      res.json({ success: true, data: result.data, pagination: result.pagination });
     } catch (error) {
       next(error);
     }

@@ -34,12 +34,16 @@ export class EventBus {
 
     // Broadcast via Socket.io to workspace room
     if (this.io && payload.workspaceId) {
-      const room = `workspace:${payload.workspaceId}:executions`;
-      this.io.to(room).emit(event, {
-        type: event,
-        timestamp: new Date().toISOString(),
-        ...payload,
-      });
+      try {
+        const room = `workspace:${payload.workspaceId}:executions`;
+        this.io.to(room).emit(event, {
+          type: event,
+          timestamp: new Date().toISOString(),
+          ...payload,
+        });
+      } catch (error) {
+        logger.error({ event, error }, 'Socket.io broadcast failed');
+      }
     }
   }
 

@@ -51,7 +51,10 @@ export class WorkspaceService {
     if (!workspace) throw new NotFoundError('Workspace not found');
 
     const member = workspace.members.find((m) => m.userId.toString() === userId);
-    if (!member || member.role !== 'owner') {
+    if (!member) {
+      throw new ForbiddenError('You are not a member of this workspace');
+    }
+    if (member.role !== 'owner') {
       throw new ForbiddenError('Only workspace owner can delete the workspace');
     }
 

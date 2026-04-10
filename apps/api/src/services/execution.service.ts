@@ -43,7 +43,12 @@ export class ExecutionService {
     return execution;
   }
 
-  async create(workflowId: string, workspaceId: string, triggerType: string, payload?: Record<string, unknown>) {
+  async create(
+    workflowId: string,
+    workspaceId: string,
+    triggerType: string,
+    payload?: Record<string, unknown>,
+  ) {
     const workflow = await Workflow.findOne({ _id: workflowId, workspaceId });
     if (!workflow) throw new NotFoundError('Workflow not found');
 
@@ -96,12 +101,12 @@ export class ExecutionService {
       return { total: 0, completed: 0, failed: 0, avgDurationMs: 0, successRate: 0 };
     }
 
-    const { total, completed, failed, avgDurationMs } = stats[0];
+    const { total = 0, completed = 0, failed = 0, avgDurationMs = 0 } = stats[0];
     return {
       total,
       completed,
       failed,
-      avgDurationMs: Math.round(avgDurationMs || 0),
+      avgDurationMs: Math.round(avgDurationMs ?? 0),
       successRate: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
   }
