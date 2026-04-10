@@ -8,7 +8,18 @@ import { useWorkflowStore } from '@/stores/workflow-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { formatDate, formatDuration } from '@/lib/utils';
-import { Activity, CheckCircle2, XCircle, Clock, GitBranch, Zap } from 'lucide-react';
+import {
+  Activity,
+  CheckCircle2,
+  Clock,
+  GitBranch,
+  Zap,
+  TrendingUp,
+  PieChart as PieChartIcon,
+} from 'lucide-react';
+import { ExecutionStatusChart } from '@/components/charts/execution-status-chart';
+import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
+import { WorkflowPerformanceChart } from '@/components/charts/workflow-performance-chart';
 
 const statusBadge = (status: string) => {
   const variants: Record<string, 'success' | 'destructive' | 'warning' | 'default' | 'secondary'> =
@@ -25,7 +36,16 @@ const statusBadge = (status: string) => {
 export default function DashboardPage() {
   const { currentWorkspace } = useWorkspaceStore();
   const { workflows, fetchWorkflows } = useWorkflowStore();
-  const { executions, stats, fetchExecutions, fetchStats } = useExecutionStore();
+  const {
+    executions,
+    stats,
+    timeline,
+    workflowStats,
+    fetchExecutions,
+    fetchStats,
+    fetchTimeline,
+    fetchWorkflowStats,
+  } = useExecutionStore();
 
   useExecutionSocket(currentWorkspace?.id);
 
@@ -34,7 +54,16 @@ export default function DashboardPage() {
     fetchWorkflows(currentWorkspace.id);
     fetchExecutions(currentWorkspace.id, { limit: '5' });
     fetchStats(currentWorkspace.id);
-  }, [currentWorkspace?.id, fetchWorkflows, fetchExecutions, fetchStats]);
+    fetchTimeline(currentWorkspace.id, 14);
+    fetchWorkflowStats(currentWorkspace.id);
+  }, [
+    currentWorkspace?.id,
+    fetchWorkflows,
+    fetchExecutions,
+    fetchStats,
+    fetchTimeline,
+    fetchWorkflowStats,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -84,6 +113,47 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts Row */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg">Execution Trend</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="mb-2 text-xs text-muted-foreground">Last 14 days</p>
+            <ExecutionTimelineChart data={timeline} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg">Status Breakdown</CardTitle>
+            <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="mb-2 text-xs text-muted-foreground">All-time distribution</p>
+            {stats ? (
+              <ExecutionStatusChart stats={stats} />
+            ) : (
+              <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
+                Loading…
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Workflow Performance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Top Workflows</CardTitle>
+          <p className="text-xs text-muted-foreground">Most active workflows by execution count</p>
+        </CardHeader>
+        <CardContent>
+          <WorkflowPerformanceChart data={workflowStats} />
+        </CardContent>
+      </Card>
 
       {/* Recent Executions */}
       <Card>

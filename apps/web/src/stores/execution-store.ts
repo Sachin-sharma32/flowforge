@@ -1,11 +1,18 @@
 import { create } from 'zustand';
 import { api } from '@/lib/api-client';
-import type { IExecution, IExecutionStats } from '@flowforge/shared';
+import type {
+  IExecution,
+  IExecutionStats,
+  IExecutionTimelinePoint,
+  IWorkflowExecutionStats,
+} from '@flowforge/shared';
 
 interface ExecutionState {
   executions: IExecution[];
   currentExecution: IExecution | null;
   stats: IExecutionStats | null;
+  timeline: IExecutionTimelinePoint[];
+  workflowStats: IWorkflowExecutionStats[];
   isLoading: boolean;
   error: string | null;
   pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -13,6 +20,8 @@ interface ExecutionState {
   fetchExecutions: (workspaceId: string, params?: Record<string, string>) => Promise<void>;
   fetchExecution: (workspaceId: string, executionId: string) => Promise<void>;
   fetchStats: (workspaceId: string) => Promise<void>;
+  fetchTimeline: (workspaceId: string, days?: number) => Promise<void>;
+  fetchWorkflowStats: (workspaceId: string) => Promise<void>;
   cancelExecution: (workspaceId: string, executionId: string) => Promise<void>;
   clearError: () => void;
 
@@ -25,6 +34,8 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
   executions: [],
   currentExecution: null,
   stats: null,
+  timeline: [],
+  workflowStats: [],
   isLoading: false,
   error: null,
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
@@ -58,6 +69,22 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     } catch (err) {
       console.error('Failed to fetch execution stats:', err);
     }
+  },
+
+  fetchTimeline: async (workspaceId, days = 14) => {
+    try {
+      const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats/timeline`, {
+        params: { days },
+      });
+      set({ timeline: data.data });
+    } catch {}
+  },
+
+  fetchWorkflowStats: async (workspaceId) => {
+    try {
+      const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats/by-workflow`);
+      set({ workflowStats: data.data });
+    } catch {}
   },
 
   cancelExecution: async (workspaceId, executionId) => {

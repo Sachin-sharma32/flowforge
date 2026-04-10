@@ -15,6 +15,16 @@ executionRoutes.get(
   ExecutionController.stats,
 );
 executionRoutes.get(
+  '/stats/timeline',
+  requirePermission(Permissions.VIEW_EXECUTIONS),
+  ExecutionController.timeline,
+);
+executionRoutes.get(
+  '/stats/by-workflow',
+  requirePermission(Permissions.VIEW_EXECUTIONS),
+  ExecutionController.statsByWorkflow,
+);
+executionRoutes.get(
   '/:id',
   requirePermission(Permissions.VIEW_EXECUTIONS),
   ExecutionController.getById,

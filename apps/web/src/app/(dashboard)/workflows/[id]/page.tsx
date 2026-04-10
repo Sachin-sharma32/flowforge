@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
-import { formatDate } from '@/lib/utils';
+import { useExecutionStore } from '@/stores/execution-store';
+import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, Edit, Play, Pause, Copy } from 'lucide-react';
+import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
+import type { IExecutionTimelinePoint } from '@flowforge/shared';
 
 export default function WorkflowDetailPage() {
   const params = useParams();
@@ -24,12 +27,68 @@ export default function WorkflowDetailPage() {
     executeWorkflow,
     isLoading,
   } = useWorkflowStore();
+  const { executions, fetchExecutions } = useExecutionStore();
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
       fetchWorkflow(currentWorkspace.id, workflowId);
+      fetchExecutions(currentWorkspace.id, { workflowId, limit: '50' });
     }
-  }, [currentWorkspace?.id, workflowId, fetchWorkflow]);
+  }, [currentWorkspace?.id, workflowId, fetchWorkflow, fetchExecutions]);
+
+  // Build a 14-day timeline + summary stats from this workflow's executions
+  const { workflowTimeline, workflowSummary } = useMemo(() => {
+    const days = 14;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const buckets = new Map<string, { total: number; completed: number; failed: number }>();
+    for (let i = 0; i <= days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      buckets.set(d.toISOString().split('T')[0], { total: 0, completed: 0, failed: 0 });
+    }
+
+    let total = 0;
+    let completed = 0;
+    let failed = 0;
+    let durationSum = 0;
+    let durationCount = 0;
+
+    for (const ex of executions) {
+      total += 1;
+      if (ex.status === 'completed') completed += 1;
+      if (ex.status === 'failed') failed += 1;
+      if (typeof ex.durationMs === 'number') {
+        durationSum += ex.durationMs;
+        durationCount += 1;
+      }
+      if (!ex.createdAt) continue;
+      const key = new Date(ex.createdAt).toISOString().split('T')[0];
+      const bucket = buckets.get(key);
+      if (!bucket) continue;
+      bucket.total += 1;
+      if (ex.status === 'completed') bucket.completed += 1;
+      if (ex.status === 'failed') bucket.failed += 1;
+    }
+
+    const timeline: IExecutionTimelinePoint[] = Array.from(buckets.entries()).map(([date, v]) => ({
+      date,
+      ...v,
+    }));
+
+    return {
+      workflowTimeline: timeline,
+      workflowSummary: {
+        total,
+        completed,
+        failed,
+        successRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+        avgDurationMs: durationCount > 0 ? Math.round(durationSum / durationCount) : 0,
+      },
+    };
+  }, [executions]);
 
   if (isLoading || !currentWorkflow) {
     return (
@@ -98,6 +157,61 @@ export default function WorkflowDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Execution Stats Row */}
+      <div className="grid gap-4 sm:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Runs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflowSummary.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Success Rate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflowSummary.successRate}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Failed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">{workflowSummary.failed}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Avg Duration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {workflowSummary.avgDurationMs > 0
+                ? formatDuration(workflowSummary.avgDurationMs)
+                : '—'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Execution History Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Execution History</CardTitle>
+          <p className="text-xs text-muted-foreground">Last 14 days of runs for this workflow</p>
+        </CardHeader>
+        <CardContent>
+          <ExecutionTimelineChart data={workflowTimeline} />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

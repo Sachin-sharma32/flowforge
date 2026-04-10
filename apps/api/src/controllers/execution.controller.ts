@@ -45,4 +45,23 @@ export class ExecutionController {
       next(error);
     }
   }
+
+  static async timeline(req: Request, res: Response, next: NextFunction) {
+    try {
+      const days = Math.min(Number(req.query.days) || 14, 90);
+      const timeline = await executionService.getTimeline(req.params.workspaceId, days);
+      res.json({ success: true, data: timeline });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async statsByWorkflow(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stats = await executionService.getStatsByWorkflow(req.params.workspaceId);
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

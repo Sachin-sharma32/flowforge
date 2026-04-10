@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Execution, IExecutionDocument } from '../models/execution.model';
 import { Workflow } from '../models/workflow.model';
 import { NotFoundError, ForbiddenError } from '../domain/errors';
@@ -109,6 +110,96 @@ export class ExecutionService {
       avgDurationMs: Math.round(avgDurationMs ?? 0),
       successRate: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
+  }
+
+  async getTimeline(workspaceId: string, days: number = 14) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const pipeline = await Execution.aggregate([
+      {
+        $match: {
+          workspaceId: new mongoose.Types.ObjectId(workspaceId),
+          createdAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+          },
+          total: { $sum: 1 },
+          completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+          failed: { $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // Fill in missing days with zero values
+    const timeline: Array<{ date: string; total: number; completed: number; failed: number }> = [];
+    const dataMap = new Map(pipeline.map((p) => [p._id, p]));
+
+    for (let i = 0; i <= days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      const entry = dataMap.get(key);
+      timeline.push({
+        date: key,
+        total: entry?.total || 0,
+        completed: entry?.completed || 0,
+        failed: entry?.failed || 0,
+      });
+    }
+
+    return timeline;
+  }
+
+  async getStatsByWorkflow(workspaceId: string) {
+    const stats = await Execution.aggregate([
+      { $match: { workspaceId: new mongoose.Types.ObjectId(workspaceId) } },
+      {
+        $group: {
+          _id: '$workflowId',
+          total: { $sum: 1 },
+          completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+          failed: { $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] } },
+          avgDurationMs: { $avg: '$durationMs' },
+        },
+      },
+      { $sort: { total: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'workflows',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'workflow',
+        },
+      },
+      { $unwind: { path: '$workflow', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          workflowId: '$_id',
+          workflowName: { $ifNull: ['$workflow.name', 'Deleted Workflow'] },
+          total: 1,
+          completed: 1,
+          failed: 1,
+          avgDurationMs: { $round: [{ $ifNull: ['$avgDurationMs', 0] }, 0] },
+          successRate: {
+            $cond: [
+              { $gt: ['$total', 0] },
+              { $round: [{ $multiply: [{ $divide: ['$completed', '$total'] }, 100] }, 0] },
+              0,
+            ],
+          },
+        },
+      },
+    ]);
+
+    return stats;
   }
 
   async updateStepStatus(

@@ -35,3 +35,20 @@ export interface IExecutionStats {
   avgDurationMs: number;
   successRate: number;
 }
+
+export interface IExecutionTimelinePoint {
+  date: string;
+  total: number;
+  completed: number;
+  failed: number;
+}
+
+export interface IWorkflowExecutionStats {
+  workflowId: string;
+  workflowName: string;
+  total: number;
+  completed: number;
+  failed: number;
+  avgDurationMs: number;
+  successRate: number;
+}
