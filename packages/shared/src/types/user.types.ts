@@ -17,7 +17,6 @@ export interface IUserResponse {
 
 export interface IAuthTokens {
   accessToken: string;
-  refreshToken: string;
 }
 
 export interface ILoginResponse {

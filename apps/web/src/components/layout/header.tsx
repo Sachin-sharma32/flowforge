@@ -3,7 +3,7 @@
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { logout } from '@/stores/auth-store';
+import { logoutUser } from '@/stores/auth-store';
 import { LogOut, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -24,8 +24,8 @@ export function Header() {
     setIsDark(!isDark);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
     router.push('/login');
   };
 

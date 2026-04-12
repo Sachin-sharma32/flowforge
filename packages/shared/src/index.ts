@@ -49,11 +49,10 @@ export type {
 export {
   registerSchema,
   loginSchema,
-  refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from './validation/auth.schema';
-export type { RegisterInput, LoginInput, RefreshTokenInput } from './validation/auth.schema';
+export type { RegisterInput, LoginInput } from './validation/auth.schema';
 
 export { createWorkflowSchema, updateWorkflowSchema } from './validation/workflow.schema';
 export type { CreateWorkflowInput, UpdateWorkflowInput } from './validation/workflow.schema';

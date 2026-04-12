@@ -3,7 +3,7 @@ import http from 'http';
 import { createApp } from './server';
 import { config } from './config';
 import { connectDatabase } from './config/database';
-import { createRedisClient } from './config/redis';
+import { disconnectSharedRedisClient, getSharedRedisClient } from './config/redis';
 import { createSocketServer } from './config/socket';
 import { EventBus } from './infrastructure/event-bus';
 import { logger } from './infrastructure/logger';
@@ -13,7 +13,7 @@ async function bootstrap() {
   await connectDatabase();
 
   // Connect to Redis
-  const redis = createRedisClient();
+  getSharedRedisClient();
 
   // Create Express app
   const app = createApp();
@@ -38,7 +38,7 @@ async function bootstrap() {
   const shutdown = async () => {
     logger.info('Shutting down...');
     server.close();
-    redis.disconnect();
+    await disconnectSharedRedisClient();
     process.exit(0);
   };
 

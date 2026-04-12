@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
+import { clearAccessToken, setAccessToken } from '@/lib/auth-token-store';
+import { getCsrfHeaders } from '@/lib/csrf-token';
 import type { IUserResponse } from '@flowforge/shared';
 
 interface AuthState {
@@ -21,10 +23,10 @@ export const login = createAsyncThunk(
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/auth/login', credentials);
-      localStorage.setItem('accessToken', data.data.tokens.accessToken);
-      localStorage.setItem('refreshToken', data.data.tokens.refreshToken);
+      setAccessToken(data.data.tokens.accessToken);
       return data.data.user;
     } catch (error: any) {
+      clearAccessToken();
       return rejectWithValue(error.response?.data?.error || 'Login failed');
     }
   },
@@ -35,10 +37,10 @@ export const register = createAsyncThunk(
   async (input: { email: string; password: string; name: string }, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/auth/register', input);
-      localStorage.setItem('accessToken', data.data.tokens.accessToken);
-      localStorage.setItem('refreshToken', data.data.tokens.refreshToken);
+      setAccessToken(data.data.tokens.accessToken);
       return data.data.user;
     } catch (error: any) {
+      clearAccessToken();
       return rejectWithValue(error.response?.data?.error || 'Registration failed');
     }
   },
@@ -56,18 +58,20 @@ export const fetchProfile = createAsyncThunk(
   },
 );
 
+export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
+  try {
+    await api.post('/auth/logout', {}, { headers: getCsrfHeaders() });
+  } catch {
+    // Clear local auth state even if server-side revocation fails.
+  }
+
+  clearAccessToken();
+});
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    logout(state) {
-      state.user = null;
-      state.isAuthenticated = false;
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      }
-    },
     clearError(state) {
       state.error = null;
     },
@@ -107,9 +111,14 @@ const authSlice = createSlice({
       .addCase(fetchProfile.rejected, (state) => {
         state.user = null;
         state.isAuthenticated = false;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = null;
       });
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { clearError } = authSlice.actions;
 export const authReducer = authSlice.reducer;

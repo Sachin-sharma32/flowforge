@@ -7,7 +7,7 @@ import { logger } from '../infrastructure/logger';
 const workflowService = new WorkflowService();
 const executionService = new ExecutionService();
 
-function requireUser(req: Request): { userId: string; email: string } {
+function requireUser(req: Request): { userId: string } {
   if (!req.user) {
     throw new UnauthorizedError('Authentication required');
   }

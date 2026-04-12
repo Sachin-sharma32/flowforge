@@ -1,14 +1,28 @@
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { config } from '../config';
-import { User, IUserDocument } from '../models/user.model';
+import { IUserDocument, User } from '../models/user.model';
 import { Organization } from '../models/organization.model';
 import { Workspace } from '../models/workspace.model';
 import { ConflictError, NotFoundError, UnauthorizedError } from '../domain/errors';
-import { RegisterInput, LoginInput } from '@flowforge/shared';
+import { RegisterInput, LoginInput, IUserResponse } from '@flowforge/shared';
 import { JwtPayload } from '../middleware/auth.middleware';
+import { RefreshSessionService } from './refresh-session.service';
+
+interface AuthResult {
+  user: IUserResponse;
+  tokens: { accessToken: string };
+  refreshToken: string;
+}
+
+interface RefreshResult {
+  tokens: { accessToken: string };
+  refreshToken: string;
+}
 
 export class AuthService {
+  constructor(private readonly refreshSessionService = new RefreshSessionService()) {}
+
   async register(input: RegisterInput) {
     const normalizedEmail = input.email.toLowerCase().trim();
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -28,7 +42,7 @@ export class AuthService {
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
-    const uniqueSuffix = uuidv4().replace(/-/g, '').slice(0, 8);
+    const uniqueSuffix = randomUUID().replace(/-/g, '').slice(0, 8);
     const org = await Organization.create({
       name: `${input.name}'s Organization`,
       slug: `${slug}-${uniqueSuffix}`,
@@ -42,8 +56,7 @@ export class AuthService {
       members: [{ userId: user._id, role: 'owner', joinedAt: new Date() }],
     });
 
-    const tokens = await this.generateTokens(user);
-    return { user: user.toJSON(), tokens };
+    return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
   }
 
   async login(input: LoginInput) {
@@ -57,31 +70,37 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    const tokens = await this.generateTokens(user);
-    return { user: user.toJSON(), tokens };
+    return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
   }
 
-  async refresh(refreshToken: string) {
-    // Atomically pull the used token to prevent concurrent reuse
-    const user = await User.findOneAndUpdate(
-      {
-        'refreshTokens.token': refreshToken,
-        'refreshTokens.expiresAt': { $gt: new Date() },
-      },
-      { $pull: { refreshTokens: { token: refreshToken } } },
-      { new: true },
-    );
+  async refresh(refreshToken: string): Promise<RefreshResult> {
+    const rotatedSession = await this.refreshSessionService.rotateSession(refreshToken);
 
-    if (!user) {
+    if (rotatedSession.status === 'invalid') {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
-    const tokens = await this.generateTokens(user);
-    return { user: user.toJSON(), tokens };
+    if (rotatedSession.status === 'replay') {
+      if (rotatedSession.userId) {
+        await this.refreshSessionService.revokeAllUserSessions(rotatedSession.userId);
+      }
+      throw new UnauthorizedError('Refresh token replay detected. Please sign in again.');
+    }
+
+    return {
+      tokens: {
+        accessToken: this.generateAccessToken(rotatedSession.userId),
+      },
+      refreshToken: rotatedSession.refreshToken,
+    };
   }
 
-  async logout(userId: string, refreshToken: string) {
-    await User.updateOne({ _id: userId }, { $pull: { refreshTokens: { token: refreshToken } } });
+  async logout(refreshToken: string) {
+    await this.refreshSessionService.revokeSession(refreshToken);
+  }
+
+  async logoutAll(userId: string) {
+    await this.refreshSessionService.revokeAllUserSessions(userId);
   }
 
   async getProfile(userId: string) {
@@ -92,24 +111,31 @@ export class AuthService {
     return user.toJSON();
   }
 
-  private async generateTokens(user: IUserDocument) {
-    const payload: JwtPayload = { userId: user._id.toString(), email: user.email };
+  private async issueAuthResult(user: IUserResponse, userId: string): Promise<AuthResult> {
+    const { refreshToken } = await this.refreshSessionService.createSession(userId);
+    return {
+      user,
+      tokens: {
+        accessToken: this.generateAccessToken(userId),
+      },
+      refreshToken,
+    };
+  }
 
-    const accessToken = jwt.sign(payload, config.JWT_SECRET, {
+  private generateAccessToken(userId: string): string {
+    const payload: JwtPayload = { userId };
+
+    return jwt.sign(payload, config.JWT_SECRET, {
       expiresIn: config.JWT_ACCESS_EXPIRY as string,
     } as jwt.SignOptions);
+  }
 
-    const refreshToken = uuidv4();
-    const refreshExpiresAt = new Date();
-    refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
-
-    user.refreshTokens.push({ token: refreshToken, expiresAt: refreshExpiresAt });
-    // Keep only last 5 refresh tokens
-    if (user.refreshTokens.length > 5) {
-      user.refreshTokens = user.refreshTokens.slice(-5);
-    }
-    await user.save();
-
-    return { accessToken, refreshToken };
+  private toUserResponse(user: IUserDocument): IUserResponse {
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      ...(user.avatar ? { avatar: user.avatar } : {}),
+    };
   }
 }

@@ -16,16 +16,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    if (!user) {
-      dispatch(fetchProfile());
-    }
-    dispatch(fetchWorkspaces());
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      setMounted(true);
+
+      if (!user) {
+        const profileResult = await dispatch(fetchProfile());
+        if (!cancelled && fetchProfile.rejected.match(profileResult)) {
+          router.push('/login');
+          return;
+        }
+      }
+
+      if (!cancelled) {
+        dispatch(fetchWorkspaces());
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dispatch, router, user]);
 
   if (!mounted) {

@@ -1,3 +1,5 @@
 {
-  "editor.acceptSuggestionOnEnter": "on"
+  "editor.acceptSuggestionOnEnter": "on",
+  "chatgpt.commentCodeLensEnabled": true,
+  "chatgpt.openOnStartup": true
 }

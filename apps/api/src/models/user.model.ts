@@ -7,7 +7,6 @@ export interface IUserDocument extends Document {
   name: string;
   avatar?: string;
   isVerified: boolean;
-  refreshTokens: Array<{ token: string; expiresAt: Date }>;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -27,12 +26,6 @@ const userSchema = new Schema<IUserDocument>(
     name: { type: String, required: true, trim: true },
     avatar: { type: String },
     isVerified: { type: Boolean, default: false },
-    refreshTokens: [
-      {
-        token: { type: String, required: true },
-        expiresAt: { type: Date, required: true },
-      },
-    ],
   },
   { timestamps: true },
 );
@@ -53,7 +46,6 @@ userSchema.set('toJSON', {
     delete ret._id;
     delete ret.__v;
     delete ret.passwordHash;
-    delete ret.refreshTokens;
   },
 });
 

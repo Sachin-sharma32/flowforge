@@ -4,6 +4,7 @@ import { AuthService } from '../auth.service';
 import { User } from '../../models/user.model';
 import { Organization } from '../../models/organization.model';
 import { Workspace } from '../../models/workspace.model';
+import { RefreshSessionService, RotateRefreshSessionResult } from '../refresh-session.service';
 
 // Mock config
 jest.mock('../../config', () => ({
@@ -18,10 +19,24 @@ describe('AuthService', () => {
   let mongoServer: MongoMemoryServer;
   let authService: AuthService;
 
+  const refreshSessionServiceMock = {
+    createSession: jest.fn<Promise<{ refreshToken: string }>, [string]>(),
+    rotateSession: jest.fn<Promise<RotateRefreshSessionResult>, [string]>(),
+    revokeSession: jest.fn<Promise<void>, [string]>(),
+    revokeAllUserSessions: jest.fn<Promise<void>, [string]>(),
+  };
+
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     await mongoose.connect(mongoServer.getUri());
-    authService = new AuthService();
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    refreshSessionServiceMock.createSession.mockResolvedValue({
+      refreshToken: 'test-refresh-token',
+    });
+    authService = new AuthService(refreshSessionServiceMock as unknown as RefreshSessionService);
   });
 
   afterAll(async () => {
@@ -46,7 +61,7 @@ describe('AuthService', () => {
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.name).toBe('Test User');
       expect(result.tokens.accessToken).toBeDefined();
-      expect(result.tokens.refreshToken).toBeDefined();
+      expect(result.refreshToken).toBe('test-refresh-token');
 
       // Verify organization was created
       const org = await Organization.findOne({ ownerId: result.user.id });
@@ -57,6 +72,8 @@ describe('AuthService', () => {
       expect(workspace).toBeTruthy();
       expect(workspace!.members).toHaveLength(1);
       expect(workspace!.members[0].role).toBe('owner');
+
+      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(result.user.id);
     });
 
     it('should throw ConflictError for duplicate email', async () => {
@@ -93,6 +110,7 @@ describe('AuthService', () => {
 
       expect(result.user.email).toBe('test@example.com');
       expect(result.tokens.accessToken).toBeDefined();
+      expect(result.refreshToken).toBe('test-refresh-token');
     });
 
     it('should throw UnauthorizedError for wrong password', async () => {
@@ -115,25 +133,45 @@ describe('AuthService', () => {
   });
 
   describe('refresh', () => {
-    it('should issue new tokens with valid refresh token', async () => {
+    it('should issue new access token and refresh token for valid refresh token', async () => {
       const registered = await authService.register({
         email: 'test@example.com',
         password: 'Password123',
         name: 'Test User',
       });
 
-      const result = await authService.refresh(registered.tokens.refreshToken);
+      refreshSessionServiceMock.rotateSession.mockResolvedValue({
+        status: 'ok',
+        userId: registered.user.id,
+        refreshToken: 'rotated-refresh-token',
+      });
+
+      const result = await authService.refresh(registered.refreshToken);
 
       expect(result.tokens.accessToken).toBeDefined();
-      expect(result.tokens.refreshToken).toBeDefined();
-      // Old token should no longer work (rotation)
-      expect(result.tokens.refreshToken).not.toBe(registered.tokens.refreshToken);
+      expect(result.refreshToken).toBe('rotated-refresh-token');
+      expect(refreshSessionServiceMock.rotateSession).toHaveBeenCalledWith(registered.refreshToken);
     });
 
     it('should throw UnauthorizedError for invalid refresh token', async () => {
+      refreshSessionServiceMock.rotateSession.mockResolvedValue({ status: 'invalid' });
+
       await expect(authService.refresh('invalid-token')).rejects.toThrow(
         'Invalid or expired refresh token',
       );
+    });
+
+    it('should revoke all sessions and fail on replay detection', async () => {
+      refreshSessionServiceMock.rotateSession.mockResolvedValue({
+        status: 'replay',
+        userId: 'user-id-1',
+      });
+
+      await expect(authService.refresh('replayed-token')).rejects.toThrow(
+        'Refresh token replay detected. Please sign in again.',
+      );
+
+      expect(refreshSessionServiceMock.revokeAllUserSessions).toHaveBeenCalledWith('user-id-1');
     });
   });
 });
