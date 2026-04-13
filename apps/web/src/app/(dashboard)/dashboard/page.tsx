@@ -6,6 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import {
+  selectCurrentWorkspaceId,
+  selectDashboardStatValues,
+  selectExecutions,
+  selectExecutionLoading,
+  selectExecutionStats,
+  selectExecutionTimeline,
+  selectExecutionWorkflowStats,
+  selectWorkflowLoading,
+} from '@/stores/selectors';
 import { fetchWorkflows } from '@/stores/workflow-slice';
 import {
   fetchExecutions,
@@ -86,45 +96,25 @@ const STATS = [
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
-  const { currentWorkspace } = useAppSelector((state) => state.workspace);
-  const { workflows, isLoading: workflowsLoading } = useAppSelector((state) => state.workflow);
-  const {
-    executions,
-    stats,
-    timeline,
-    workflowStats,
-    isLoading: executionsLoading,
-  } = useAppSelector((state) => state.execution);
+  const currentWorkspaceId = useAppSelector(selectCurrentWorkspaceId);
+  const workflowsLoading = useAppSelector(selectWorkflowLoading);
+  const executionsLoading = useAppSelector(selectExecutionLoading);
+  const dashboardStats = useAppSelector(selectDashboardStatValues);
+  const executions = useAppSelector(selectExecutions);
+  const stats = useAppSelector(selectExecutionStats);
+  const timeline = useAppSelector(selectExecutionTimeline);
+  const workflowStats = useAppSelector(selectExecutionWorkflowStats);
 
-  useExecutionSocket(currentWorkspace?.id);
+  useExecutionSocket(currentWorkspaceId ?? undefined);
 
   useEffect(() => {
-    if (!currentWorkspace?.id) return;
-    dispatch(fetchWorkflows({ workspaceId: currentWorkspace.id }));
-    dispatch(fetchExecutions({ workspaceId: currentWorkspace.id, params: { limit: '5' } }));
-    dispatch(fetchExecutionStats({ workspaceId: currentWorkspace.id }));
-    dispatch(fetchExecutionTimeline({ workspaceId: currentWorkspace.id, days: 14 }));
-    dispatch(fetchWorkflowExecutionStats({ workspaceId: currentWorkspace.id }));
-  }, [currentWorkspace?.id, dispatch]);
-
-  const statValues: Record<string, { value: number; display: React.ReactNode }> = {
-    workflows: {
-      value: workflows.length,
-      display: <AnimatedNumber value={workflows.length} />,
-    },
-    executions: {
-      value: stats?.total ?? 0,
-      display: <AnimatedNumber value={stats?.total ?? 0} />,
-    },
-    success: {
-      value: stats?.successRate ?? 0,
-      display: <AnimatedNumber value={stats?.successRate ?? 0} suffix="%" />,
-    },
-    duration: {
-      value: stats?.avgDurationMs ?? 0,
-      display: stats?.avgDurationMs ? formatDuration(stats.avgDurationMs) : '—',
-    },
-  };
+    if (!currentWorkspaceId) return;
+    dispatch(fetchWorkflows({ workspaceId: currentWorkspaceId }));
+    dispatch(fetchExecutions({ workspaceId: currentWorkspaceId, params: { limit: '5' } }));
+    dispatch(fetchExecutionStats({ workspaceId: currentWorkspaceId }));
+    dispatch(fetchExecutionTimeline({ workspaceId: currentWorkspaceId, days: 14 }));
+    dispatch(fetchWorkflowExecutionStats({ workspaceId: currentWorkspaceId }));
+  }, [currentWorkspaceId, dispatch]);
 
   return (
     <div className="space-y-8">
@@ -140,7 +130,28 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map((stat, i) => {
           const Icon = stat.icon;
-          const data = statValues[stat.key];
+          const data =
+            stat.key === 'workflows'
+              ? {
+                  value: dashboardStats.workflowCount,
+                  display: <AnimatedNumber value={dashboardStats.workflowCount} />,
+                }
+              : stat.key === 'executions'
+                ? {
+                    value: dashboardStats.totalExecutions,
+                    display: <AnimatedNumber value={dashboardStats.totalExecutions} />,
+                  }
+                : stat.key === 'success'
+                  ? {
+                      value: dashboardStats.successRate,
+                      display: <AnimatedNumber value={dashboardStats.successRate} suffix="%" />,
+                    }
+                  : {
+                      value: dashboardStats.avgDurationMs,
+                      display: dashboardStats.avgDurationMs
+                        ? formatDuration(dashboardStats.avgDurationMs)
+                        : '—',
+                    };
           return (
             <Card
               key={stat.key}

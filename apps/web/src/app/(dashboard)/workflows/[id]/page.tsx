@@ -1,11 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import {
+  selectCurrentWorkspaceId,
+  selectCurrentWorkflow,
+  selectExecutionLoading,
+  selectWorkflowExecutionAnalytics,
+  selectWorkflowLoading,
+} from '@/stores/selectors';
 import {
   fetchWorkflow,
   activateWorkflow,
@@ -17,84 +24,31 @@ import { fetchExecutions } from '@/stores/execution-slice';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, Edit, Play, Pause, Copy } from 'lucide-react';
 import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
-import type { IExecutionTimelinePoint } from '@flowforge/shared';
 
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const workflowId = params.id as string;
-  const { currentWorkspace } = useAppSelector((state) => state.workspace);
-  const { currentWorkflow, isLoading } = useAppSelector((state) => state.workflow);
-  const { executions } = useAppSelector((state) => state.execution);
+  const currentWorkspaceId = useAppSelector(selectCurrentWorkspaceId);
+  const currentWorkflow = useAppSelector(selectCurrentWorkflow);
+  const workflowLoading = useAppSelector(selectWorkflowLoading);
+  const executionLoading = useAppSelector(selectExecutionLoading);
+  const workflowExecutionAnalytics = useAppSelector(selectWorkflowExecutionAnalytics);
   const [runMessage, setRunMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
     null,
   );
 
   useEffect(() => {
-    if (currentWorkspace?.id && workflowId) {
-      dispatch(fetchWorkflow({ workspaceId: currentWorkspace.id, workflowId }));
+    if (currentWorkspaceId && workflowId) {
+      dispatch(fetchWorkflow({ workspaceId: currentWorkspaceId, workflowId }));
       dispatch(
-        fetchExecutions({ workspaceId: currentWorkspace.id, params: { workflowId, limit: '50' } }),
+        fetchExecutions({ workspaceId: currentWorkspaceId, params: { workflowId, limit: '50' } }),
       );
     }
-  }, [currentWorkspace?.id, workflowId, dispatch]);
+  }, [currentWorkspaceId, workflowId, dispatch]);
 
-  // Build a 14-day timeline + summary stats from this workflow's executions
-  const { workflowTimeline, workflowSummary } = useMemo(() => {
-    const days = 14;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
-
-    const buckets = new Map<string, { total: number; completed: number; failed: number }>();
-    for (let i = 0; i <= days; i++) {
-      const d = new Date(startDate);
-      d.setDate(d.getDate() + i);
-      buckets.set(d.toISOString().split('T')[0], { total: 0, completed: 0, failed: 0 });
-    }
-
-    let total = 0;
-    let completed = 0;
-    let failed = 0;
-    let durationSum = 0;
-    let durationCount = 0;
-
-    for (const ex of executions) {
-      total += 1;
-      if (ex.status === 'completed') completed += 1;
-      if (ex.status === 'failed') failed += 1;
-      if (typeof ex.durationMs === 'number') {
-        durationSum += ex.durationMs;
-        durationCount += 1;
-      }
-      if (!ex.createdAt) continue;
-      const key = new Date(ex.createdAt).toISOString().split('T')[0];
-      const bucket = buckets.get(key);
-      if (!bucket) continue;
-      bucket.total += 1;
-      if (ex.status === 'completed') bucket.completed += 1;
-      if (ex.status === 'failed') bucket.failed += 1;
-    }
-
-    const timeline: IExecutionTimelinePoint[] = Array.from(buckets.entries()).map(([date, v]) => ({
-      date,
-      ...v,
-    }));
-
-    return {
-      workflowTimeline: timeline,
-      workflowSummary: {
-        total,
-        completed,
-        failed,
-        successRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-        avgDurationMs: durationCount > 0 ? Math.round(durationSum / durationCount) : 0,
-      },
-    };
-  }, [executions]);
-
-  if (isLoading || !currentWorkflow) {
+  if (workflowLoading || executionLoading || !currentWorkflow) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -103,11 +57,9 @@ export default function WorkflowDetailPage() {
   }
 
   const handleExecute = async () => {
-    if (!currentWorkspace?.id) return;
+    if (!currentWorkspaceId) return;
     setRunMessage(null);
-    const result = await dispatch(
-      executeWorkflow({ workspaceId: currentWorkspace.id, workflowId }),
-    );
+    const result = await dispatch(executeWorkflow({ workspaceId: currentWorkspaceId, workflowId }));
     if (executeWorkflow.fulfilled.match(result)) {
       setRunMessage({ type: 'success', text: 'Execution queued successfully.' });
       router.push(`/executions/${result.payload}`);
@@ -149,8 +101,8 @@ export default function WorkflowDetailPage() {
           <Button
             variant="outline"
             onClick={() =>
-              currentWorkspace &&
-              dispatch(duplicateWorkflow({ workspaceId: currentWorkspace.id, workflowId }))
+              currentWorkspaceId &&
+              dispatch(duplicateWorkflow({ workspaceId: currentWorkspaceId, workflowId }))
             }
           >
             <Copy className="mr-2 h-4 w-4" /> Duplicate
@@ -159,8 +111,8 @@ export default function WorkflowDetailPage() {
             <Button
               variant="outline"
               onClick={() =>
-                currentWorkspace &&
-                dispatch(pauseWorkflow({ workspaceId: currentWorkspace.id, workflowId }))
+                currentWorkspaceId &&
+                dispatch(pauseWorkflow({ workspaceId: currentWorkspaceId, workflowId }))
               }
             >
               <Pause className="mr-2 h-4 w-4" /> Pause
@@ -169,8 +121,8 @@ export default function WorkflowDetailPage() {
             <Button
               variant="outline"
               onClick={() =>
-                currentWorkspace &&
-                dispatch(activateWorkflow({ workspaceId: currentWorkspace.id, workflowId }))
+                currentWorkspaceId &&
+                dispatch(activateWorkflow({ workspaceId: currentWorkspaceId, workflowId }))
               }
             >
               <Play className="mr-2 h-4 w-4" /> Activate
@@ -204,7 +156,7 @@ export default function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Runs</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workflowSummary.total}</div>
+            <div className="text-2xl font-bold">{workflowExecutionAnalytics.summary.total}</div>
           </CardContent>
         </Card>
         <Card>
@@ -214,7 +166,9 @@ export default function WorkflowDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workflowSummary.successRate}%</div>
+            <div className="text-2xl font-bold">
+              {workflowExecutionAnalytics.summary.successRate}%
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -222,7 +176,9 @@ export default function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Failed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">{workflowSummary.failed}</div>
+            <div className="text-2xl font-bold text-red-500">
+              {workflowExecutionAnalytics.summary.failed}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -233,8 +189,8 @@ export default function WorkflowDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {workflowSummary.avgDurationMs > 0
-                ? formatDuration(workflowSummary.avgDurationMs)
+              {workflowExecutionAnalytics.summary.avgDurationMs > 0
+                ? formatDuration(workflowExecutionAnalytics.summary.avgDurationMs)
                 : '—'}
             </div>
           </CardContent>
@@ -248,7 +204,7 @@ export default function WorkflowDetailPage() {
           <p className="text-xs text-muted-foreground">Last 14 days of runs for this workflow</p>
         </CardHeader>
         <CardContent>
-          <ExecutionTimelineChart data={workflowTimeline} />
+          <ExecutionTimelineChart data={workflowExecutionAnalytics.timeline} />
         </CardContent>
       </Card>
 
