@@ -44,20 +44,20 @@ A visual workflow automation platform for building event-driven pipelines with a
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, shadcn/ui |
-| Visual Builder | React Flow (@xyflow/react v12) |
-| State Management | Redux Toolkit (auth) + Zustand (workflows, executions) |
-| Backend | Express, TypeScript, Clean Architecture |
-| Database | MongoDB + Mongoose |
-| Cache & Queue | Redis, BullMQ |
-| Real-time | Socket.io |
-| Validation | Zod (shared between frontend and backend) |
-| Testing | Jest + mongodb-memory-server, Playwright |
-| Logging | Pino (structured JSON logging) |
-| CI/CD | GitHub Actions |
-| Infrastructure | Docker multi-stage builds |
+| Layer            | Technology                                                             |
+| ---------------- | ---------------------------------------------------------------------- |
+| Frontend         | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, shadcn/ui |
+| Visual Builder   | React Flow (@xyflow/react v12)                                         |
+| State Management | Redux Toolkit (auth) + Zustand (workflows, executions)                 |
+| Backend          | Express, TypeScript, Clean Architecture                                |
+| Database         | MongoDB + Mongoose                                                     |
+| Cache & Queue    | Redis, BullMQ                                                          |
+| Real-time        | Socket.io                                                              |
+| Validation       | Zod (shared between frontend and backend)                              |
+| Testing          | Jest + mongodb-memory-server, Playwright                               |
+| Logging          | Pino (structured JSON logging)                                         |
+| CI/CD            | GitHub Actions                                                         |
+| Infrastructure   | Docker multi-stage builds                                              |
 
 ## Key Features
 
@@ -138,6 +138,13 @@ npm test --workspace=apps/api
 
 # With coverage
 npm test --workspace=apps/api -- --coverage
+
+# Frontend E2E (Playwright, mocked API)
+npm run e2e --workspace=apps/web
+
+# Optional E2E modes
+npm run e2e:headed --workspace=apps/web
+npm run e2e:ui --workspace=apps/web
 ```
 
 ### Docker Build
@@ -152,31 +159,31 @@ docker build -t flowforge-web apps/web
 
 ## Design Patterns
 
-| Pattern | Where | Why |
-|---------|-------|-----|
-| **Factory** | `StepFactory` — maps step types to handlers | Extensible step execution without modifying the processor |
-| **Adapter** | Integration handlers (HTTP, Email, Slack) | Uniform interface for diverse external services |
-| **Composition Root** | `container.ts` — manual DI wiring | Explicit dependency graph, no DI framework magic |
-| **Event-Driven** | `EventBus` — Redis pub/sub → Socket.io | Decoupled execution from real-time broadcasting |
-| **Clean Architecture** | Domain → Repo → Service → Controller | Domain logic has zero framework dependencies |
-| **RBAC Middleware** | Permission checks on workspace membership | Declarative access control per route |
+| Pattern                | Where                                       | Why                                                       |
+| ---------------------- | ------------------------------------------- | --------------------------------------------------------- |
+| **Factory**            | `StepFactory` — maps step types to handlers | Extensible step execution without modifying the processor |
+| **Adapter**            | Integration handlers (HTTP, Email, Slack)   | Uniform interface for diverse external services           |
+| **Composition Root**   | `container.ts` — manual DI wiring           | Explicit dependency graph, no DI framework magic          |
+| **Event-Driven**       | `EventBus` — Redis pub/sub → Socket.io      | Decoupled execution from real-time broadcasting           |
+| **Clean Architecture** | Domain → Repo → Service → Controller        | Domain logic has zero framework dependencies              |
+| **RBAC Middleware**    | Permission checks on workspace membership   | Declarative access control per route                      |
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register + create org/workspace |
-| POST | `/api/v1/auth/login` | Login, returns JWT + refresh token |
-| GET | `/api/v1/workspaces` | List user's workspaces |
-| POST | `/api/v1/workspaces/:id/members` | Invite member |
-| GET | `/api/v1/workspaces/:wId/workflows` | List workflows |
-| POST | `/api/v1/workspaces/:wId/workflows` | Create workflow |
-| PATCH | `/api/v1/workspaces/:wId/workflows/:id` | Update workflow (steps, config) |
-| POST | `/api/v1/workspaces/:wId/workflows/:id/execute` | Trigger manual execution |
-| GET | `/api/v1/workspaces/:wId/executions` | List executions |
-| GET | `/api/v1/workspaces/:wId/executions/:id` | Execution detail with step trace |
-| GET | `/api/v1/workspaces/:wId/executions/stats` | Aggregated execution stats |
-| POST | `/api/v1/webhooks/:wId/:path` | Inbound webhook trigger |
+| Method | Endpoint                                        | Description                        |
+| ------ | ----------------------------------------------- | ---------------------------------- |
+| POST   | `/api/v1/auth/register`                         | Register + create org/workspace    |
+| POST   | `/api/v1/auth/login`                            | Login, returns JWT + refresh token |
+| GET    | `/api/v1/workspaces`                            | List user's workspaces             |
+| POST   | `/api/v1/workspaces/:id/members`                | Invite member                      |
+| GET    | `/api/v1/workspaces/:wId/workflows`             | List workflows                     |
+| POST   | `/api/v1/workspaces/:wId/workflows`             | Create workflow                    |
+| PATCH  | `/api/v1/workspaces/:wId/workflows/:id`         | Update workflow (steps, config)    |
+| POST   | `/api/v1/workspaces/:wId/workflows/:id/execute` | Trigger manual execution           |
+| GET    | `/api/v1/workspaces/:wId/executions`            | List executions                    |
+| GET    | `/api/v1/workspaces/:wId/executions/:id`        | Execution detail with step trace   |
+| GET    | `/api/v1/workspaces/:wId/executions/stats`      | Aggregated execution stats         |
+| POST   | `/api/v1/webhooks/:wId/:path`                   | Inbound webhook trigger            |
 
 ## License
 
