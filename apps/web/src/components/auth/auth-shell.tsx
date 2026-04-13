@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 
 interface AuthShellProps {
   children: React.ReactNode;
@@ -78,6 +79,7 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
           </Link>
 
           <div className="flex items-center gap-2 text-sm">
+            <ThemeToggleButton />
             <Link
               href="/"
               className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

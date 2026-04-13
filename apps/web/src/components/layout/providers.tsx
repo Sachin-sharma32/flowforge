@@ -3,6 +3,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@/stores/store';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -53,7 +54,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
-      <Provider store={store}>{children}</Provider>
+      <ThemeProvider>
+        <Provider store={store}>{children}</Provider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

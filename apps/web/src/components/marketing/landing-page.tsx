@@ -19,6 +19,7 @@ import {
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 
 interface LandingPageExperienceProps {
   headingFontClassName: string;
@@ -259,6 +260,7 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
           </nav>
 
           <div className="flex items-center gap-2">
+            <ThemeToggleButton />
             <Button asChild variant="ghost" size="sm">
               <Link href="/login">Log in</Link>
             </Button>
