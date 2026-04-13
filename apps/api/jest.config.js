@@ -7,7 +7,7 @@ module.exports = {
   setupFiles: ['<rootDir>/src/test/setup-env.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
-    '@flowforge/shared': '<rootDir>/../../packages/shared/src',
+    '@flowforge/shared': '<rootDir>/../../packages/shared/src/index.ts',
   },
   collectCoverageFrom: ['src/**/*.ts', '!src/index.ts', '!src/**/*.d.ts'],
   coverageThreshold: {
