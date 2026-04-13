@@ -253,6 +253,9 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
             <a href="#execution" className="transition-colors hover:text-foreground">
               Execution
             </a>
+            <Link href="/privacy" className="transition-colors hover:text-foreground">
+              Privacy & Cookies
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -608,6 +611,16 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                     <Link href="/login">Sign In</Link>
                   </Button>
                 </div>
+              </div>
+
+              <div className="relative z-10 mt-6 text-sm text-muted-foreground">
+                We currently use only essential auth/security cookies.{' '}
+                <Link
+                  href="/privacy"
+                  className="font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+                >
+                  View Privacy & Cookies
+                </Link>
               </div>
             </div>
           </SectionReveal>

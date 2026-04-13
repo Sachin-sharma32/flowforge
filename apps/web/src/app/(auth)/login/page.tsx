@@ -39,7 +39,7 @@ export default function LoginPage() {
       title="Sign in to continue"
       description="Access your workspaces, monitor live executions, and manage automation flows."
       error={error}
-      footerText="Don\'t have an account?"
+      footerText="Don't have an account?"
       footerLinkLabel="Create one"
       footerLinkHref="/register"
       headingFontClassName={sora.className}

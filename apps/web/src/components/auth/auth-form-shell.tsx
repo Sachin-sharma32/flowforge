@@ -98,6 +98,16 @@ export function AuthFormShell({
           {footerLinkLabel}
         </Link>
       </motion.p>
+
+      <motion.p variants={itemVariants} className="mt-2 text-center text-xs text-muted-foreground">
+        We currently use only essential auth/security cookies.{' '}
+        <Link
+          href="/privacy"
+          className="font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+        >
+          Privacy & Cookies
+        </Link>
+      </motion.p>
     </motion.div>
   );
 }

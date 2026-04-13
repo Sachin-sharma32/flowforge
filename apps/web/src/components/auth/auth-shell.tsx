@@ -85,6 +85,12 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
               <ArrowLeft className="h-3.5 w-3.5" />
               Home
             </Link>
+            <Link
+              href="/privacy"
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              Privacy & Cookies
+            </Link>
             {isRegister ? (
               <Link
                 href="/login"
