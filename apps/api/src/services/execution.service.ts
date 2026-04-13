@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import { Execution, IExecutionDocument } from '../models/execution.model';
 import { Workflow } from '../models/workflow.model';
 import { NotFoundError, ForbiddenError } from '../domain/errors';
+import { Workspace } from '../models/workspace.model';
+import { Organization } from '../models/organization.model';
+import { UsageService } from './usage.service';
 
 export interface ExecutionQuery {
   workspaceId: string;
@@ -12,6 +15,8 @@ export interface ExecutionQuery {
 }
 
 export class ExecutionService {
+  private usageService = new UsageService();
+
   async list(query: ExecutionQuery) {
     const { workspaceId, workflowId, status, page = 1, limit = 20 } = query;
     const filter: Record<string, unknown> = { workspaceId };
@@ -57,6 +62,20 @@ export class ExecutionService {
       throw new ForbiddenError('Workflow is not active');
     }
 
+    const workspace = await Workspace.findById(workspaceId).select('organizationId');
+    if (!workspace) throw new NotFoundError('Workspace not found');
+
+    const organization = await Organization.findById(workspace.organizationId).select(
+      'plan limits',
+    );
+    if (!organization) throw new NotFoundError('Organization not found');
+
+    await this.usageService.reserveExecution(
+      organization._id.toString(),
+      organization.plan,
+      organization.limits.maxExecutionsPerMonth,
+    );
+
     const execution = await Execution.create({
       workflowId,
       workspaceId,
@@ -85,8 +104,9 @@ export class ExecutionService {
   }
 
   async getStats(workspaceId: string) {
+    const workspaceObjectId = this.toObjectId(workspaceId);
     const stats = await Execution.aggregate([
-      { $match: { workspaceId } },
+      { $match: { workspaceId: workspaceObjectId } },
       {
         $group: {
           _id: null,
@@ -113,6 +133,7 @@ export class ExecutionService {
   }
 
   async getTimeline(workspaceId: string, days: number = 14) {
+    const workspaceObjectId = this.toObjectId(workspaceId);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
@@ -120,7 +141,7 @@ export class ExecutionService {
     const pipeline = await Execution.aggregate([
       {
         $match: {
-          workspaceId: new mongoose.Types.ObjectId(workspaceId),
+          workspaceId: workspaceObjectId,
           createdAt: { $gte: startDate },
         },
       },
@@ -158,8 +179,9 @@ export class ExecutionService {
   }
 
   async getStatsByWorkflow(workspaceId: string) {
+    const workspaceObjectId = this.toObjectId(workspaceId);
     const stats = await Execution.aggregate([
-      { $match: { workspaceId: new mongoose.Types.ObjectId(workspaceId) } },
+      { $match: { workspaceId: workspaceObjectId } },
       {
         $group: {
           _id: '$workflowId',
@@ -230,5 +252,12 @@ export class ExecutionService {
       },
       { new: true },
     );
+  }
+
+  private toObjectId(id: string): mongoose.Types.ObjectId {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new NotFoundError('Invalid workspace ID');
+    }
+    return new mongoose.Types.ObjectId(id);
   }
 }

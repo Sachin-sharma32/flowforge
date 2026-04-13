@@ -44,6 +44,12 @@ export type {
   IApiErrorResponse,
   IPaginatedResponse,
 } from './types/api-response.types';
+export type {
+  BillingPlan,
+  BillingSubscriptionStatus,
+  IMonthlyExecutionUsage,
+  IWorkspaceBillingSummary,
+} from './types/billing.types';
 
 // Validation schemas
 export {

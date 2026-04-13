@@ -42,6 +42,11 @@ export class RateLimitError extends AppError {
   readonly isOperational = true;
 }
 
+export class PaymentRequiredError extends AppError {
+  readonly statusCode = 402;
+  readonly isOperational = true;
+}
+
 export class UnknownStepTypeError extends AppError {
   readonly statusCode = 400;
   readonly isOperational = true;

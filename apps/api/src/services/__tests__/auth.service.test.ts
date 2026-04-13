@@ -12,6 +12,9 @@ jest.mock('../../config', () => ({
     JWT_SECRET: 'test-jwt-secret-key-minimum-16-chars',
     JWT_ACCESS_EXPIRY: '15m',
     JWT_REFRESH_EXPIRY: '7d',
+    FREE_EXECUTION_LIMIT: 1000,
+    PRO_EXECUTION_LIMIT: 10000,
+    ENTERPRISE_EXECUTION_LIMIT: 100000,
   },
 }));
 

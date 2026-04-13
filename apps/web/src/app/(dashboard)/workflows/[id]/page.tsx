@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,9 @@ export default function WorkflowDetailPage() {
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { currentWorkflow, isLoading } = useAppSelector((state) => state.workflow);
   const { executions } = useAppSelector((state) => state.execution);
+  const [runMessage, setRunMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
@@ -101,12 +104,22 @@ export default function WorkflowDetailPage() {
 
   const handleExecute = async () => {
     if (!currentWorkspace?.id) return;
+    setRunMessage(null);
     const result = await dispatch(
       executeWorkflow({ workspaceId: currentWorkspace.id, workflowId }),
     );
     if (executeWorkflow.fulfilled.match(result)) {
+      setRunMessage({ type: 'success', text: 'Execution queued successfully.' });
       router.push(`/executions/${result.payload}`);
+      return;
     }
+
+    setRunMessage({
+      type: 'error',
+      text:
+        (typeof result.payload === 'string' && result.payload) ||
+        'Failed to run workflow. Please try again.',
+    });
   };
 
   return (
@@ -171,6 +184,18 @@ export default function WorkflowDetailPage() {
           </Button>
         </div>
       </div>
+
+      {runMessage && (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            runMessage.type === 'error'
+              ? 'border-destructive/30 bg-destructive/10 text-destructive'
+              : 'border-success/30 bg-success/10 text-success'
+          }`}
+        >
+          {runMessage.text}
+        </div>
+      )}
 
       {/* Execution Stats Row */}
       <div className="grid gap-4 sm:grid-cols-4">

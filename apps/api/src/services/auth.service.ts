@@ -8,6 +8,7 @@ import { ConflictError, NotFoundError, UnauthorizedError } from '../domain/error
 import { RegisterInput, LoginInput, IUserResponse } from '@flowforge/shared';
 import { JwtPayload } from '../middleware/auth.middleware';
 import { RefreshSessionService } from './refresh-session.service';
+import { getLimitsForPlan } from '../domain/billing';
 
 interface AuthResult {
   user: IUserResponse;
@@ -47,6 +48,12 @@ export class AuthService {
       name: `${input.name}'s Organization`,
       slug: `${slug}-${uniqueSuffix}`,
       ownerId: user._id,
+      plan: 'free',
+      limits: getLimitsForPlan('free'),
+      billing: {
+        subscriptionStatus: 'none',
+        cancelAtPeriodEnd: false,
+      },
     });
 
     await Workspace.create({

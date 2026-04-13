@@ -164,7 +164,17 @@ export const executeWorkflow = createAsyncThunk(
       );
       return data.data.id as string;
     } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to execute workflow');
+      const apiError = err?.response?.data;
+      const context = apiError?.context;
+      const contextSuffix =
+        context && typeof context.used === 'number' && typeof context.limit === 'number'
+          ? ` (${context.used}/${context.limit} used this month)`
+          : '';
+      return rejectWithValue(
+        apiError?.error
+          ? `${apiError.error}${contextSuffix}`
+          : err.message || 'Failed to execute workflow',
+      );
     }
   },
 );

@@ -19,6 +19,13 @@ const envSchema = z.object({
   AUTH_COOKIE_SECURE: z.string().optional(),
   AUTH_REFRESH_REPLAY_TTL_SECONDS: z.coerce.number().default(3600),
   AUTH_REFRESH_SESSION_LIMIT: z.coerce.number().default(5),
+  WEB_APP_URL: z.string().url().default('http://localhost:3000'),
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  STRIPE_PRICE_PRO_MONTHLY: z.string().min(1),
+  FREE_EXECUTION_LIMIT: z.coerce.number().int().positive().default(1000),
+  PRO_EXECUTION_LIMIT: z.coerce.number().int().positive().default(10000),
+  ENTERPRISE_EXECUTION_LIMIT: z.coerce.number().int().positive().default(100000),
 });
 
 function loadConfig() {

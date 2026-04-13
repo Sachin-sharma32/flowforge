@@ -1,14 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { Sora } from 'next/font/google';
+import { motion, useReducedMotion } from 'framer-motion';
+import { UserRoundPlus } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { register, clearError } from '@/stores/auth-store';
-import { Zap } from 'lucide-react';
+
+const sora = Sora({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+});
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -17,6 +23,7 @@ export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { isLoading, error } = useAppSelector((state) => state.auth);
+  const shouldReduceMotion = useReducedMotion();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,73 +35,91 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-            <Zap className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <CardTitle>Create your account</CardTitle>
-          <CardDescription>Start building workflows in minutes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Name
-              </label>
-              <Input
-                id="name"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Min 8 chars, 1 uppercase, 1 number"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthFormShell
+      badge="New Workspace"
+      title="Create your account"
+      description="Start building resilient workflows with live observability and team-ready controls."
+      error={error}
+      footerText="Already have an account?"
+      footerLinkLabel="Sign in"
+      footerLinkHref="/login"
+      headingFontClassName={sora.className}
+      icon={UserRoundPlus}
+    >
+      <motion.form
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
+        onSubmit={handleSubmit}
+        className="space-y-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.04 }}
+          className="space-y-2"
+        >
+          <label htmlFor="name" className="text-sm font-medium">
+            Name
+          </label>
+          <Input
+            id="name"
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.09 }}
+          className="space-y-2"
+        >
+          <label htmlFor="email" className="text-sm font-medium">
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.14 }}
+          className="space-y-2"
+        >
+          <label htmlFor="password" className="text-sm font-medium">
+            Password
+          </label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="Min 8 chars, 1 uppercase, 1 number"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.19 }}
+        >
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Creating account...' : 'Create account'}
+          </Button>
+        </motion.div>
+      </motion.form>
+    </AuthFormShell>
   );
 }

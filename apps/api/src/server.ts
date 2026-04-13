@@ -15,6 +15,9 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 
+  // Stripe webhook signature verification requires raw body
+  app.use('/api/v1/billing/webhooks/stripe', express.raw({ type: 'application/json' }));
+
   // Parsing
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));

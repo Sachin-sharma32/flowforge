@@ -10,6 +10,24 @@ export interface IOrganizationDocument extends Document {
     maxWorkflows: number;
     maxExecutionsPerMonth: number;
   };
+  billing?: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    stripePriceId?: string;
+    subscriptionStatus?:
+      | 'none'
+      | 'active'
+      | 'trialing'
+      | 'past_due'
+      | 'unpaid'
+      | 'incomplete'
+      | 'incomplete_expired'
+      | 'canceled';
+    currentPeriodStart?: Date;
+    currentPeriodEnd?: Date;
+    cancelAtPeriodEnd?: boolean;
+    lastWebhookAt?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +42,29 @@ const organizationSchema = new Schema<IOrganizationDocument>(
       maxWorkspaces: { type: Number, default: 3 },
       maxWorkflows: { type: Number, default: 10 },
       maxExecutionsPerMonth: { type: Number, default: 1000 },
+    },
+    billing: {
+      stripeCustomerId: { type: String },
+      stripeSubscriptionId: { type: String },
+      stripePriceId: { type: String },
+      subscriptionStatus: {
+        type: String,
+        enum: [
+          'none',
+          'active',
+          'trialing',
+          'past_due',
+          'unpaid',
+          'incomplete',
+          'incomplete_expired',
+          'canceled',
+        ],
+        default: 'none',
+      },
+      currentPeriodStart: { type: Date },
+      currentPeriodEnd: { type: Date },
+      cancelAtPeriodEnd: { type: Boolean, default: false },
+      lastWebhookAt: { type: Date },
     },
   },
   { timestamps: true },
