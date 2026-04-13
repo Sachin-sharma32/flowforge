@@ -2,6 +2,7 @@ import { Workflow, IWorkflowDocument } from '../models/workflow.model';
 import { NotFoundError, ValidationError } from '../domain/errors';
 import { CreateWorkflowInput, UpdateWorkflowInput } from '@flowforge/shared';
 import { StepFactory } from '../engine/step-factory';
+import { registerStepHandlers } from '../engine/register-step-handlers';
 
 export interface WorkflowQuery {
   workspaceId: string;
@@ -12,6 +13,37 @@ export interface WorkflowQuery {
 }
 
 export class WorkflowService {
+  private validateSteps(
+    steps: Array<{
+      id: string;
+      type: string;
+      name: string;
+      config: Record<string, unknown>;
+    }>,
+  ): void {
+    registerStepHandlers();
+
+    const registeredTypes = StepFactory.getRegisteredTypes();
+    for (const step of steps) {
+      if (!registeredTypes.includes(step.type)) {
+        throw new ValidationError(`Unknown step type: ${step.type}`, {
+          stepId: step.id,
+          stepType: step.type,
+        });
+      }
+
+      const handler = StepFactory.create(step.type);
+      const validation = handler.validate(step.config);
+      if (!validation.valid) {
+        throw new ValidationError(`Invalid config for step "${step.name}"`, {
+          stepId: step.id,
+          stepType: step.type,
+          errors: validation.errors,
+        });
+      }
+    }
+  }
+
   async list(query: WorkflowQuery) {
     const { workspaceId, status, page = 1, limit = 20, search } = query;
     const filter: Record<string, unknown> = { workspaceId, status: { $ne: 'archived' } };
@@ -41,15 +73,8 @@ export class WorkflowService {
   }
 
   async create(input: CreateWorkflowInput, workspaceId: string, userId: string) {
-    // Validate step types before persisting
-    const inputWithSteps = input as CreateWorkflowInput & { steps?: Array<{ type: string }> };
-    if (inputWithSteps.steps) {
-      const registeredTypes = StepFactory.getRegisteredTypes();
-      for (const step of inputWithSteps.steps) {
-        if (!registeredTypes.includes(step.type)) {
-          throw new ValidationError(`Unknown step type: ${step.type}`);
-        }
-      }
+    if (input.steps.length > 0) {
+      this.validateSteps(input.steps);
     }
 
     return Workflow.create({
@@ -66,6 +91,10 @@ export class WorkflowService {
     input: UpdateWorkflowInput,
     userId: string,
   ) {
+    if (input.steps) {
+      this.validateSteps(input.steps);
+    }
+
     const workflow = await Workflow.findOneAndUpdate(
       { _id: workflowId, workspaceId },
       { ...input, updatedBy: userId, $inc: { version: 1 } },

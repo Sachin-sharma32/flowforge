@@ -7,21 +7,7 @@ import { EventTypes } from '../domain/events';
 import { StepContext } from '../domain/interfaces/step-handler.interface';
 import { logger } from '../infrastructure/logger';
 import { createRedisClient } from '../config/redis';
-
-// Register all handlers
-import { HttpRequestHandler } from './handlers/http-request.handler';
-import { ConditionHandler } from './handlers/condition.handler';
-import { TransformHandler } from './handlers/transform.handler';
-import { DelayHandler } from './handlers/delay.handler';
-import { SendEmailHandler } from './handlers/send-email.handler';
-import { SlackMessageHandler } from './handlers/slack-message.handler';
-
-StepFactory.register('http_request', HttpRequestHandler);
-StepFactory.register('condition', ConditionHandler);
-StepFactory.register('transform', TransformHandler);
-StepFactory.register('delay', DelayHandler);
-StepFactory.register('send_email', SendEmailHandler);
-StepFactory.register('slack_message', SlackMessageHandler);
+import { registerStepHandlers } from './register-step-handlers';
 
 export class WorkflowProcessor {
   private executionService = new ExecutionService();
@@ -56,6 +42,8 @@ export class WorkflowProcessor {
   }
 
   private async _process(executionId: string): Promise<void> {
+    registerStepHandlers();
+
     const execution = await Execution.findById(executionId);
     if (!execution) {
       logger.error({ executionId }, 'Execution not found');
