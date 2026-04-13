@@ -30,7 +30,11 @@ export default function WorkflowEditPage() {
       await dispatch(
         updateWorkflow({ workspaceId: currentWorkspace.id, workflowId, input: { steps } }),
       ).unwrap();
-    } catch (err) {
+    } catch (err: unknown) {
+      if (typeof err === 'string') {
+        setSaveError(err);
+        return;
+      }
       setSaveError(err instanceof Error ? err.message : 'Failed to save workflow');
     }
   };

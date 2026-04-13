@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
 import { clearAccessToken, setAccessToken } from '@/lib/auth-token-store';
 import { getCsrfHeaders } from '@/lib/csrf-token';
+import { getApiErrorMessage } from '@/lib/api-error';
 import type { IUserResponse } from '@flowforge/shared';
 
 interface AuthState {
@@ -25,9 +26,9 @@ export const login = createAsyncThunk(
       const { data } = await api.post('/auth/login', credentials);
       setAccessToken(data.data.tokens.accessToken);
       return data.data.user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearAccessToken();
-      return rejectWithValue(error.response?.data?.error || 'Login failed');
+      return rejectWithValue(getApiErrorMessage(error, 'Login failed'));
     }
   },
 );
@@ -39,9 +40,9 @@ export const register = createAsyncThunk(
       const { data } = await api.post('/auth/register', input);
       setAccessToken(data.data.tokens.accessToken);
       return data.data.user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearAccessToken();
-      return rejectWithValue(error.response?.data?.error || 'Registration failed');
+      return rejectWithValue(getApiErrorMessage(error, 'Registration failed'));
     }
   },
 );
@@ -52,8 +53,8 @@ export const fetchProfile = createAsyncThunk(
     try {
       const { data } = await api.get('/auth/me');
       return data.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to fetch profile');
+    } catch (error: unknown) {
+      return rejectWithValue(getApiErrorMessage(error, 'Failed to fetch profile'));
     }
   },
 );

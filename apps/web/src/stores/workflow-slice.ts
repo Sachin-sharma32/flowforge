@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/api-error';
 import type { IWorkflow, IWorkflowListItem } from '@flowforge/shared';
 
 interface WorkflowState {
@@ -27,8 +28,8 @@ export const fetchWorkflows = createAsyncThunk(
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/workflows`, { params });
       return { workflows: data.data, pagination: data.pagination };
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch workflows');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflows'));
     }
   },
 );
@@ -42,8 +43,8 @@ export const fetchWorkflow = createAsyncThunk(
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/workflows/${workflowId}`);
       return data.data as IWorkflow;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflow'));
     }
   },
 );
@@ -58,8 +59,8 @@ export const createWorkflow = createAsyncThunk(
       const { data } = await api.post(`/workspaces/${workspaceId}/workflows`, input);
       dispatch(fetchWorkflows({ workspaceId }));
       return data.data as IWorkflow;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to create workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to create workflow'));
     }
   },
 );
@@ -77,8 +78,8 @@ export const updateWorkflow = createAsyncThunk(
     try {
       const { data } = await api.patch(`/workspaces/${workspaceId}/workflows/${workflowId}`, input);
       return data.data as IWorkflow;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to update workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to update workflow'));
     }
   },
 );
@@ -92,8 +93,8 @@ export const deleteWorkflow = createAsyncThunk(
     try {
       await api.delete(`/workspaces/${workspaceId}/workflows/${workflowId}`);
       dispatch(fetchWorkflows({ workspaceId }));
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to delete workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to delete workflow'));
     }
   },
 );
@@ -107,8 +108,8 @@ export const duplicateWorkflow = createAsyncThunk(
     try {
       await api.post(`/workspaces/${workspaceId}/workflows/${workflowId}/duplicate`);
       dispatch(fetchWorkflows({ workspaceId }));
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to duplicate workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to duplicate workflow'));
     }
   },
 );
@@ -125,8 +126,8 @@ export const activateWorkflow = createAsyncThunk(
       );
       dispatch(fetchWorkflows({ workspaceId }));
       return data.data as IWorkflow;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to activate workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to activate workflow'));
     }
   },
 );
@@ -141,8 +142,8 @@ export const pauseWorkflow = createAsyncThunk(
       const { data } = await api.post(`/workspaces/${workspaceId}/workflows/${workflowId}/pause`);
       dispatch(fetchWorkflows({ workspaceId }));
       return data.data as IWorkflow;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to pause workflow');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to pause workflow'));
     }
   },
 );
@@ -163,17 +164,21 @@ export const executeWorkflow = createAsyncThunk(
         { payload },
       );
       return data.data.id as string;
-    } catch (err: any) {
-      const apiError = err?.response?.data;
-      const context = apiError?.context;
+    } catch (err: unknown) {
+      const rawError = err as {
+        response?: {
+          data?: {
+            context?: { used?: number; limit?: number };
+          };
+        };
+      };
+      const context = rawError.response?.data?.context;
       const contextSuffix =
         context && typeof context.used === 'number' && typeof context.limit === 'number'
           ? ` (${context.used}/${context.limit} used this month)`
           : '';
       return rejectWithValue(
-        apiError?.error
-          ? `${apiError.error}${contextSuffix}`
-          : err.message || 'Failed to execute workflow',
+        `${getApiErrorMessage(err, 'Failed to execute workflow')}${contextSuffix}`,
       );
     }
   },

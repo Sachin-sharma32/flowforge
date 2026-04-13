@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
@@ -37,10 +38,10 @@ export default function MembersPage() {
       setEmail('');
       await dispatch(fetchWorkspaces()).unwrap();
       setMessage({ type: 'success', text: 'Member invited successfully' });
-    } catch (err) {
+    } catch (err: unknown) {
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to invite member',
+        text: getApiErrorMessage(err, 'Failed to invite member'),
       });
     } finally {
       setInviting(false);

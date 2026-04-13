@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/api-error';
 import type { IWorkspaceBillingSummary } from '@flowforge/shared';
 import { Settings, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -47,13 +48,12 @@ export default function SettingsPage() {
         if (!cancelled) {
           setBillingSummary(data.data as IWorkspaceBillingSummary);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          const apiError = err?.response?.data?.error;
           setBillingSummary(null);
           setBillingMessage({
             type: 'error',
-            text: apiError || err.message || 'Failed to load billing summary',
+            text: getApiErrorMessage(err, 'Failed to load billing summary'),
           });
         }
       } finally {
@@ -78,10 +78,10 @@ export default function SettingsPage() {
       await api.patch(`/workspaces/${currentWorkspace.id}`, { name: name.trim() });
       await dispatch(fetchWorkspaces()).unwrap();
       setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
-    } catch (err) {
+    } catch (err: unknown) {
       setSaveMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to save settings',
+        text: getApiErrorMessage(err, 'Failed to save settings'),
       });
     } finally {
       setSaving(false);
@@ -100,11 +100,10 @@ export default function SettingsPage() {
         throw new Error('Missing checkout URL');
       }
       window.location.href = url;
-    } catch (err: any) {
-      const apiError = err?.response?.data?.error;
+    } catch (err: unknown) {
       setBillingMessage({
         type: 'error',
-        text: apiError || err.message || 'Failed to start checkout',
+        text: getApiErrorMessage(err, 'Failed to start checkout'),
       });
       setBillingAction(null);
     }
@@ -122,11 +121,10 @@ export default function SettingsPage() {
         throw new Error('Missing portal URL');
       }
       window.location.href = url;
-    } catch (err: any) {
-      const apiError = err?.response?.data?.error;
+    } catch (err: unknown) {
       setBillingMessage({
         type: 'error',
-        text: apiError || err.message || 'Failed to open billing portal',
+        text: getApiErrorMessage(err, 'Failed to open billing portal'),
       });
       setBillingAction(null);
     }

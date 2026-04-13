@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 interface Workspace {
   id: string;
@@ -29,8 +30,8 @@ export const fetchWorkspaces = createAsyncThunk(
     try {
       const { data } = await api.get('/workspaces');
       return data.data as Workspace[];
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch workspaces');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workspaces'));
     }
   },
 );

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/api-error';
 import type {
   IExecution,
   IExecutionStats,
@@ -38,8 +39,8 @@ export const fetchExecutions = createAsyncThunk(
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions`, { params });
       return { executions: data.data, pagination: data.pagination };
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch executions');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch executions'));
     }
   },
 );
@@ -53,8 +54,8 @@ export const fetchExecution = createAsyncThunk(
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions/${executionId}`);
       return data.data as IExecution;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch execution');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch execution'));
     }
   },
 );
@@ -65,8 +66,8 @@ export const fetchExecutionStats = createAsyncThunk(
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats`);
       return data.data as IExecutionStats;
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch execution stats');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch execution stats'));
     }
   },
 );
@@ -82,8 +83,8 @@ export const fetchExecutionTimeline = createAsyncThunk(
         params: { days },
       });
       return data.data as IExecutionTimelinePoint[];
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch execution timeline');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch execution timeline'));
     }
   },
 );
@@ -94,8 +95,8 @@ export const fetchWorkflowExecutionStats = createAsyncThunk(
     try {
       const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats/by-workflow`);
       return data.data as IWorkflowExecutionStats[];
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to fetch workflow stats');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflow stats'));
     }
   },
 );
@@ -109,8 +110,8 @@ export const cancelExecution = createAsyncThunk(
     try {
       await api.post(`/workspaces/${workspaceId}/executions/${executionId}/cancel`);
       dispatch(fetchExecution({ workspaceId, executionId }));
-    } catch (err: any) {
-      return rejectWithValue(err.message || 'Failed to cancel execution');
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to cancel execution'));
     }
   },
 );
