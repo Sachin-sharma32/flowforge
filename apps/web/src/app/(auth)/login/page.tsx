@@ -50,6 +50,7 @@ export default function LoginPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
         onSubmit={handleSubmit}
+        data-testid="login-form"
         className="space-y-4"
       >
         <motion.div
@@ -67,6 +68,7 @@ export default function LoginPage() {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            data-testid="login-email-input"
             required
           />
         </motion.div>
@@ -86,6 +88,7 @@ export default function LoginPage() {
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            data-testid="login-password-input"
             required
           />
         </motion.div>
@@ -95,7 +98,7 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.14 }}
         >
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading} data-testid="login-submit">
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </motion.div>

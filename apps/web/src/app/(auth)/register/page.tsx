@@ -51,6 +51,7 @@ export default function RegisterPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
         onSubmit={handleSubmit}
+        data-testid="register-form"
         className="space-y-4"
       >
         <motion.div
@@ -67,6 +68,7 @@ export default function RegisterPage() {
             placeholder="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            data-testid="register-name-input"
             required
           />
         </motion.div>
@@ -86,6 +88,7 @@ export default function RegisterPage() {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            data-testid="register-email-input"
             required
           />
         </motion.div>
@@ -105,6 +108,7 @@ export default function RegisterPage() {
             placeholder="Min 8 chars, 1 uppercase, 1 number"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            data-testid="register-password-input"
             required
             minLength={8}
           />
@@ -115,7 +119,12 @@ export default function RegisterPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.19 }}
         >
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+            data-testid="register-submit"
+          >
             {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
         </motion.div>

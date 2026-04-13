@@ -64,7 +64,7 @@ export default function NewWorkflowPage() {
         <p className="text-muted-foreground">Set up a new automation workflow</p>
       </div>
 
-      <form onSubmit={handleCreate} className="space-y-6">
+      <form onSubmit={handleCreate} className="space-y-6" data-testid="workflow-create-form">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Details</CardTitle>
@@ -79,6 +79,7 @@ export default function NewWorkflowPage() {
                 placeholder="e.g., Process New Orders"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                data-testid="workflow-name-input"
                 required
               />
             </div>
@@ -91,6 +92,7 @@ export default function NewWorkflowPage() {
                 placeholder="What does this workflow do?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                data-testid="workflow-description-input"
               />
             </div>
           </CardContent>
@@ -107,6 +109,7 @@ export default function NewWorkflowPage() {
                   key={trigger.type}
                   type="button"
                   onClick={() => setTriggerType(trigger.type)}
+                  data-testid={`workflow-trigger-${trigger.type}`}
                   className={`rounded-lg border p-4 text-left transition-colors ${
                     triggerType === trigger.type ? 'border-primary bg-primary/5' : 'hover:bg-accent'
                   }`}
@@ -125,10 +128,19 @@ export default function NewWorkflowPage() {
         </Card>
 
         <div className="flex gap-3">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            data-testid="workflow-create-cancel"
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={isCreating || !name.trim()}>
+          <Button
+            type="submit"
+            disabled={isCreating || !name.trim()}
+            data-testid="workflow-create-submit"
+          >
             {isCreating ? 'Creating...' : 'Create & Open Editor'}
           </Button>
         </div>
