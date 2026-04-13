@@ -10,7 +10,10 @@ export function validate(schema: ZodSchema, source: 'body' | 'query' | 'params' 
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const messages = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
+        const messages = error.errors.map((e) => {
+          const path = e.path.length > 0 ? e.path.join('.') : 'root';
+          return `${path}: ${e.message}`;
+        });
         next(new ValidationError('Validation failed', { errors: messages }));
         return;
       }
