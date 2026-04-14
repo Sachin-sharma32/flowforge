@@ -1,19 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { PageTransition } from '@/components/ui/page-transition';
 import { fetchProfile } from '@/stores/auth-store';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAppSelector((state) => state.auth.user);
   const [mounted, setMounted] = useState(false);
+  const isWorkflowBuilderRoute =
+    pathname === '/workflows/new' || /^\/workflows\/[^/]+\/edit$/.test(pathname);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +56,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  if (isWorkflowBuilderRoute) {
+    return (
+      <div className="app-background relative h-screen w-screen overflow-hidden">
+        <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
+        <main className="relative h-full w-full overflow-hidden">
+          <PageTransition className="h-full">{children}</PageTransition>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-background relative flex h-screen overflow-hidden">
       {/* Subtle dot grid texture */}
@@ -59,8 +74,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto px-10 py-10">
-          <PageTransition className="mx-auto max-w-[1800px] 2xl:max-w-full 2xl:px-12">
+        <main className={cn('flex-1 overflow-y-auto px-10 py-10')}>
+          <PageTransition className={cn('mx-auto max-w-[1800px] 2xl:max-w-full 2xl:px-12')}>
             {children}
           </PageTransition>
         </main>

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { createHash } from 'node:crypto';
 import { AuthService } from '../auth.service';
 import { User } from '../../models/user.model';
 import { Organization } from '../../models/organization.model';
@@ -127,7 +128,7 @@ describe('AuthService', () => {
     it('verifies token without creating a session', async () => {
       const email = 'test@example.com';
       const token = 'test-verification-token';
-      const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
+      const tokenHash = createHash('sha256').update(token).digest('hex');
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       await User.create({

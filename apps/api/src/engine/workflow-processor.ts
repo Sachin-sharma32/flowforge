@@ -111,6 +111,7 @@ export class WorkflowProcessor {
           execution.workspaceId.toString(),
           variables,
           lastOutput,
+          [],
         );
       }
 
@@ -154,7 +155,13 @@ export class WorkflowProcessor {
     workspaceId: string,
     variables: Record<string, string>,
     input: Record<string, unknown>,
+    path: string[],
   ): Promise<Record<string, unknown>> {
+    if (path.includes(stepId)) {
+      const cycle = [...path, stepId].join(' -> ');
+      throw new Error(`Circular workflow connection detected: ${cycle}`);
+    }
+
     const stepDef = stepMap.get(stepId);
     if (!stepDef) {
       logger.warn({ stepId }, 'Step definition not found, skipping');
@@ -228,6 +235,7 @@ export class WorkflowProcessor {
           workspaceId,
           variables,
           nextOutput,
+          [...path, stepId],
         );
       }
 

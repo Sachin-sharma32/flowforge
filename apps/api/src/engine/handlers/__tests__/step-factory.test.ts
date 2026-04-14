@@ -18,6 +18,10 @@ describe('StepFactory', () => {
     expect(types).toContain('delay');
     expect(types).toContain('send_email');
     expect(types).toContain('slack_message');
+    expect(types).toContain('google_drive');
+    expect(types).toContain('google_calendar');
+    expect(types).toContain('gmail');
+    expect(types).toContain('notion');
   });
 
   it('should create correct handler for each type', () => {

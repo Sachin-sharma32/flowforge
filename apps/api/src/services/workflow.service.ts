@@ -12,20 +12,30 @@ export interface WorkflowQuery {
   search?: string;
 }
 
+interface WorkflowStepInput {
+  id: string;
+  type: string;
+  name: string;
+  config: Record<string, unknown>;
+  connections: Array<{ targetStepId: string; label: string }>;
+}
+
 export class WorkflowService {
-  private validateSteps(
-    steps: Array<{
-      id: string;
-      type: string;
-      name: string;
-      config: Record<string, unknown>;
-    }>,
-  ): void {
+  private validateSteps(steps: WorkflowStepInput[]): void {
     registerStepHandlers();
 
-    const registeredTypes = StepFactory.getRegisteredTypes();
+    const registeredTypes = new Set(StepFactory.getRegisteredTypes());
+    const stepIds = new Set<string>();
+    const validationErrors: string[] = [];
+
     for (const step of steps) {
-      if (!registeredTypes.includes(step.type)) {
+      if (stepIds.has(step.id)) {
+        validationErrors.push(`Duplicate step id "${step.id}"`);
+        continue;
+      }
+      stepIds.add(step.id);
+
+      if (!registeredTypes.has(step.type)) {
         throw new ValidationError(`Unknown step type: ${step.type}`, {
           stepId: step.id,
           stepType: step.type,
@@ -41,7 +51,101 @@ export class WorkflowService {
           errors: validation.errors,
         });
       }
+
+      if (step.type === 'condition') {
+        for (const connection of step.connections) {
+          if (connection.label !== 'true' && connection.label !== 'false') {
+            validationErrors.push(
+              `Condition step "${step.name}" has invalid branch label "${connection.label}"`,
+            );
+          }
+        }
+
+        const conditionLabels = new Set(step.connections.map((connection) => connection.label));
+        if (conditionLabels.size !== step.connections.length) {
+          validationErrors.push(`Condition step "${step.name}" has duplicate branch labels`);
+        }
+      }
     }
+
+    for (const step of steps) {
+      for (const connection of step.connections) {
+        if (!stepIds.has(connection.targetStepId)) {
+          validationErrors.push(
+            `Step "${step.name}" points to missing target "${connection.targetStepId}"`,
+          );
+        }
+        if (connection.targetStepId === step.id) {
+          validationErrors.push(`Step "${step.name}" cannot connect to itself`);
+        }
+      }
+    }
+
+    const targetedSteps = new Set<string>();
+    for (const step of steps) {
+      for (const connection of step.connections) {
+        targetedSteps.add(connection.targetStepId);
+      }
+    }
+    const entryStepCount = steps.filter((step) => !targetedSteps.has(step.id)).length;
+    if (steps.length > 0 && entryStepCount === 0) {
+      validationErrors.push('Workflow must include at least one entry step');
+    }
+
+    if (this.hasCycle(steps)) {
+      validationErrors.push('Workflow contains circular step connections');
+    }
+
+    if (validationErrors.length > 0) {
+      throw new ValidationError('Invalid workflow step graph', {
+        errors: validationErrors,
+      });
+    }
+  }
+
+  private hasCycle(steps: WorkflowStepInput[]): boolean {
+    const adjacency = new Map<string, string[]>();
+    for (const step of steps) {
+      adjacency.set(
+        step.id,
+        step.connections.map((connection) => connection.targetStepId),
+      );
+    }
+
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+
+    const dfs = (stepId: string): boolean => {
+      if (visiting.has(stepId)) {
+        return true;
+      }
+      if (visited.has(stepId)) {
+        return false;
+      }
+
+      visiting.add(stepId);
+      const neighbors = adjacency.get(stepId) || [];
+      for (const neighbor of neighbors) {
+        if (!adjacency.has(neighbor)) {
+          continue;
+        }
+        if (dfs(neighbor)) {
+          return true;
+        }
+      }
+
+      visiting.delete(stepId);
+      visited.add(stepId);
+      return false;
+    };
+
+    for (const step of steps) {
+      if (dfs(step.id)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   async list(query: WorkflowQuery) {

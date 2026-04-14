@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createHash } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -81,7 +82,6 @@ describe('API validation hardening', () => {
         }
       | undefined;
     const verificationToken = registerData?.verificationToken;
-    let verified = true;
     if (verificationToken) {
       const verifyResponse = await request('/auth/verify-email', {
         method: 'POST',
@@ -90,7 +90,6 @@ describe('API validation hardening', () => {
         },
       });
       expect(verifyResponse.status).toBe(200);
-      verified = true;
     }
 
     const loginResponse = await request('/auth/login', {
@@ -179,8 +178,7 @@ describe('API validation hardening', () => {
       user.isVerified = false;
 
       verificationToken = 'mock-verification-token';
-      user.emailVerificationTokenHash = require('crypto')
-        .createHash('sha256')
+      user.emailVerificationTokenHash = createHash('sha256')
         .update(verificationToken)
         .digest('hex');
       user.emailVerificationExpiresAt = new Date(Date.now() + 1000 * 60 * 60);
@@ -304,5 +302,63 @@ describe('API validation hardening', () => {
     expect(response.status).toBe(422);
     expect(payload.error).toContain('Invalid config for step');
     expect(payload.context?.errors).toContain('durationMs must be a positive number');
+  });
+
+  it('rejects workflow graphs with missing connection targets', async () => {
+    const response = await createWorkflow({
+      name: 'Invalid Graph Workflow',
+      description: '',
+      trigger: { type: 'manual', config: {} },
+      steps: [
+        {
+          id: 'step-1',
+          type: 'http_request',
+          name: 'Call API',
+          config: { url: 'https://example.com', method: 'GET' },
+          position: { x: 0, y: 0 },
+          connections: [{ targetStepId: 'does-not-exist', label: 'next' }],
+        },
+      ],
+      variables: [],
+    });
+
+    expect(response.response.status).toBe(422);
+    expect(response.payload.error).toContain('Invalid workflow step graph');
+    expect(response.payload.context?.errors).toContain(
+      'Step "Call API" points to missing target "does-not-exist"',
+    );
+  });
+
+  it('rejects workflow graphs with circular connections', async () => {
+    const response = await createWorkflow({
+      name: 'Circular Graph Workflow',
+      description: '',
+      trigger: { type: 'manual', config: {} },
+      steps: [
+        {
+          id: 'step-1',
+          type: 'http_request',
+          name: 'Step 1',
+          config: { url: 'https://example.com/1', method: 'GET' },
+          position: { x: 0, y: 0 },
+          connections: [{ targetStepId: 'step-2', label: 'next' }],
+        },
+        {
+          id: 'step-2',
+          type: 'http_request',
+          name: 'Step 2',
+          config: { url: 'https://example.com/2', method: 'GET' },
+          position: { x: 0, y: 140 },
+          connections: [{ targetStepId: 'step-1', label: 'next' }],
+        },
+      ],
+      variables: [],
+    });
+
+    expect(response.response.status).toBe(422);
+    expect(response.payload.error).toContain('Invalid workflow step graph');
+    expect(response.payload.context?.errors).toContain(
+      'Workflow contains circular step connections',
+    );
   });
 });
