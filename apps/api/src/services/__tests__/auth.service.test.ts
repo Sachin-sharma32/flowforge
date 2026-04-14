@@ -16,6 +16,10 @@ jest.mock('../../config', () => ({
     JWT_REFRESH_EXPIRY: '7d',
     AUTH_EMAIL_VERIFICATION_EXPIRY: '24h',
     API_PUBLIC_URL: 'http://localhost:4000',
+    GOOGLE_CLIENT_ID: 'google-client-id',
+    GOOGLE_CLIENT_SECRET: 'google-client-secret',
+    GITHUB_CLIENT_ID: 'github-client-id',
+    GITHUB_CLIENT_SECRET: 'github-client-secret',
     FREE_EXECUTION_LIMIT: 1000,
     PRO_EXECUTION_LIMIT: 10000,
     ENTERPRISE_EXECUTION_LIMIT: 100000,
@@ -25,6 +29,7 @@ jest.mock('../../config', () => ({
 describe('AuthService', () => {
   let mongoServer: MongoMemoryServer;
   let authService: AuthService;
+  let fetchSpy: jest.SpiedFunction<typeof fetch>;
 
   const refreshSessionServiceMock = {
     createSession: jest.fn<Promise<{ refreshToken: string }>, [string]>(),
@@ -43,6 +48,7 @@ describe('AuthService', () => {
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     await mongoose.connect(mongoServer.getUri());
+    fetchSpy = jest.spyOn(global, 'fetch');
   });
 
   beforeEach(() => {
@@ -51,6 +57,7 @@ describe('AuthService', () => {
       refreshToken: 'test-refresh-token',
     });
     emailServiceMock.sendEmail.mockResolvedValue();
+    fetchSpy.mockReset();
     authService = new AuthService(
       refreshSessionServiceMock as unknown as RefreshSessionService,
       emailServiceMock as unknown as EmailService,
@@ -58,6 +65,7 @@ describe('AuthService', () => {
   });
 
   afterAll(async () => {
+    fetchSpy.mockRestore();
     await mongoose.disconnect();
     await mongoServer.stop();
   });
@@ -78,12 +86,12 @@ describe('AuthService', () => {
 
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.name).toBe('Test User');
-      expect(result.requiresEmailVerification).toBe(true);
+      expect(result.requiresEmailVerification).toBe(false);
       expect(result.verificationToken).toBeDefined();
-      expect(emailServiceMock.sendEmail).toHaveBeenCalledTimes(1);
+      expect(emailServiceMock.sendEmail).toHaveBeenCalledTimes(0);
 
       const user = await User.findOne({ email: 'test@example.com' });
-      expect(user?.isVerified).toBe(false);
+      expect(user?.isVerified).toBe(true);
       expect(user?.emailVerificationTokenHash).toBeDefined();
       expect(user?.emailVerificationExpiresAt).toBeDefined();
 
@@ -116,26 +124,30 @@ describe('AuthService', () => {
   });
 
   describe('verifyEmail', () => {
-    it('verifies token and signs user in', async () => {
-      const registered = await authService.register({
-        email: 'test@example.com',
-        password: 'Password123',
+    it('verifies token without creating a session', async () => {
+      const email = 'test@example.com';
+      const token = 'test-verification-token';
+      const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await User.create({
+        email,
+        passwordHash: 'hashed-password',
         name: 'Test User',
+        isVerified: false,
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: expiresAt,
       });
 
-      const result = await authService.verifyEmail({
-        token: registered.verificationToken!,
+      await authService.verifyEmail({
+        token,
       });
-
-      expect(result.user.email).toBe('test@example.com');
-      expect(result.tokens.accessToken).toBeDefined();
-      expect(result.refreshToken).toBe('test-refresh-token');
-      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(result.user.id);
 
       const user = await User.findOne({ email: 'test@example.com' });
       expect(user?.isVerified).toBe(true);
       expect(user?.emailVerificationTokenHash).toBeUndefined();
       expect(user?.emailVerificationExpiresAt).toBeUndefined();
+      expect(refreshSessionServiceMock.createSession).not.toHaveBeenCalled();
     });
 
     it('throws for invalid verification token', async () => {
@@ -154,13 +166,20 @@ describe('AuthService', () => {
       });
     });
 
-    it('blocks login for unverified accounts', async () => {
-      await expect(
-        authService.login({
-          email: 'test@example.com',
-          password: 'Password123',
-        }),
-      ).rejects.toThrow('Please verify your email before signing in.');
+    it('auto-verifies unverified accounts in development upon login', async () => {
+      const user = await User.findOne({ email: 'test@example.com' });
+      user!.isVerified = false;
+      await user!.save();
+
+      const result = await authService.login({
+        email: 'test@example.com',
+        password: 'Password123',
+      });
+
+      expect(result.tokens.accessToken).toBeDefined();
+
+      const updatedUser = await User.findOne({ email: 'test@example.com' });
+      expect(updatedUser?.isVerified).toBe(true);
     });
 
     it('logs in with valid credentials after verification', async () => {
@@ -196,6 +215,77 @@ describe('AuthService', () => {
           password: 'Password123',
         }),
       ).rejects.toThrow('Invalid email or password');
+    });
+  });
+
+  describe('loginWithOAuth', () => {
+    it('creates a verified Google user without sending verification email', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ access_token: 'google-access-token' }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              sub: 'google-user-1',
+              email: 'google-user@example.com',
+              email_verified: true,
+              name: 'Google User',
+              picture: 'https://example.com/avatar.png',
+            }),
+            { status: 200 },
+          ),
+        );
+
+      const result = await authService.loginWithOAuth('google', 'auth-code');
+
+      expect(result.user.email).toBe('google-user@example.com');
+      expect(result.refreshToken).toBe('test-refresh-token');
+      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(result.user.id);
+      expect(emailServiceMock.sendEmail).not.toHaveBeenCalled();
+
+      const user = await User.findOne({ email: 'google-user@example.com' });
+      expect(user?.isVerified).toBe(true);
+      expect(user?.oauthProviders?.google?.id).toBe('google-user-1');
+    });
+
+    it('links Google sign-in to an existing unverified password account', async () => {
+      const registered = await authService.register({
+        email: 'existing@example.com',
+        password: 'Password123',
+        name: 'Existing User',
+      });
+      emailServiceMock.sendEmail.mockClear();
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ access_token: 'google-access-token' }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              sub: 'google-user-2',
+              email: 'existing@example.com',
+              email_verified: true,
+              name: 'Existing User',
+            }),
+            { status: 200 },
+          ),
+        );
+
+      const result = await authService.loginWithOAuth('google', 'auth-code');
+
+      expect(result.user.id).toBe(registered.user.id);
+      expect(result.user.email).toBe('existing@example.com');
+      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(registered.user.id);
+      expect(emailServiceMock.sendEmail).not.toHaveBeenCalled();
+
+      const user = await User.findOne({ email: 'existing@example.com' });
+      expect(user?.isVerified).toBe(true);
+      expect(user?.emailVerificationTokenHash).toBeDefined();
+      expect(user?.emailVerificationExpiresAt).toBeDefined();
+      expect(user?.oauthProviders?.google?.id).toBe('google-user-2');
+      expect(await User.countDocuments({ email: 'existing@example.com' })).toBe(1);
     });
   });
 

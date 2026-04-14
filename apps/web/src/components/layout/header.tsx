@@ -24,7 +24,7 @@ export function Header() {
         <ThemeToggleButton />
 
         {user && (
-          <div className="flex items-center gap-3 rounded-full border border-border/60 bg-background/60 py-1 pl-1 pr-2 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-soft">
+          <div className="flex items-center gap-3 rounded-full border border-border/60 bg-background/60 py-1 pl-1 pr-2 backdrop-blur-sm transition-colors duration-300 hover:border-primary/30">
             <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-xs font-bold text-primary-foreground shadow-glow">
               {user.name.charAt(0).toUpperCase()}
             </div>

@@ -65,7 +65,7 @@ export function Sidebar() {
 
       {/* Plan card */}
       <div className="border-t border-border/50 p-3">
-        <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-accent/40 to-accent/10 p-4 transition-all duration-300 hover:border-primary/30 hover:shadow-soft">
+        <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-accent/40 to-accent/10 p-4 transition-colors duration-300 hover:border-primary/30">
           <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-primary/10 blur-2xl transition-all duration-500 group-hover:bg-primary/20" />
           <p className="label-uppercase text-muted-foreground">Free Plan</p>
           <p className="mt-1 text-sm font-medium">0 / 1,000 runs</p>

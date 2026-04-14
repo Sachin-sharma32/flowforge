@@ -223,10 +223,18 @@ export async function installApiMocks(page: Page, overrides: MockApiOverrides = 
         route,
         201,
         success({
-          user: state.auth.user,
-          tokens: {
-            accessToken: 'mock-access-token',
-          },
+          requiresEmailVerification: true,
+        }),
+      );
+      return;
+    }
+
+    if (method === 'POST' && path.endsWith('/auth/resend-verification')) {
+      await fulfillJson(
+        route,
+        200,
+        success({
+          message: 'If an unverified account exists, a new verification link has been sent.',
         }),
       );
       return;

@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { PublicNavbar } from '@/components/layout/public-navbar';
 import { cn } from '@/lib/utils';
-import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 
 interface LandingPageExperienceProps {
   headingFontClassName: string;
@@ -233,43 +233,7 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
         className="landing-spotlight pointer-events-none absolute -top-36 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2"
       />
 
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
-          <Link href="/" className="group flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-soft transition-transform duration-300 group-hover:scale-105">
-              <Zap className="h-4 w-4" />
-            </div>
-            <span className={cn('text-lg font-semibold tracking-tight', headingFontClassName)}>
-              FlowForge
-            </span>
-          </Link>
-
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-            <a href="#features" className="transition-colors hover:text-foreground">
-              Features
-            </a>
-            <a href="#how-it-works" className="transition-colors hover:text-foreground">
-              How it works
-            </a>
-            <a href="#execution" className="transition-colors hover:text-foreground">
-              Execution
-            </a>
-            <Link href="/privacy" className="transition-colors hover:text-foreground">
-              Privacy & Cookies
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggleButton />
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PublicNavbar />
 
       <main>
         <section ref={heroRef} className="relative">
@@ -583,7 +547,7 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
           <SectionReveal>
             <div className="landing-panel relative overflow-hidden p-8 sm:p-10">
               <div className="absolute -left-24 top-0 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
-              <div className="absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-info/20 blur-3xl" />
+              <div className="absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-foreground/10 blur-3xl" />
 
               <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                 <div>

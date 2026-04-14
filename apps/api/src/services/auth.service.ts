@@ -39,7 +39,7 @@ interface RefreshResult {
 
 interface RegisterResult {
   user: IUserResponse;
-  requiresEmailVerification: true;
+  requiresEmailVerification: boolean;
   verificationToken?: string;
 }
 
@@ -103,22 +103,24 @@ export class AuthService {
       email: normalizedEmail,
       passwordHash: input.password,
       name: input.name,
-      isVerified: false,
+      isVerified: config.NODE_ENV !== 'production',
       emailVerificationTokenHash: verification.tokenHash,
       emailVerificationExpiresAt: verification.expiresAt,
     });
 
     await this.ensureDefaultWorkspace(user._id.toString(), input.name);
-    await this.sendVerificationEmail(user.email, user.name, verification.rawToken);
+    if (config.NODE_ENV === 'production') {
+      await this.sendVerificationEmail(user.email, user.name, verification.rawToken);
+    }
 
     return {
       user: this.toUserResponse(user),
-      requiresEmailVerification: true,
+      requiresEmailVerification: config.NODE_ENV === 'production',
       ...(config.NODE_ENV !== 'production' ? { verificationToken: verification.rawToken } : {}),
     };
   }
 
-  async verifyEmail(input: VerifyEmailInput): Promise<AuthResult> {
+  async verifyEmail(input: VerifyEmailInput): Promise<void> {
     const token = input.token.trim();
     if (!token) {
       throw new UnauthorizedError('Verification token is required');
@@ -138,8 +140,6 @@ export class AuthService {
     user.emailVerificationTokenHash = undefined;
     user.emailVerificationExpiresAt = undefined;
     await user.save();
-
-    return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
   }
 
   async resendVerification(input: ResendVerificationInput): Promise<void> {
@@ -177,7 +177,14 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      throw new ForbiddenError('Please verify your email before signing in.');
+      if (config.NODE_ENV !== 'production') {
+        user.isVerified = true;
+        user.emailVerificationTokenHash = undefined;
+        user.emailVerificationExpiresAt = undefined;
+        await user.save();
+      } else {
+        throw new ForbiddenError('Please verify your email before signing in.');
+      }
     }
 
     return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
@@ -326,6 +333,8 @@ export class AuthService {
 
     if (!user.isVerified) {
       user.isVerified = true;
+      user.emailVerificationTokenHash = undefined;
+      user.emailVerificationExpiresAt = undefined;
       changed = true;
     }
 

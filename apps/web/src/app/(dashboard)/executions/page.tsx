@@ -78,7 +78,7 @@ export default function ExecutionsPage() {
                 <div
                   key={execution.id || execution._id}
                   style={{ animationDelay: `${120 + i * 40}ms` }}
-                  className="stagger-fade-in group flex cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4 transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-border hover:bg-background/80 hover:shadow-soft"
+                  className="stagger-fade-in group flex cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4 transition-colors duration-200 ease-spring hover:border-border hover:bg-background/80"
                   onClick={() => router.push(`/executions/${execution.id || execution._id}`)}
                 >
                   <div className="flex items-center gap-4">

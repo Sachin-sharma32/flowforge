@@ -60,13 +60,11 @@ export class AuthController {
 
   static async verifyEmail(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await authService.verifyEmail(req.body);
-      setAuthCookies(res, result.refreshToken);
+      await authService.verifyEmail(req.body);
       res.json({
         success: true,
         data: {
-          user: result.user,
-          tokens: result.tokens,
+          message: 'Email verified successfully.',
         },
       });
     } catch (error) {
@@ -82,11 +80,9 @@ export class AuthController {
     }
 
     try {
-      const result = await authService.verifyEmail({ token });
-      setAuthCookies(res, result.refreshToken);
-      res.redirect(`${config.WEB_APP_URL}/dashboard?verification=success`);
+      await authService.verifyEmail({ token });
+      res.redirect(`${config.WEB_APP_URL}/login?verification=success`);
     } catch {
-      clearAuthCookies(res);
       res.redirect(`${config.WEB_APP_URL}/login?verification=invalid`);
     }
   }

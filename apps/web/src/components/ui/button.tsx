@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium',
-    'ring-offset-background transition-all duration-200 ease-spring',
+    'ring-offset-background transition-colors duration-200 ease-spring',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
     'disabled:pointer-events-none disabled:opacity-50',
     'active:scale-[0.97]',
@@ -16,22 +16,22 @@ const buttonVariants = cva(
       variant: {
         default: [
           'bg-gradient-to-br from-primary to-primary/85 text-primary-foreground',
-          'shadow-soft hover:shadow-glow hover:-translate-y-0.5',
+          'shadow-soft hover:from-primary/95 hover:to-primary/78 hover:ring-1 hover:ring-primary-foreground/10',
         ].join(' '),
         destructive: [
           'bg-gradient-to-br from-destructive to-destructive/85 text-destructive-foreground',
-          'shadow-soft hover:-translate-y-0.5 hover:shadow-soft-lg',
+          'shadow-soft hover:from-destructive/95 hover:to-destructive/78 hover:ring-1 hover:ring-destructive-foreground/10',
         ].join(' '),
         outline: [
           'border border-border bg-background/60 backdrop-blur-sm',
-          'hover:bg-accent hover:text-accent-foreground hover:-translate-y-0.5 hover:shadow-soft',
+          'hover:border-primary/30 hover:bg-accent/80 hover:text-accent-foreground',
         ].join(' '),
         secondary: [
           'bg-secondary text-secondary-foreground',
-          'hover:bg-secondary/80 hover:-translate-y-0.5 hover:shadow-soft',
+          'hover:bg-secondary/80 hover:ring-1 hover:ring-border/80',
         ].join(' '),
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        ghost: 'hover:bg-accent/80 hover:text-accent-foreground',
+        link: 'h-auto px-0 py-0 text-primary underline-offset-4 hover:text-primary/80 hover:underline',
       },
       size: {
         default: 'h-10 px-4 py-2',

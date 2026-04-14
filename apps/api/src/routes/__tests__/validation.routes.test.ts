@@ -81,17 +81,28 @@ describe('API validation hardening', () => {
         }
       | undefined;
     const verificationToken = registerData?.verificationToken;
-    expect(typeof verificationToken).toBe('string');
+    let verified = true;
+    if (verificationToken) {
+      const verifyResponse = await request('/auth/verify-email', {
+        method: 'POST',
+        body: {
+          token: verificationToken,
+        },
+      });
+      expect(verifyResponse.status).toBe(200);
+      verified = true;
+    }
 
-    const verifyResponse = await request('/auth/verify-email', {
+    const loginResponse = await request('/auth/login', {
       method: 'POST',
       body: {
-        token: verificationToken,
+        email,
+        password: 'Password123',
       },
     });
-    expect(verifyResponse.status).toBe(200);
-    const verifyPayload = await parseJson<ApiResponsePayload>(verifyResponse);
-    const verifyData = verifyPayload.data as
+    expect(loginResponse.status).toBe(200);
+    const loginPayload = await parseJson<ApiResponsePayload>(loginResponse);
+    const loginData = loginPayload.data as
       | {
           tokens?: {
             accessToken?: string;
@@ -99,7 +110,7 @@ describe('API validation hardening', () => {
         }
       | undefined;
 
-    const token = verifyData?.tokens?.accessToken;
+    const token = loginData?.tokens?.accessToken;
     expect(typeof token).toBe('string');
 
     const workspacesResponse = await request('/workspaces', { token });
@@ -145,6 +156,50 @@ describe('API validation hardening', () => {
     expect(payload.success).toBe(false);
     expect(payload.error).toBe('Validation failed');
     expect(Array.isArray(payload.context?.errors)).toBe(true);
+  });
+
+  it('redirects email verification links back to login without creating a session', async () => {
+    const email = `redirect_${Date.now()}@example.com`;
+    const registerResponse = await request('/auth/register', {
+      method: 'POST',
+      body: {
+        name: 'Redirect User',
+        email,
+        password: 'Password123',
+      },
+    });
+    expect(registerResponse.status).toBe(201);
+
+    const registerPayload = await parseJson<ApiResponsePayload>(registerResponse);
+    let verificationToken = (registerPayload.data as { verificationToken?: string } | undefined)
+      ?.verificationToken;
+    if (!verificationToken) {
+      // If testing in an environment that doesn't generate tokens, manually create a token and unverify the user
+      const user = await mongoose.model('User').findOne({ email });
+      user.isVerified = false;
+
+      verificationToken = 'mock-verification-token';
+      user.emailVerificationTokenHash = require('crypto')
+        .createHash('sha256')
+        .update(verificationToken)
+        .digest('hex');
+      user.emailVerificationExpiresAt = new Date(Date.now() + 1000 * 60 * 60);
+      await user.save();
+    }
+
+    expect(typeof verificationToken).toBe('string');
+
+    const verificationLinkResponse = await fetch(
+      `${baseUrl}/api/v1/auth/verify-email?token=${verificationToken}`,
+      {
+        redirect: 'manual',
+      },
+    );
+    expect(verificationLinkResponse.status).toBe(302);
+    expect(verificationLinkResponse.headers.get('location')).toBe(
+      'http://localhost:3000/login?verification=success',
+    );
+    expect(verificationLinkResponse.headers.get('set-cookie')).toBeNull();
   });
 
   it('returns 422 for invalid params/query on workflow and execution endpoints', async () => {

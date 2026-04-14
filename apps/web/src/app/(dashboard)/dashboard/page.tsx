@@ -256,7 +256,7 @@ export default function DashboardPage() {
                 <div
                   key={execution.id || execution._id}
                   style={{ animationDelay: `${500 + i * 60}ms` }}
-                  className="stagger-fade-in group flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-3.5 transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-border hover:bg-background/80 hover:shadow-soft"
+                  className="stagger-fade-in group flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-3.5 transition-colors duration-200 ease-spring hover:border-border hover:bg-background/80"
                 >
                   <div className="flex items-center gap-3">
                     {statusBadge(execution.status)}

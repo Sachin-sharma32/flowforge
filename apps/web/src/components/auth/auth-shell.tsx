@@ -1,20 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
-import {
-  Activity,
-  ArrowLeft,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  UserRoundPlus,
-  Workflow,
-  Zap,
-} from 'lucide-react';
+import { Activity, ShieldCheck, Sparkles, UserRoundPlus, Workflow, Zap } from 'lucide-react';
+import { PublicNavbar } from '@/components/layout/public-navbar';
 import { cn } from '@/lib/utils';
-import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 
 interface AuthShellProps {
   children: React.ReactNode;
@@ -67,53 +57,10 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
       <div className="auth-light-beam pointer-events-none absolute -left-24 top-0 h-full w-64" />
       <div className="auth-light-beam pointer-events-none absolute -right-24 top-0 h-full w-64 rotate-180" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
-        <header className="auth-topbar flex items-center justify-between gap-3 rounded-2xl px-4 py-3">
-          <Link href="/" className="group inline-flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-info text-primary-foreground shadow-soft transition-transform duration-300 group-hover:scale-105">
-              <Zap className="h-4 w-4" />
-            </span>
-            <span className={cn('text-base font-semibold tracking-tight', headingFontClassName)}>
-              FlowForge
-            </span>
-          </Link>
+      <div className="relative z-10">
+        <PublicNavbar />
 
-          <div className="flex items-center gap-2 text-sm">
-            <ThemeToggleButton />
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Home
-            </Link>
-            <Link
-              href="/privacy"
-              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              Privacy & Cookies
-            </Link>
-            {isRegister ? (
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/70 px-2.5 py-1.5 text-foreground transition-all hover:border-primary/40 hover:text-primary"
-              >
-                Have an account?
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            ) : (
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/70 px-2.5 py-1.5 text-foreground transition-all hover:border-primary/40 hover:text-primary"
-              >
-                New here?
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            )}
-          </div>
-        </header>
-
-        <div className="grid flex-1 gap-5 py-5 lg:grid-cols-2 lg:gap-8 lg:py-8">
+        <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-2 lg:gap-8 lg:px-8 lg:py-8">
           <section className="hidden lg:block">
             <motion.div
               initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}

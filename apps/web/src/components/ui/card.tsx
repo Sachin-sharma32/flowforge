@@ -2,19 +2,18 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Disable the default hover lift / shadow expansion */
+  /** Retained for compatibility; cards are now static by default. */
   noHover?: boolean;
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, noHover, ...props }, ref) => (
+  ({ className, noHover: _noHover, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
         'rounded-2xl border border-border/60 bg-card/80 text-card-foreground shadow-soft',
         'backdrop-blur-xl supports-[backdrop-filter]:bg-card/60',
         'transition-all duration-300 ease-spring',
-        !noHover && 'hover:-translate-y-0.5 hover:shadow-soft-lg hover:border-border',
         className,
       )}
       {...props}

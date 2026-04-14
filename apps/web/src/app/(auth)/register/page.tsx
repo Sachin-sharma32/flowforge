@@ -72,15 +72,14 @@ export default function RegisterPage() {
             email to activate your account.
           </p>
 
-          <Button
+          <button
             type="button"
-            className="w-full"
-            variant="outline"
+            className="inline-flex w-fit text-sm font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline disabled:pointer-events-none disabled:opacity-50"
             onClick={handleResend}
             disabled={isResendingVerification}
           >
             {isResendingVerification ? 'Resending link...' : 'Resend verification email'}
-          </Button>
+          </button>
 
           <Button type="button" className="w-full" onClick={() => router.push('/login')}>
             I already verified, continue to sign in

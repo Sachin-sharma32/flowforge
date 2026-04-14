@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
-import { login, clearError, clearNotice, resendVerificationEmail } from '@/stores/auth-store';
+import { login, clearError, clearNotice } from '@/stores/auth-store';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -24,9 +24,7 @@ export default function LoginPage() {
   const [oauthStatus, setOauthStatus] = useState<string | null>(null);
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { isLoading, isResendingVerification, error, notice } = useAppSelector(
-    (state) => state.auth,
-  );
+  const { isLoading, error, notice } = useAppSelector((state) => state.auth);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -39,13 +37,12 @@ export default function LoginPage() {
     verificationStatus === 'success' ? 'Email verified successfully. Sign in to continue.' : null;
   const queryError =
     verificationStatus === 'invalid'
-      ? 'Verification link is invalid or expired. Request a new verification email below.'
+      ? 'Verification link is invalid or expired. Request a new verification email from the sign-up screen.'
       : oauthStatus === 'error'
         ? 'Social sign-in failed. Please try again.'
         : null;
   const resolvedNotice = notice || queryNotice;
   const resolvedError = queryError || error;
-  const showResend = Boolean(resolvedError?.toLowerCase().includes('verify') && email.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +52,6 @@ export default function LoginPage() {
     if (login.fulfilled.match(result)) {
       router.push('/dashboard');
     }
-  };
-
-  const handleResend = async () => {
-    if (!email.trim()) return;
-    dispatch(clearError());
-    await dispatch(resendVerificationEmail({ email: email.trim() }));
   };
 
   return (
@@ -125,20 +116,6 @@ export default function LoginPage() {
             required
           />
         </motion.div>
-
-        {showResend ? (
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={handleResend}
-            disabled={isResendingVerification}
-          >
-            {isResendingVerification
-              ? 'Sending verification email...'
-              : 'Resend verification email'}
-          </Button>
-        ) : null}
 
         <motion.div
           initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
