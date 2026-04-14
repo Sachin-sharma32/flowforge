@@ -10,6 +10,7 @@ interface AuthFormShellProps {
   title: string;
   description: string;
   error?: string | null;
+  notice?: string | null;
   footerText: string;
   footerLinkLabel: string;
   footerLinkHref: string;
@@ -23,6 +24,7 @@ export function AuthFormShell({
   title,
   description,
   error,
+  notice,
   footerText,
   footerLinkLabel,
   footerLinkHref,
@@ -75,6 +77,15 @@ export function AuthFormShell({
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
       </motion.div>
+
+      {notice ? (
+        <motion.div
+          variants={itemVariants}
+          className="mt-5 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary"
+        >
+          {notice}
+        </motion.div>
+      ) : null}
 
       {error ? (
         <motion.div

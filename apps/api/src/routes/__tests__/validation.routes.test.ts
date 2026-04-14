@@ -77,13 +77,29 @@ describe('API validation hardening', () => {
     const registerPayload = await parseJson<ApiResponsePayload>(registerResponse);
     const registerData = registerPayload.data as
       | {
+          verificationToken?: string;
+        }
+      | undefined;
+    const verificationToken = registerData?.verificationToken;
+    expect(typeof verificationToken).toBe('string');
+
+    const verifyResponse = await request('/auth/verify-email', {
+      method: 'POST',
+      body: {
+        token: verificationToken,
+      },
+    });
+    expect(verifyResponse.status).toBe(200);
+    const verifyPayload = await parseJson<ApiResponsePayload>(verifyResponse);
+    const verifyData = verifyPayload.data as
+      | {
           tokens?: {
             accessToken?: string;
           };
         }
       | undefined;
 
-    const token = registerData?.tokens?.accessToken;
+    const token = verifyData?.tokens?.accessToken;
     expect(typeof token).toBe('string');
 
     const workspacesResponse = await request('/workspaces', { token });

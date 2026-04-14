@@ -5,13 +5,17 @@ import { User } from '../../models/user.model';
 import { Organization } from '../../models/organization.model';
 import { Workspace } from '../../models/workspace.model';
 import { RefreshSessionService, RotateRefreshSessionResult } from '../refresh-session.service';
+import { EmailService } from '../email.service';
 
 // Mock config
 jest.mock('../../config', () => ({
   config: {
+    NODE_ENV: 'test',
     JWT_SECRET: 'test-jwt-secret-key-minimum-16-chars',
     JWT_ACCESS_EXPIRY: '15m',
     JWT_REFRESH_EXPIRY: '7d',
+    AUTH_EMAIL_VERIFICATION_EXPIRY: '24h',
+    API_PUBLIC_URL: 'http://localhost:4000',
     FREE_EXECUTION_LIMIT: 1000,
     PRO_EXECUTION_LIMIT: 10000,
     ENTERPRISE_EXECUTION_LIMIT: 100000,
@@ -29,6 +33,13 @@ describe('AuthService', () => {
     revokeAllUserSessions: jest.fn<Promise<void>, [string]>(),
   };
 
+  const emailServiceMock = {
+    sendEmail: jest.fn<
+      Promise<void>,
+      [{ to: string; subject: string; html: string; text: string }]
+    >(),
+  };
+
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     await mongoose.connect(mongoServer.getUri());
@@ -39,7 +50,11 @@ describe('AuthService', () => {
     refreshSessionServiceMock.createSession.mockResolvedValue({
       refreshToken: 'test-refresh-token',
     });
-    authService = new AuthService(refreshSessionServiceMock as unknown as RefreshSessionService);
+    emailServiceMock.sendEmail.mockResolvedValue();
+    authService = new AuthService(
+      refreshSessionServiceMock as unknown as RefreshSessionService,
+      emailServiceMock as unknown as EmailService,
+    );
   });
 
   afterAll(async () => {
@@ -54,7 +69,7 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('should create a new user with organization and workspace', async () => {
+    it('creates user and sends verification email', async () => {
       const result = await authService.register({
         email: 'test@example.com',
         password: 'Password123',
@@ -63,8 +78,14 @@ describe('AuthService', () => {
 
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.name).toBe('Test User');
-      expect(result.tokens.accessToken).toBeDefined();
-      expect(result.refreshToken).toBe('test-refresh-token');
+      expect(result.requiresEmailVerification).toBe(true);
+      expect(result.verificationToken).toBeDefined();
+      expect(emailServiceMock.sendEmail).toHaveBeenCalledTimes(1);
+
+      const user = await User.findOne({ email: 'test@example.com' });
+      expect(user?.isVerified).toBe(false);
+      expect(user?.emailVerificationTokenHash).toBeDefined();
+      expect(user?.emailVerificationExpiresAt).toBeDefined();
 
       // Verify organization was created
       const org = await Organization.findOne({ ownerId: result.user.id });
@@ -75,11 +96,9 @@ describe('AuthService', () => {
       expect(workspace).toBeTruthy();
       expect(workspace!.members).toHaveLength(1);
       expect(workspace!.members[0].role).toBe('owner');
-
-      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(result.user.id);
     });
 
-    it('should throw ConflictError for duplicate email', async () => {
+    it('throws ConflictError for duplicate email', async () => {
       await authService.register({
         email: 'test@example.com',
         password: 'Password123',
@@ -96,6 +115,36 @@ describe('AuthService', () => {
     });
   });
 
+  describe('verifyEmail', () => {
+    it('verifies token and signs user in', async () => {
+      const registered = await authService.register({
+        email: 'test@example.com',
+        password: 'Password123',
+        name: 'Test User',
+      });
+
+      const result = await authService.verifyEmail({
+        token: registered.verificationToken!,
+      });
+
+      expect(result.user.email).toBe('test@example.com');
+      expect(result.tokens.accessToken).toBeDefined();
+      expect(result.refreshToken).toBe('test-refresh-token');
+      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(result.user.id);
+
+      const user = await User.findOne({ email: 'test@example.com' });
+      expect(user?.isVerified).toBe(true);
+      expect(user?.emailVerificationTokenHash).toBeUndefined();
+      expect(user?.emailVerificationExpiresAt).toBeUndefined();
+    });
+
+    it('throws for invalid verification token', async () => {
+      await expect(authService.verifyEmail({ token: 'invalid-token' })).rejects.toThrow(
+        'Invalid or expired verification link',
+      );
+    });
+  });
+
   describe('login', () => {
     beforeEach(async () => {
       await authService.register({
@@ -105,7 +154,22 @@ describe('AuthService', () => {
       });
     });
 
-    it('should login with valid credentials', async () => {
+    it('blocks login for unverified accounts', async () => {
+      await expect(
+        authService.login({
+          email: 'test@example.com',
+          password: 'Password123',
+        }),
+      ).rejects.toThrow('Please verify your email before signing in.');
+    });
+
+    it('logs in with valid credentials after verification', async () => {
+      const unverified = await User.findOne({ email: 'test@example.com' });
+      unverified!.isVerified = true;
+      unverified!.emailVerificationTokenHash = undefined;
+      unverified!.emailVerificationExpiresAt = undefined;
+      await unverified!.save();
+
       const result = await authService.login({
         email: 'test@example.com',
         password: 'Password123',
@@ -116,7 +180,7 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBe('test-refresh-token');
     });
 
-    it('should throw UnauthorizedError for wrong password', async () => {
+    it('throws UnauthorizedError for wrong password', async () => {
       await expect(
         authService.login({
           email: 'test@example.com',
@@ -125,7 +189,7 @@ describe('AuthService', () => {
       ).rejects.toThrow('Invalid email or password');
     });
 
-    it('should throw UnauthorizedError for non-existent email', async () => {
+    it('throws UnauthorizedError for non-existent email', async () => {
       await expect(
         authService.login({
           email: 'nobody@example.com',
@@ -136,7 +200,7 @@ describe('AuthService', () => {
   });
 
   describe('refresh', () => {
-    it('should issue new access token and refresh token for valid refresh token', async () => {
+    it('issues new tokens for a valid refresh token', async () => {
       const registered = await authService.register({
         email: 'test@example.com',
         password: 'Password123',
@@ -149,14 +213,14 @@ describe('AuthService', () => {
         refreshToken: 'rotated-refresh-token',
       });
 
-      const result = await authService.refresh(registered.refreshToken);
+      const result = await authService.refresh('current-refresh-token');
 
       expect(result.tokens.accessToken).toBeDefined();
       expect(result.refreshToken).toBe('rotated-refresh-token');
-      expect(refreshSessionServiceMock.rotateSession).toHaveBeenCalledWith(registered.refreshToken);
+      expect(refreshSessionServiceMock.rotateSession).toHaveBeenCalledWith('current-refresh-token');
     });
 
-    it('should throw UnauthorizedError for invalid refresh token', async () => {
+    it('throws UnauthorizedError for invalid refresh token', async () => {
       refreshSessionServiceMock.rotateSession.mockResolvedValue({ status: 'invalid' });
 
       await expect(authService.refresh('invalid-token')).rejects.toThrow(
@@ -164,7 +228,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('should revoke all sessions and fail on replay detection', async () => {
+    it('revokes all sessions and fails on replay detection', async () => {
       refreshSessionServiceMock.rotateSession.mockResolvedValue({
         status: 'replay',
         userId: 'user-id-1',

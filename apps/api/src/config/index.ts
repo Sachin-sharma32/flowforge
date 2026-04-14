@@ -17,9 +17,21 @@ const envSchema = z.object({
   AUTH_CSRF_COOKIE_PATH: z.string().default('/'),
   AUTH_COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
   AUTH_COOKIE_SECURE: z.string().optional(),
+  AUTH_EMAIL_VERIFICATION_EXPIRY: z.string().default('24h'),
   AUTH_REFRESH_REPLAY_TTL_SECONDS: z.coerce.number().default(3600),
   AUTH_REFRESH_SESSION_LIMIT: z.coerce.number().default(5),
   WEB_APP_URL: z.string().url().default('http://localhost:3000'),
+  API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
+  EMAIL_FROM: z.string().email().default('no-reply@flowforge.dev'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
   STRIPE_PRICE_PRO_MONTHLY: z.string().min(1),
@@ -40,15 +52,27 @@ function loadConfig() {
     rawSecure === undefined
       ? result.data.NODE_ENV === 'production'
       : rawSecure.toLowerCase() === 'true';
+  const smtpSecure = (result.data.SMTP_SECURE || '').toLowerCase() === 'true';
 
   if (result.data.AUTH_COOKIE_SAME_SITE === 'none' && !secure) {
     console.error('AUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAME_SITE is "none"');
     process.exit(1);
   }
 
+  if (result.data.SMTP_HOST && !result.data.SMTP_PORT) {
+    console.error('SMTP_PORT is required when SMTP_HOST is set');
+    process.exit(1);
+  }
+
+  if (result.data.SMTP_HOST && (!result.data.SMTP_USER || !result.data.SMTP_PASS)) {
+    console.error('SMTP_USER and SMTP_PASS are required when SMTP_HOST is set');
+    process.exit(1);
+  }
+
   return {
     ...result.data,
     AUTH_COOKIE_SECURE: secure,
+    SMTP_SECURE: smtpSecure,
   };
 }
 

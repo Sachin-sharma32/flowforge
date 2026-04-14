@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const MIN_VISIBLE_MS = 280;
@@ -9,7 +9,6 @@ const SAFETY_TIMEOUT_MS = 12000;
 
 export function RouteProgressBar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [active, setActive] = useState(false);
   const startedAtRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -53,7 +52,7 @@ export function RouteProgressBar() {
 
   useEffect(() => {
     stop();
-  }, [pathname, searchParams, stop]);
+  }, [pathname, stop]);
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {

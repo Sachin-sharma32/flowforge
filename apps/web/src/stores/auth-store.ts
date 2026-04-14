@@ -8,15 +8,21 @@ import type { IUserResponse } from '@flowforge/shared';
 interface AuthState {
   user: IUserResponse | null;
   isLoading: boolean;
+  isResendingVerification: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  notice: string | null;
+  pendingVerificationEmail: string | null;
 }
 
 const initialState: AuthState = {
   user: null,
   isLoading: false,
+  isResendingVerification: false,
   isAuthenticated: false,
   error: null,
+  notice: null,
+  pendingVerificationEmail: null,
 };
 
 export const login = createAsyncThunk(
@@ -38,11 +44,29 @@ export const register = createAsyncThunk(
   async (input: { email: string; password: string; name: string }, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/auth/register', input);
-      setAccessToken(data.data.tokens.accessToken);
-      return data.data.user;
+      return {
+        email: input.email,
+        requiresEmailVerification: Boolean(data?.data?.requiresEmailVerification),
+      };
     } catch (error: unknown) {
       clearAccessToken();
       return rejectWithValue(getApiErrorMessage(error, 'Registration failed'));
+    }
+  },
+);
+
+export const resendVerificationEmail = createAsyncThunk(
+  'auth/resendVerificationEmail',
+  async (input: { email: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post('/auth/resend-verification', input);
+      return (
+        data?.data?.message ||
+        'If an unverified account exists, a new verification link has been sent.'
+      );
+    } catch (error: unknown) {
+      clearAccessToken();
+      return rejectWithValue(getApiErrorMessage(error, 'Failed to resend verification email'));
     }
   },
 );
@@ -76,17 +100,27 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    clearNotice(state) {
+      state.notice = null;
+    },
+    clearPendingVerification(state) {
+      state.pendingVerificationEmail = null;
+      state.notice = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.notice = null;
       })
       .addCase(login.fulfilled, (state, action: PayloadAction<IUserResponse>) => {
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
+        state.notice = null;
+        state.pendingVerificationEmail = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -95,14 +129,32 @@ const authSlice = createSlice({
       .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.notice = null;
       })
-      .addCase(register.fulfilled, (state, action: PayloadAction<IUserResponse>) => {
-        state.isLoading = false;
-        state.user = action.payload;
-        state.isAuthenticated = true;
-      })
+      .addCase(
+        register.fulfilled,
+        (state, action: PayloadAction<{ email: string; requiresEmailVerification: boolean }>) => {
+          state.isLoading = false;
+          state.user = null;
+          state.isAuthenticated = false;
+          state.pendingVerificationEmail = action.payload.email;
+          state.notice = `Verification email sent to ${action.payload.email}. Please verify before signing in.`;
+        },
+      )
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(resendVerificationEmail.pending, (state) => {
+        state.isResendingVerification = true;
+        state.error = null;
+      })
+      .addCase(resendVerificationEmail.fulfilled, (state, action: PayloadAction<string>) => {
+        state.isResendingVerification = false;
+        state.notice = action.payload;
+      })
+      .addCase(resendVerificationEmail.rejected, (state, action) => {
+        state.isResendingVerification = false;
         state.error = action.payload as string;
       })
       .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<IUserResponse>) => {
@@ -117,9 +169,11 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.error = null;
+        state.notice = null;
+        state.pendingVerificationEmail = null;
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, clearNotice, clearPendingVerification } = authSlice.actions;
 export const authReducer = authSlice.reducer;

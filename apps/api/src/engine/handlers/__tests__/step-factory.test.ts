@@ -1,13 +1,15 @@
 import { StepFactory } from '../../step-factory';
+import { registerStepHandlers } from '../../register-step-handlers';
 import { HttpRequestHandler } from '../http-request.handler';
 import { ConditionHandler } from '../condition.handler';
 import { TransformHandler } from '../transform.handler';
 import { DelayHandler } from '../delay.handler';
 
-// Import to trigger registration
-import '../../workflow-processor';
-
 describe('StepFactory', () => {
+  beforeAll(() => {
+    registerStepHandlers();
+  });
+
   it('should have all handlers registered', () => {
     const types = StepFactory.getRegisteredTypes();
     expect(types).toContain('http_request');

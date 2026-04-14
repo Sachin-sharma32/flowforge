@@ -1,13 +1,25 @@
-import { Request, Response, NextFunction } from 'express';
+import { randomBytes } from 'crypto';
+import { Request, Response, NextFunction, type CookieOptions } from 'express';
 import { AuthService } from '../services/auth.service';
 import { UnauthorizedError } from '../domain/errors';
+import { config } from '../config';
 import {
   clearAuthCookies,
+  getCookieValue,
   getRefreshTokenFromRequest,
   setAuthCookies,
 } from '../utils/auth-cookies';
 
 const authService = new AuthService();
+const oauthStateCookieName = 'ff_oauth_state';
+const sameSite = config.AUTH_COOKIE_SAME_SITE as 'lax' | 'strict' | 'none';
+const oauthStateCookieOptions: CookieOptions = {
+  httpOnly: true,
+  secure: config.AUTH_COOKIE_SECURE,
+  sameSite,
+  path: '/api/v1/auth/oauth',
+  maxAge: 10 * 60 * 1000,
+};
 
 function requireUser(req: Request): { userId: string } {
   if (!req.user) {
@@ -16,12 +28,41 @@ function requireUser(req: Request): { userId: string } {
   return req.user;
 }
 
+function readString(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return '';
+}
+
+function parseOAuthProvider(input: string): 'google' | 'github' {
+  if (input === 'google' || input === 'github') {
+    return input;
+  }
+  throw new UnauthorizedError('Unsupported OAuth provider');
+}
+
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.register(req.body);
-      setAuthCookies(res, result.refreshToken);
       res.status(201).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.verifyEmail(req.body);
+      setAuthCookies(res, result.refreshToken);
+      res.json({
         success: true,
         data: {
           user: result.user,
@@ -30,6 +71,80 @@ export class AuthController {
       });
     } catch (error) {
       next(error);
+    }
+  }
+
+  static async verifyEmailFromLink(req: Request, res: Response, _next: NextFunction) {
+    const token = readString(req.query.token);
+    if (!token.trim()) {
+      res.redirect(`${config.WEB_APP_URL}/login?verification=invalid`);
+      return;
+    }
+
+    try {
+      const result = await authService.verifyEmail({ token });
+      setAuthCookies(res, result.refreshToken);
+      res.redirect(`${config.WEB_APP_URL}/dashboard?verification=success`);
+    } catch {
+      clearAuthCookies(res);
+      res.redirect(`${config.WEB_APP_URL}/login?verification=invalid`);
+    }
+  }
+
+  static async resendVerification(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.resendVerification(req.body);
+      res.json({
+        success: true,
+        data: {
+          message: 'If an unverified account exists, a new verification link has been sent.',
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async oauthStart(req: Request, res: Response, next: NextFunction) {
+    try {
+      const provider = parseOAuthProvider(readString(req.params.provider));
+      const state = randomBytes(24).toString('base64url');
+      const authorizationUrl = authService.getOAuthAuthorizationUrl(provider, state);
+      res.cookie(oauthStateCookieName, state, oauthStateCookieOptions);
+      res.redirect(authorizationUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async oauthCallback(req: Request, res: Response, _next: NextFunction) {
+    const errorRedirect = `${config.WEB_APP_URL}/login?oauth=error`;
+    const providerInput = readString(req.params.provider);
+    const state = readString(req.query.state);
+    const code = readString(req.query.code);
+    const storedState = getCookieValue(req, oauthStateCookieName);
+
+    res.clearCookie(oauthStateCookieName, {
+      httpOnly: true,
+      secure: config.AUTH_COOKIE_SECURE,
+      sameSite,
+      path: '/api/v1/auth/oauth',
+    });
+
+    if (!state || !storedState || state !== storedState || !code) {
+      clearAuthCookies(res);
+      res.redirect(errorRedirect);
+      return;
+    }
+
+    try {
+      const provider = parseOAuthProvider(providerInput);
+      const result = await authService.loginWithOAuth(provider, code);
+      setAuthCookies(res, result.refreshToken);
+      res.redirect(`${config.WEB_APP_URL}/dashboard`);
+    } catch {
+      clearAuthCookies(res);
+      res.redirect(errorRedirect);
     }
   }
 
