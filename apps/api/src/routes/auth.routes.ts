@@ -9,6 +9,7 @@ import {
   loginSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  googleOneTapSchema,
 } from '@flowforge/shared';
 
 export const authRoutes = Router();
@@ -26,6 +27,12 @@ authRoutes.post(
   authLimiter,
   validate(resendVerificationSchema),
   AuthController.resendVerification,
+);
+authRoutes.post(
+  '/oauth/google/one-tap',
+  authLimiter,
+  validate(googleOneTapSchema),
+  AuthController.googleOneTap,
 );
 authRoutes.get('/oauth/:provider/start', authLimiter, AuthController.oauthStart);
 authRoutes.get('/oauth/:provider/callback', authLimiter, AuthController.oauthCallback);

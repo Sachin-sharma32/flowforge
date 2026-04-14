@@ -144,6 +144,22 @@ export class AuthController {
     }
   }
 
+  static async googleOneTap(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.loginWithGoogleOneTap(req.body);
+      setAuthCookies(res, result.refreshToken);
+      res.json({
+        success: true,
+        data: {
+          user: result.user,
+          tokens: result.tokens,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.login(req.body);

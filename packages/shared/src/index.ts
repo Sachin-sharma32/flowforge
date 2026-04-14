@@ -57,6 +57,7 @@ export {
   loginSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  googleOneTapSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from './validation/auth.schema';
@@ -65,6 +66,7 @@ export type {
   LoginInput,
   VerifyEmailInput,
   ResendVerificationInput,
+  GoogleOneTapInput,
 } from './validation/auth.schema';
 
 export { createWorkflowSchema, updateWorkflowSchema } from './validation/workflow.schema';

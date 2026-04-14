@@ -213,6 +213,20 @@ export async function installApiMocks(page: Page, overrides: MockApiOverrides = 
       return;
     }
 
+    if (method === 'POST' && path.endsWith('/auth/oauth/google/one-tap')) {
+      await fulfillJson(
+        route,
+        200,
+        success({
+          user: state.auth.user,
+          tokens: {
+            accessToken: 'mock-access-token',
+          },
+        }),
+      );
+      return;
+    }
+
     if (method === 'POST' && path.endsWith('/auth/register')) {
       if (!state.auth.registerSuccess) {
         await fulfillJson(route, 400, error('Registration failed'));

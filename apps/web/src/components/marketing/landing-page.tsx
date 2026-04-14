@@ -16,9 +16,11 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PublicNavbar } from '@/components/layout/public-navbar';
+import { setAccessToken } from '@/lib/auth-token-store';
+import { api } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
 interface LandingPageExperienceProps {
@@ -151,6 +153,33 @@ const executionFeed = [
 ] as const;
 
 const statBars = [78, 56, 91, 63, 88, 72] as const;
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const googleScriptId = 'google-identity-services';
+
+interface GoogleCredentialResponse {
+  credential?: string;
+}
+
+interface GoogleAccountsIdApi {
+  cancel: () => void;
+  initialize: (config: {
+    callback: (response: GoogleCredentialResponse) => void;
+    client_id: string;
+    context?: 'signin' | 'signup' | 'use';
+    use_fedcm_for_prompt?: boolean;
+  }) => void;
+  prompt: () => void;
+}
+
+interface GoogleAccountsApi {
+  id: GoogleAccountsIdApi;
+}
+
+interface WindowWithGoogle extends Window {
+  google?: {
+    accounts?: GoogleAccountsApi;
+  };
+}
 
 function SectionReveal({
   children,
@@ -213,6 +242,7 @@ function SectionHeading({
 
 export function LandingPageExperience({ headingFontClassName }: LandingPageExperienceProps) {
   const heroRef = useRef<HTMLElement | null>(null);
+  const oneTapInFlightRef = useRef(false);
   const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -221,6 +251,81 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
 
   const heroOrbY = useTransform(scrollYProgress, [0, 1], [0, shouldReduceMotion ? 0 : 140]);
   const heroOrbScale = useTransform(scrollYProgress, [0, 1], [1, shouldReduceMotion ? 1 : 1.2]);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const handleCredential = async ({ credential }: GoogleCredentialResponse) => {
+      if (!credential || oneTapInFlightRef.current) {
+        return;
+      }
+
+      oneTapInFlightRef.current = true;
+
+      try {
+        const { data } = await api.post('/auth/oauth/google/one-tap', { credential });
+        const accessToken = data?.data?.tokens?.accessToken as string | undefined;
+        if (!accessToken) {
+          oneTapInFlightRef.current = false;
+          return;
+        }
+
+        setAccessToken(accessToken);
+        window.location.href = '/dashboard';
+      } catch {
+        oneTapInFlightRef.current = false;
+      }
+    };
+
+    const initializeOneTap = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const google = (window as WindowWithGoogle).google?.accounts?.id;
+      if (!google) {
+        return;
+      }
+
+      google.initialize({
+        client_id: googleClientId,
+        callback: handleCredential,
+        context: 'signin',
+        use_fedcm_for_prompt: true,
+      });
+      google.prompt();
+    };
+
+    const existingScript = document.getElementById(googleScriptId) as HTMLScriptElement | null;
+    if (existingScript) {
+      existingScript.addEventListener('load', initializeOneTap);
+      initializeOneTap();
+
+      return () => {
+        cancelled = true;
+        existingScript.removeEventListener('load', initializeOneTap);
+        (window as WindowWithGoogle).google?.accounts?.id.cancel();
+      };
+    }
+
+    const script = document.createElement('script');
+    script.id = googleScriptId;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.addEventListener('load', initializeOneTap);
+    document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+      script.removeEventListener('load', initializeOneTap);
+      (window as WindowWithGoogle).google?.accounts?.id.cancel();
+    };
+  }, []);
 
   return (
     <div className="landing-shell relative min-h-screen overflow-x-clip">

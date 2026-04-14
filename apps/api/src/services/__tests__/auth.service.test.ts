@@ -289,6 +289,56 @@ describe('AuthService', () => {
     });
   });
 
+  describe('loginWithGoogleOneTap', () => {
+    it('accepts a valid One Tap credential and signs the user in', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            aud: 'google-client-id',
+            iss: 'https://accounts.google.com',
+            exp: `${Math.floor(Date.now() / 1000) + 600}`,
+            sub: 'google-onetap-user-1',
+            email: 'onetap@example.com',
+            email_verified: 'true',
+            name: 'One Tap User',
+            picture: 'https://example.com/avatar.png',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const result = await authService.loginWithGoogleOneTap({
+        credential: 'valid-google-id-token',
+      });
+
+      expect(result.user.email).toBe('onetap@example.com');
+      expect(result.refreshToken).toBe('test-refresh-token');
+      expect(refreshSessionServiceMock.createSession).toHaveBeenCalledWith(result.user.id);
+    });
+
+    it('rejects One Tap credentials with mismatched audience', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            aud: 'unexpected-client-id',
+            iss: 'https://accounts.google.com',
+            exp: `${Math.floor(Date.now() / 1000) + 600}`,
+            sub: 'google-onetap-user-2',
+            email: 'onetap@example.com',
+            email_verified: 'true',
+          }),
+          { status: 200 },
+        ),
+      );
+
+      await expect(
+        authService.loginWithGoogleOneTap({
+          credential: 'invalid-audience-token',
+        }),
+      ).rejects.toThrow('Google credential audience mismatch');
+    });
+  });
+
   describe('refresh', () => {
     it('issues new tokens for a valid refresh token', async () => {
       const registered = await authService.register({

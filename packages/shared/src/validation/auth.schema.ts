@@ -31,6 +31,12 @@ export const resendVerificationSchema = z
   })
   .strict();
 
+export const googleOneTapSchema = z
+  .object({
+    credential: z.string().min(1, 'Google credential is required'),
+  })
+  .strict();
+
 export const forgotPasswordSchema = z
   .object({
     email: z.string().email('Invalid email address'),
@@ -52,3 +58,4 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+export type GoogleOneTapInput = z.infer<typeof googleOneTapSchema>;

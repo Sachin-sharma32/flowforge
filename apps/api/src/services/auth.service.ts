@@ -17,6 +17,7 @@ import type {
   IUserResponse,
   ResendVerificationInput,
   VerifyEmailInput,
+  GoogleOneTapInput,
 } from '@flowforge/shared';
 import { JwtPayload } from '../middleware/auth.middleware';
 import { RefreshSessionService } from './refresh-session.service';
@@ -61,6 +62,17 @@ interface GoogleProfileResponse {
   email_verified?: boolean;
   name?: string;
   picture?: string;
+}
+
+interface GoogleOneTapTokenInfoResponse {
+  aud?: string;
+  email?: string;
+  email_verified?: string;
+  exp?: string;
+  iss?: string;
+  name?: string;
+  picture?: string;
+  sub?: string;
 }
 
 interface GithubTokenResponse {
@@ -233,56 +245,16 @@ export class AuthService {
         ? await this.fetchGoogleProfile(code)
         : await this.fetchGithubProfile(code);
 
-    const normalizedEmail = profile.email.toLowerCase().trim();
-    let user = await User.findOne({
-      [`oauthProviders.${provider}.id`]: profile.providerId,
-    });
+    return this.loginWithOAuthProfile(provider, profile);
+  }
 
-    if (!user) {
-      user = await User.findOne({ email: normalizedEmail });
+  async loginWithGoogleOneTap(input: GoogleOneTapInput): Promise<AuthResult> {
+    if (!config.GOOGLE_CLIENT_ID) {
+      throw new ValidationError('Google OAuth is not configured');
     }
 
-    let isNewUser = false;
-    if (!user) {
-      isNewUser = true;
-      user = await User.create({
-        email: normalizedEmail,
-        name: profile.name,
-        avatar: profile.avatar,
-        isVerified: true,
-        oauthProviders:
-          provider === 'google'
-            ? {
-                google: {
-                  id: profile.providerId,
-                  email: normalizedEmail,
-                },
-              }
-            : {
-                github: {
-                  id: profile.providerId,
-                  email: normalizedEmail,
-                  ...(profile.username ? { username: profile.username } : {}),
-                },
-              },
-      });
-    } else {
-      const changed = this.applyOAuthProfileToExistingUser(
-        user,
-        provider,
-        profile,
-        normalizedEmail,
-      );
-      if (changed) {
-        await user.save();
-      }
-    }
-
-    if (isNewUser) {
-      await this.ensureDefaultWorkspace(user._id.toString(), user.name);
-    }
-
-    return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
+    const profile = await this.verifyGoogleOneTapCredential(input.credential);
+    return this.loginWithOAuthProfile('google', profile);
   }
 
   async refresh(refreshToken: string): Promise<RefreshResult> {
@@ -383,6 +355,62 @@ export class AuthService {
     return changed;
   }
 
+  private async loginWithOAuthProfile(
+    provider: OAuthProvider,
+    profile: OAuthProfile,
+  ): Promise<AuthResult> {
+    const normalizedEmail = profile.email.toLowerCase().trim();
+    let user = await User.findOne({
+      [`oauthProviders.${provider}.id`]: profile.providerId,
+    });
+
+    if (!user) {
+      user = await User.findOne({ email: normalizedEmail });
+    }
+
+    let isNewUser = false;
+    if (!user) {
+      isNewUser = true;
+      user = await User.create({
+        email: normalizedEmail,
+        name: profile.name,
+        avatar: profile.avatar,
+        isVerified: true,
+        oauthProviders:
+          provider === 'google'
+            ? {
+                google: {
+                  id: profile.providerId,
+                  email: normalizedEmail,
+                },
+              }
+            : {
+                github: {
+                  id: profile.providerId,
+                  email: normalizedEmail,
+                  ...(profile.username ? { username: profile.username } : {}),
+                },
+              },
+      });
+    } else {
+      const changed = this.applyOAuthProfileToExistingUser(
+        user,
+        provider,
+        profile,
+        normalizedEmail,
+      );
+      if (changed) {
+        await user.save();
+      }
+    }
+
+    if (isNewUser) {
+      await this.ensureDefaultWorkspace(user._id.toString(), user.name);
+    }
+
+    return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
+  }
+
   private async fetchGoogleProfile(code: string): Promise<OAuthProfile> {
     if (!config.GOOGLE_CLIENT_ID || !config.GOOGLE_CLIENT_SECRET) {
       throw new ValidationError('Google OAuth is not configured');
@@ -431,6 +459,52 @@ export class AuthService {
       email: profile.email,
       name: profile.name?.trim() || this.nameFromEmail(profile.email),
       ...(profile.picture ? { avatar: profile.picture } : {}),
+    };
+  }
+
+  private async verifyGoogleOneTapCredential(idToken: string): Promise<OAuthProfile> {
+    const token = idToken.trim();
+    if (!token) {
+      throw new UnauthorizedError('Google credential is required');
+    }
+
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`,
+    );
+    if (!response.ok) {
+      throw new UnauthorizedError('Google credential is invalid or expired');
+    }
+
+    const tokenInfo = (await response.json()) as GoogleOneTapTokenInfoResponse;
+    if (tokenInfo.aud !== config.GOOGLE_CLIENT_ID) {
+      throw new UnauthorizedError('Google credential audience mismatch');
+    }
+
+    if (
+      tokenInfo.iss !== 'accounts.google.com' &&
+      tokenInfo.iss !== 'https://accounts.google.com'
+    ) {
+      throw new UnauthorizedError('Google credential issuer is invalid');
+    }
+
+    const expiresAt = Number(tokenInfo.exp);
+    if (!Number.isFinite(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) {
+      throw new UnauthorizedError('Google credential is expired');
+    }
+
+    if (tokenInfo.email_verified !== 'true') {
+      throw new ForbiddenError('Google account email must be verified');
+    }
+
+    if (!tokenInfo.sub || !tokenInfo.email) {
+      throw new UnauthorizedError('Unable to retrieve Google account identity');
+    }
+
+    return {
+      providerId: tokenInfo.sub,
+      email: tokenInfo.email,
+      name: tokenInfo.name?.trim() || this.nameFromEmail(tokenInfo.email),
+      ...(tokenInfo.picture ? { avatar: tokenInfo.picture } : {}),
     };
   }
 
