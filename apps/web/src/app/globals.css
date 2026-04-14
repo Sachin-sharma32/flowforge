@@ -470,3 +470,23 @@
     opacity: 0.9;
   }
 }
+
+@keyframes route-progress {
+  0% {
+    transform: scaleX(0.08);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scaleX(0.64);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.95);
+    opacity: 0.9;
+  }
+}
+
+.route-progress-bar {
+  transform-origin: left center;
+  animation: route-progress 1.05s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}

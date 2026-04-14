@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
+import { RouteProgressBar } from '@/components/layout/route-progress-bar';
 import { Providers } from '@/components/layout/providers';
 import { siteConfig } from '@/lib/seo';
 import { themeInitScript } from '@/lib/theme';
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
+        <RouteProgressBar />
         <Providers>{children}</Providers>
       </body>
     </html>
