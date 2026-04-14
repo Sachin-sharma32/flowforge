@@ -37,7 +37,7 @@ export default function ExecutionsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div className="stagger-fade-in" style={{ animationDelay: '0ms' }}>
         <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
           Executions
@@ -48,18 +48,18 @@ export default function ExecutionsPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+            <Skeleton key={i} className="h-24 w-full rounded-2xl" />
           ))}
         </div>
       ) : executions.length === 0 ? (
         <Card noHover className="stagger-fade-in" style={{ animationDelay: '80ms' }}>
-          <CardContent className="flex flex-col items-center justify-center py-20">
-            <div className="relative mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
-              <div className="absolute inset-0 rounded-2xl bg-primary/5 blur-2xl" />
-              <PlayCircle className="relative h-9 w-9 text-primary" strokeWidth={2} />
+          <CardContent className="flex flex-col items-center justify-center py-24">
+            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
+              <div className="absolute inset-0 rounded-3xl bg-primary/5 blur-2xl" />
+              <PlayCircle className="relative h-11 w-11 text-primary" strokeWidth={2} />
             </div>
-            <h3 className="text-lg font-semibold">No executions yet</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-xl font-semibold">No executions yet</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Run a workflow to see execution history here.
             </p>
           </CardContent>
@@ -73,15 +73,15 @@ export default function ExecutionsPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {executions.map((execution: any, i) => (
                 <div
                   key={execution.id || execution._id}
                   style={{ animationDelay: `${120 + i * 40}ms` }}
-                  className="stagger-fade-in group flex cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4 transition-colors duration-200 ease-spring hover:border-border hover:bg-background/80"
+                  className="stagger-fade-in group flex cursor-pointer items-center justify-between rounded-2xl border border-border/50 bg-background/40 p-5 transition-colors duration-200 ease-spring hover:border-border hover:bg-background/80"
                   onClick={() => router.push(`/executions/${execution.id || execution._id}`)}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-5">
                     <Badge
                       variant={statusVariant(execution.status)}
                       className={execution.status === 'running' ? 'pulse-soft' : ''}

@@ -62,26 +62,26 @@ export function AuthFormShell({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="auth-form-card relative overflow-hidden rounded-3xl p-7 sm:p-8"
+      className="auth-form-card relative overflow-hidden rounded-3xl p-8 sm:p-10"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-primary/16 to-transparent" />
 
       <motion.div variants={itemVariants} className="relative z-10">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
           <Icon className="h-3.5 w-3.5" />
           {badge}
         </div>
 
-        <h1 className={cn('mt-4 text-3xl font-semibold tracking-tight', headingFontClassName)}>
+        <h1 className={cn('mt-5 text-4xl font-semibold tracking-tight', headingFontClassName)}>
           {title}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
       </motion.div>
 
       {notice ? (
         <motion.div
           variants={itemVariants}
-          className="mt-5 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary"
+          className="mt-6 rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-primary"
         >
           {notice}
         </motion.div>
@@ -90,17 +90,17 @@ export function AuthFormShell({
       {error ? (
         <motion.div
           variants={itemVariants}
-          className="mt-5 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+          className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
         >
           {error}
         </motion.div>
       ) : null}
 
-      <motion.div variants={itemVariants} className="relative z-10 mt-6">
+      <motion.div variants={itemVariants} className="relative z-10 mt-8">
         {children}
       </motion.div>
 
-      <motion.p variants={itemVariants} className="mt-5 text-center text-sm text-muted-foreground">
+      <motion.p variants={itemVariants} className="mt-6 text-center text-sm text-muted-foreground">
         {footerText}{' '}
         <Link
           href={footerLinkHref}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sora } from 'next/font/google';
+import { DM_Sans } from 'next/font/google';
 import { motion, useReducedMotion } from 'framer-motion';
 import { UserRoundPlus } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
@@ -18,7 +18,7 @@ import {
   resendVerificationEmail,
 } from '@/stores/auth-store';
 
-const sora = Sora({
+const dmSansHeading = DM_Sans({
   subsets: ['latin'],
   weight: ['600', '700'],
 });
@@ -56,7 +56,7 @@ export default function RegisterPage() {
       footerText="Already have an account?"
       footerLinkLabel="Sign in"
       footerLinkHref="/login"
-      headingFontClassName={sora.className}
+      headingFontClassName={dmSansHeading.className}
       icon={UserRoundPlus}
     >
       {pendingVerificationEmail ? (
@@ -106,7 +106,7 @@ export default function RegisterPage() {
           transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
           onSubmit={handleSubmit}
           data-testid="register-form"
-          className="space-y-4"
+          className="space-y-5"
         >
           <SocialAuthButtons disabled={isLoading} />
 

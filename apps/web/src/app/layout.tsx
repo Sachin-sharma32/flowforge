@@ -1,13 +1,18 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { DM_Sans } from 'next/font/google';
 import Script from 'next/script';
 import { RouteProgressBar } from '@/components/layout/route-progress-bar';
+import { DevClickToComponent } from '@/components/layout/click-to-component';
 import { Providers } from '@/components/layout/providers';
 import { siteConfig } from '@/lib/seo';
 import { themeInitScript } from '@/lib/theme';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -74,11 +79,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={dmSans.className}>
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
         <RouteProgressBar />
+        <DevClickToComponent />
         <Providers>{children}</Providers>
       </body>
     </html>

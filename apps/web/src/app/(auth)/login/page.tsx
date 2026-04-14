@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sora } from 'next/font/google';
+import { DM_Sans } from 'next/font/google';
 import { motion, useReducedMotion } from 'framer-motion';
 import { LogIn } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
@@ -12,7 +12,7 @@ import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { login, clearError, clearNotice } from '@/stores/auth-store';
 
-const sora = Sora({
+const dmSansHeading = DM_Sans({
   subsets: ['latin'],
   weight: ['600', '700'],
 });
@@ -64,7 +64,7 @@ export default function LoginPage() {
       footerText="Don't have an account?"
       footerLinkLabel="Create one"
       footerLinkHref="/register"
-      headingFontClassName={sora.className}
+      headingFontClassName={dmSansHeading.className}
       icon={LogIn}
     >
       <motion.form
@@ -73,7 +73,7 @@ export default function LoginPage() {
         transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
         onSubmit={handleSubmit}
         data-testid="login-form"
-        className="space-y-4"
+        className="space-y-5"
       >
         <SocialAuthButtons disabled={isLoading} />
 

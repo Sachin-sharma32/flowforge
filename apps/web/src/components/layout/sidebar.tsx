@@ -16,17 +16,17 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="relative flex h-screen w-64 flex-col border-r border-border/50 bg-card/40 backdrop-blur-xl">
+    <aside className="relative flex h-screen w-[272px] flex-col border-r border-border/50 bg-card/40 backdrop-blur-xl">
       {/* Brand */}
-      <div className="flex h-16 items-center gap-2.5 border-b border-border/50 px-6">
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-glow transition-transform duration-300 hover:scale-105">
+      <div className="flex h-[72px] items-center gap-3 border-b border-border/50 px-7">
+        <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-glow transition-transform duration-300 hover:scale-105">
           <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
         </div>
         <span className="text-lg font-bold tracking-tight">FlowForge</span>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 p-4">
         {navigation.map((item, index) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -35,7 +35,7 @@ export function Sidebar() {
               href={item.href}
               style={{ animationDelay: `${index * 60}ms` }}
               className={cn(
-                'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium',
+                'group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium',
                 'transition-all duration-200 ease-spring stagger-fade-in',
                 isActive
                   ? 'bg-primary/10 text-primary'
@@ -64,8 +64,8 @@ export function Sidebar() {
       </nav>
 
       {/* Plan card */}
-      <div className="border-t border-border/50 p-3">
-        <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-accent/40 to-accent/10 p-4 transition-colors duration-300 hover:border-primary/30">
+      <div className="border-t border-border/50 p-4">
+        <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-accent/40 to-accent/10 p-5 transition-colors duration-300 hover:border-primary/30">
           <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-primary/10 blur-2xl transition-all duration-500 group-hover:bg-primary/20" />
           <p className="label-uppercase text-muted-foreground">Free Plan</p>
           <p className="mt-1 text-sm font-medium">0 / 1,000 runs</p>

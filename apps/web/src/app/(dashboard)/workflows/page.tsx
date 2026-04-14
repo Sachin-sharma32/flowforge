@@ -40,7 +40,7 @@ export default function WorkflowsPage() {
   }, [currentWorkspace?.id, debouncedSearch, dispatch]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div
         className="flex items-center justify-between stagger-fade-in"
         style={{ animationDelay: '0ms' }}
@@ -71,10 +71,10 @@ export default function WorkflowsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <Card key={i} noHover className="overflow-hidden">
-              <CardContent className="space-y-4 p-6">
+              <CardContent className="space-y-5 p-7">
                 <Skeleton className="h-5 w-2/3" />
                 <Skeleton className="h-3 w-full" />
                 <Skeleton className="h-3 w-3/4" />
@@ -88,22 +88,22 @@ export default function WorkflowsPage() {
         </div>
       ) : workflows.length === 0 ? (
         <Card noHover className="stagger-fade-in" style={{ animationDelay: '160ms' }}>
-          <CardContent className="flex flex-col items-center justify-center py-20">
-            <div className="relative mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
-              <div className="absolute inset-0 rounded-2xl bg-primary/5 blur-2xl" />
-              <GitBranch className="relative h-9 w-9 text-primary" strokeWidth={2} />
+          <CardContent className="flex flex-col items-center justify-center py-24">
+            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
+              <div className="absolute inset-0 rounded-3xl bg-primary/5 blur-2xl" />
+              <GitBranch className="relative h-11 w-11 text-primary" strokeWidth={2} />
             </div>
-            <h3 className="text-lg font-semibold">No workflows yet</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-xl font-semibold">No workflows yet</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Create your first workflow to start automating tasks.
             </p>
-            <Button className="mt-5" onClick={() => router.push('/workflows/new')}>
+            <Button className="mt-6" onClick={() => router.push('/workflows/new')}>
               <Plus className="mr-2 h-4 w-4" /> Create Workflow
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {workflows.map((workflow: any, i) => (
             <Card
               key={workflow.id || workflow._id}
@@ -113,7 +113,7 @@ export default function WorkflowsPage() {
             >
               {/* Top accent bar */}
               <div className="h-1 w-full bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <CardContent className="p-6">
+              <CardContent className="p-7">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold tracking-tight transition-colors group-hover:text-primary">
@@ -177,7 +177,7 @@ export default function WorkflowsPage() {
                     )}
                   </div>
                 </div>
-                <div className="mt-4 flex items-center gap-2">
+                <div className="mt-5 flex items-center gap-3">
                   <Badge variant={statusColors[workflow.status] || 'default'}>
                     {workflow.status}
                   </Badge>
@@ -185,7 +185,7 @@ export default function WorkflowsPage() {
                     {workflow.steps?.length || 0} steps
                   </span>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-4 text-xs text-muted-foreground">
                   Updated {formatDate(workflow.updatedAt)}
                 </p>
               </CardContent>

@@ -49,16 +49,18 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div className="flex items-center gap-4">
         <Link href="/settings">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Members</h1>
-          <p className="text-muted-foreground">Manage workspace members and roles</p>
+          <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+            Members
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Manage workspace members and roles</p>
         </div>
       </div>
 
@@ -68,8 +70,8 @@ export default function MembersPage() {
             <UserPlus className="h-5 w-5" /> Invite Member
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-3">
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
             <Input
               placeholder="Email address"
               value={email}
@@ -77,7 +79,7 @@ export default function MembersPage() {
               className="flex-1"
             />
             <select
-              className="rounded-md border px-3 text-sm"
+              className="rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -108,10 +110,10 @@ export default function MembersPage() {
             {members.map((member: any) => (
               <div
                 key={member.userId?._id || member.userId}
-                className="flex items-center justify-between rounded-lg border p-3"
+                className="flex items-center justify-between rounded-2xl border border-border/60 p-4"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-bold text-primary-foreground">
                     {(member.userId?.name || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div>

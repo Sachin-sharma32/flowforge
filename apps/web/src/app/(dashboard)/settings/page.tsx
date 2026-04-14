@@ -131,10 +131,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your workspace settings</p>
+        <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+          Settings
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">Manage your workspace settings</p>
       </div>
 
       <Card>
@@ -147,7 +149,7 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Workspace Name</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-md" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Webhook Secret</label>
@@ -200,7 +202,7 @@ export default function SettingsPage() {
               Loading billing summary...
             </div>
           ) : billingSummary ? (
-            <div className="space-y-4 rounded-lg border border-border/70 bg-muted/30 p-4">
+            <div className="space-y-5 rounded-2xl border border-border/70 bg-muted/30 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Current Plan</p>

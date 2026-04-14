@@ -1,288 +1,299 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AnimatedNumber } from '@/components/ui/animated-number';
-import { useAppDispatch, useAppSelector } from '@/stores/hooks';
-import {
-  selectCurrentWorkspaceId,
-  selectDashboardStatValues,
-  selectExecutions,
-  selectExecutionLoading,
-  selectExecutionStats,
-  selectExecutionTimeline,
-  selectExecutionWorkflowStats,
-  selectWorkflowLoading,
-} from '@/stores/selectors';
-import { fetchWorkflows } from '@/stores/workflow-slice';
-import {
-  fetchExecutions,
-  fetchExecutionStats,
-  fetchExecutionTimeline,
-  fetchWorkflowExecutionStats,
-} from '@/stores/execution-slice';
-import { useExecutionSocket } from '@/hooks/use-execution-socket';
-import { formatDate, formatDuration } from '@/lib/utils';
-import {
-  Activity,
-  CheckCircle2,
-  Clock,
-  GitBranch,
-  Zap,
-  TrendingUp,
-  PieChart as PieChartIcon,
-} from 'lucide-react';
-import { ExecutionStatusChart } from '@/components/charts/execution-status-chart';
-import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
-import { WorkflowPerformanceChart } from '@/components/charts/workflow-performance-chart';
+import { RefreshCcw, Sparkles, MessageSquare, Video, Trello } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FeedbackModal } from '@/components/ui/feedback-modal';
+import { SuggestedWorkflowCard, type AppInfo } from '@/components/workflow/suggested-workflow-card';
+import React, { useState } from 'react';
 
-const statusBadge = (status: string) => {
-  const variants: Record<string, 'success' | 'destructive' | 'warning' | 'default' | 'secondary'> =
-    {
-      completed: 'success',
-      failed: 'destructive',
-      running: 'warning',
-      pending: 'secondary',
-      cancelled: 'default',
-    };
+// ─── App Icons ───────────────────────────────────────────────────
+
+const GCalIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="4" width="18" height="16" rx="2" fill="white" stroke="#E0E0E0" strokeWidth="1" />
+    <path d="M21 9H3V6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V9Z" fill="#4285F4" />
+    <path d="M3 9H8V20H5C3.89543 20 3 19.1046 3 18V9Z" fill="#34A853" />
+    <path d="M21 9H16V20H19C20.1046 20 21 19.1046 21 18V9Z" fill="#FBBC04" />
+    <path d="M8 9H16V20H8V9Z" fill="#EA4335" />
+    <rect x="3" y="4" width="18" height="16" rx="2" stroke="#E0E0E0" strokeWidth="1" />
+  </svg>
+);
+
+const NotionIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M19.5 4H4.5V20H19.5V4ZM3 2.5C3 1.67157 3.67157 1 4.5 1H19.5C20.3284 1 21 1.67157 21 2.5V21.5C21 22.3284 20.3284 23 19.5 23H4.5C3.67157 23 3 22.3284 3 21.5V2.5Z"
+      fill="currentColor"
+    />
+    <path d="M8 6H10.5L16 14.5V6H18V18H15.5L10 9.5V18H8V6Z" fill="currentColor" />
+  </svg>
+);
+
+const GmailIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M20 5H4C2.89543 5 2 5.89543 2 7V17C2 18.1046 2.89543 19 4 19H20C21.1046 19 22 18.1046 22 17V7C22 5.89543 21.1046 5 20 5Z"
+      fill="white"
+      stroke="#EA4335"
+      strokeWidth="1.5"
+    />
+    <path
+      d="M2.5 6.5L12 13L21.5 6.5"
+      stroke="#EA4335"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const CalendlyIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="9" fill="white" stroke="#006BFF" strokeWidth="1.5" />
+    <path
+      d="M12 7V12L15 15"
+      stroke="#006BFF"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+// ─── Workflow Data ───────────────────────────────────────────────
+
+type WorkflowCard = { id: string; title: string; apps: AppInfo[] };
+
+const RECOMMENDED: WorkflowCard[] = [
+  {
+    id: '1',
+    title: 'Create logged schedule items from updated calendar events',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+    ],
+  },
+  {
+    id: '2',
+    title: 'Create meeting records from new calendar events in log',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+    ],
+  },
+  {
+    id: '3',
+    title: 'Create event records from calendar every hour',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+    ],
+  },
+  {
+    id: '4',
+    title: 'Sync new calendar attendees to Notion database',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+    ],
+  },
+];
+
+const WORKS_WELL: WorkflowCard[] = [
+  {
+    id: '5',
+    title: 'Add booked attendees to host calendar events instantly',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Calendly', icon: <CalendlyIcon /> },
+    ],
+  },
+  {
+    id: '6',
+    title: 'Create booking task and performer outreach for paid events',
+    apps: [
+      { name: 'Gmail', icon: <GmailIcon />, verified: true },
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      {
+        name: '+4',
+        icon: null,
+        extraApps: [
+          { name: 'Slack', icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" /> },
+          { name: 'Zoom', icon: <Video className="w-3.5 h-3.5 text-blue-500" /> },
+          { name: 'Trello', icon: <Trello className="w-3.5 h-3.5 text-blue-700" /> },
+          { name: 'Asana', icon: <div className="w-3.5 h-3.5 bg-red-400 rounded-full" /> },
+        ],
+      },
+    ],
+  },
+  {
+    id: '7',
+    title: 'Create production calendar exports to spreadsheet rows',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Google Sheets', icon: <GCalIcon /> },
+    ],
+  },
+];
+
+const MARKETING: WorkflowCard[] = [
+  {
+    id: '8',
+    title: 'Track new website leads in CRM instantly',
+    apps: [
+      { name: 'HubSpot', icon: <div className="h-3.5 w-3.5 bg-orange-500 rounded-full" /> },
+      { name: 'Gmail', icon: <GmailIcon />, verified: true },
+    ],
+  },
+  {
+    id: '9',
+    title: 'Send welcome email sequence to new newsletter subscribers',
+    apps: [
+      { name: 'Mailchimp', icon: <div className="h-3.5 w-3.5 bg-yellow-400 rounded-full" /> },
+      { name: 'Slack', icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" /> },
+    ],
+  },
+  {
+    id: '10',
+    title: 'Automatically post blog updates to company social media',
+    apps: [
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+      { name: 'Twitter', icon: <div className="h-3.5 w-3.5 bg-sky-500 rounded-sm" /> },
+    ],
+  },
+];
+
+// ─── Section Component ──────────────────────────────────────────
+
+function WorkflowSection({
+  title,
+  titleNode,
+  workflows,
+  onDismiss,
+}: {
+  title: string;
+  titleNode?: React.ReactNode;
+  workflows: WorkflowCard[];
+  onDismiss: (id: string) => void;
+}) {
+  if (workflows.length === 0) return null;
   return (
-    <Badge
-      variant={variants[status] || 'default'}
-      className={status === 'running' ? 'pulse-soft' : ''}
-    >
-      {status === 'running' && (
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-warning" />
-        </span>
-      )}
-      {status}
-    </Badge>
+    <section className="w-full">
+      <div className="mb-6">
+        {titleNode ?? <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+        {workflows.map((wf) => (
+          <SuggestedWorkflowCard
+            key={wf.id}
+            id={wf.id}
+            title={wf.title}
+            apps={wf.apps}
+            onDismiss={onDismiss}
+          />
+        ))}
+      </div>
+    </section>
   );
-};
+}
 
-const STATS = [
-  {
-    key: 'workflows',
-    label: 'Total Workflows',
-    icon: GitBranch,
-    accent: 'text-info',
-    bg: 'from-info/10 to-info/5',
-  },
-  {
-    key: 'executions',
-    label: 'Total Executions',
-    icon: Activity,
-    accent: 'text-primary',
-    bg: 'from-primary/10 to-primary/5',
-  },
-  {
-    key: 'success',
-    label: 'Success Rate',
-    icon: CheckCircle2,
-    accent: 'text-success',
-    bg: 'from-success/10 to-success/5',
-  },
-  {
-    key: 'duration',
-    label: 'Avg Duration',
-    icon: Clock,
-    accent: 'text-warning',
-    bg: 'from-warning/10 to-warning/5',
-  },
-] as const;
+// ─── Dismiss feedback options ───────────────────────────────────
+
+const DISMISS_OPTIONS = [
+  'Too complex',
+  'Not relevant to my role',
+  "Don't use these apps",
+  'Already automated this',
+  'Other',
+];
+
+// ─── Page ───────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const dispatch = useAppDispatch();
-  const currentWorkspaceId = useAppSelector(selectCurrentWorkspaceId);
-  const workflowsLoading = useAppSelector(selectWorkflowLoading);
-  const executionsLoading = useAppSelector(selectExecutionLoading);
-  const dashboardStats = useAppSelector(selectDashboardStatValues);
-  const executions = useAppSelector(selectExecutions);
-  const stats = useAppSelector(selectExecutionStats);
-  const timeline = useAppSelector(selectExecutionTimeline);
-  const workflowStats = useAppSelector(selectExecutionWorkflowStats);
+  const [recommended, setRecommended] = useState(RECOMMENDED);
+  const [worksWell, setWorksWell] = useState(WORKS_WELL);
+  const [marketing, setMarketing] = useState(MARKETING);
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
 
-  useExecutionSocket(currentWorkspaceId ?? undefined);
-
-  useEffect(() => {
-    if (!currentWorkspaceId) return;
-    dispatch(fetchWorkflows({ workspaceId: currentWorkspaceId }));
-    dispatch(fetchExecutions({ workspaceId: currentWorkspaceId, params: { limit: '5' } }));
-    dispatch(fetchExecutionStats({ workspaceId: currentWorkspaceId }));
-    dispatch(fetchExecutionTimeline({ workspaceId: currentWorkspaceId, days: 14 }));
-    dispatch(fetchWorkflowExecutionStats({ workspaceId: currentWorkspaceId }));
-  }, [currentWorkspaceId, dispatch]);
+  const handleDismissConfirm = (_reason: string) => {
+    if (!dismissingId) return;
+    setRecommended((prev) => prev.filter((w) => w.id !== dismissingId));
+    setWorksWell((prev) => prev.filter((w) => w.id !== dismissingId));
+    setMarketing((prev) => prev.filter((w) => w.id !== dismissingId));
+    setDismissingId(null);
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="stagger-fade-in" style={{ animationDelay: '0ms' }}>
-        <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-          Dashboard
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">Overview of your workflow activity</p>
+    <div className="mx-auto w-full space-y-16 pb-24 animate-in fade-in duration-500">
+      {/* ── Hero header ── */}
+      <div className="stagger-fade-in pt-4" style={{ animationDelay: '0ms' }}>
+        <div className="flex items-center gap-4 mb-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-glow">
+            <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+              Suggested Workflows
+            </h1>
+            <p className="text-base text-muted-foreground mt-1">
+              Start fast with pre-built automations — customize any template to match your exact
+              needs.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {STATS.map((stat, i) => {
-          const Icon = stat.icon;
-          const data =
-            stat.key === 'workflows'
-              ? {
-                  value: dashboardStats.workflowCount,
-                  display: <AnimatedNumber value={dashboardStats.workflowCount} />,
-                }
-              : stat.key === 'executions'
-                ? {
-                    value: dashboardStats.totalExecutions,
-                    display: <AnimatedNumber value={dashboardStats.totalExecutions} />,
-                  }
-                : stat.key === 'success'
-                  ? {
-                      value: dashboardStats.successRate,
-                      display: <AnimatedNumber value={dashboardStats.successRate} suffix="%" />,
-                    }
-                  : {
-                      value: dashboardStats.avgDurationMs,
-                      display: dashboardStats.avgDurationMs
-                        ? formatDuration(dashboardStats.avgDurationMs)
-                        : '—',
-                    };
-          return (
-            <Card
-              key={stat.key}
-              className="stagger-fade-in group relative overflow-hidden"
-              style={{ animationDelay: `${80 + i * 80}ms` }}
+      {/* ── Sections ── */}
+      <WorkflowSection
+        title="Recommended for you"
+        workflows={recommended}
+        onDismiss={setDismissingId}
+      />
+
+      <WorkflowSection
+        title="Works well with Google Calendar"
+        titleNode={
+          <div className="flex flex-wrap items-center gap-4">
+            <h2 className="flex flex-wrap items-center gap-2.5 text-2xl font-bold tracking-tight">
+              Works well with
+              <span className="inline-flex items-center gap-1.5 text-xl font-semibold">
+                <GCalIcon className="h-5 w-5" />
+                Google Calendar
+              </span>
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-primary hover:text-primary/80"
             >
-              {/* Gradient blob accent */}
-              <div
-                className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${stat.bg} blur-2xl transition-all duration-500 group-hover:scale-125`}
-              />
-              <CardHeader className="relative flex flex-row items-center justify-between pb-2">
-                <CardTitle className="label-uppercase text-muted-foreground">
-                  {stat.label}
-                </CardTitle>
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl bg-background/60 backdrop-blur ${stat.accent} ring-1 ring-border/60 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}
-                >
-                  <Icon className="h-4 w-4" strokeWidth={2.5} />
-                </div>
-              </CardHeader>
-              <CardContent className="relative">
-                <div className="text-3xl font-bold tabular-nums tracking-tight">
-                  {executionsLoading || workflowsLoading ? (
-                    <Skeleton className="h-9 w-20" />
-                  ) : (
-                    data.display
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              <RefreshCcw className="h-4 w-4" />
+              Change App
+            </Button>
+          </div>
+        }
+        workflows={worksWell}
+        onDismiss={setDismissingId}
+      />
 
-      {/* Charts Row */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg">Execution Trend</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="mb-2 text-xs text-muted-foreground">Last 14 days</p>
-            <ExecutionTimelineChart data={timeline} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg">Status Breakdown</CardTitle>
-            <PieChartIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="mb-2 text-xs text-muted-foreground">All-time distribution</p>
-            {stats ? (
-              <ExecutionStatusChart stats={stats} />
-            ) : (
-              <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
-                Loading…
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <WorkflowSection
+        title="Marketing &amp; Leads"
+        workflows={marketing}
+        onDismiss={setDismissingId}
+      />
 
-      {/* Workflow Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Top Workflows</CardTitle>
-          <p className="text-xs text-muted-foreground">Most active workflows by execution count</p>
-        </CardHeader>
-        <CardContent>
-          <WorkflowPerformanceChart data={workflowStats} />
-        </CardContent>
-      </Card>
-
-      {/* Recent Executions */}
-      <Card className="stagger-fade-in" noHover style={{ animationDelay: '420ms' }}>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Executions</CardTitle>
-          <p className="text-xs text-muted-foreground">Latest 5 runs across your workflows</p>
-        </CardHeader>
-        <CardContent>
-          {executionsLoading ? (
-            <div className="space-y-3">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : executions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
-                <Zap className="h-7 w-7 text-primary" strokeWidth={2} />
-              </div>
-              <p className="text-sm font-medium">No executions yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Create and run a workflow to see results here.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {executions.map((execution: any, i) => (
-                <div
-                  key={execution.id || execution._id}
-                  style={{ animationDelay: `${500 + i * 60}ms` }}
-                  className="stagger-fade-in group flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-3.5 transition-colors duration-200 ease-spring hover:border-border hover:bg-background/80"
-                >
-                  <div className="flex items-center gap-3">
-                    {statusBadge(execution.status)}
-                    <div>
-                      <p className="text-sm font-semibold">
-                        {execution.workflowId?.name || 'Workflow'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {execution.trigger?.type} trigger
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium tabular-nums">
-                      {execution.durationMs ? formatDuration(execution.durationMs) : '—'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(execution.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* ── Dismiss feedback modal ── */}
+      {dismissingId && (
+        <FeedbackModal
+          title="Why isn't this relevant?"
+          description="Help us improve your recommendations by telling us why you are dismissing this card."
+          options={DISMISS_OPTIONS}
+          confirmLabel="Dismiss card"
+          onConfirm={handleDismissConfirm}
+          onClose={() => setDismissingId(null)}
+        />
+      )}
     </div>
   );
 }

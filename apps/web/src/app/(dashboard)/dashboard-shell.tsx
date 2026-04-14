@@ -59,8 +59,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto px-6 py-8">
-          <PageTransition className="mx-auto max-w-7xl">{children}</PageTransition>
+        <main className="flex-1 overflow-y-auto px-10 py-10">
+          <PageTransition className="mx-auto max-w-[1800px] 2xl:max-w-full 2xl:px-12">
+            {children}
+          </PageTransition>
         </main>
       </div>
     </div>

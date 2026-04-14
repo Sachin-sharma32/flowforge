@@ -75,14 +75,16 @@ export default function WorkflowDetailPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="space-y-8">
+      <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push('/workflows')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{currentWorkflow.name}</h1>
+            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+              {currentWorkflow.name}
+            </h1>
             <Badge
               variant={
                 currentWorkflow.status === 'active'
@@ -95,9 +97,11 @@ export default function WorkflowDetailPage() {
               {currentWorkflow.status}
             </Badge>
           </div>
-          <p className="text-muted-foreground">{currentWorkflow.description || 'No description'}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {currentWorkflow.description || 'No description'}
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
             onClick={() =>
@@ -139,7 +143,7 @@ export default function WorkflowDetailPage() {
 
       {runMessage && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={`rounded-xl border px-5 py-3.5 text-sm ${
             runMessage.type === 'error'
               ? 'border-destructive/30 bg-destructive/10 text-destructive'
               : 'border-success/30 bg-success/10 text-success'
@@ -150,7 +154,7 @@ export default function WorkflowDetailPage() {
       )}
 
       {/* Execution Stats Row */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Runs</CardTitle>
@@ -213,7 +217,7 @@ export default function WorkflowDetailPage() {
           <CardHeader>
             <CardTitle className="text-lg">Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Trigger</span>
               <span className="font-medium">{currentWorkflow.trigger.type}</span>
@@ -249,8 +253,11 @@ export default function WorkflowDetailPage() {
             ) : (
               <div className="space-y-2">
                 {currentWorkflow.steps.map((step, i) => (
-                  <div key={step.id} className="flex items-center gap-3 rounded-lg border p-2.5">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                  <div
+                    key={step.id}
+                    className="flex items-center gap-4 rounded-2xl border border-border/60 p-3.5"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">
                       {i + 1}
                     </span>
                     <div>

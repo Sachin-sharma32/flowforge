@@ -44,11 +44,12 @@ const config: Config = {
         info: 'hsl(var(--info))',
       },
       borderRadius: {
+        '3xl': 'calc(var(--radius) + 8px)',
         '2xl': 'calc(var(--radius) + 4px)',
         xl: 'calc(var(--radius) + 2px)',
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 4px)',
-        sm: 'calc(var(--radius) - 6px)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       transitionTimingFunction: {
         spring: 'cubic-bezier(0.16, 1, 0.3, 1)',

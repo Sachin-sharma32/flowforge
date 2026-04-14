@@ -55,14 +55,16 @@ export default function ExecutionDetailPage() {
   const isRunning = currentExecution.status === 'running' || currentExecution.status === 'pending';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="space-y-8">
+      <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push('/executions')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">Execution Detail</h1>
+            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+              Execution Detail
+            </h1>
             <Badge
               variant={
                 currentExecution.status === 'completed'
@@ -151,7 +153,7 @@ export default function ExecutionDetailPage() {
             <CardTitle className="text-lg">Trigger Payload</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="overflow-auto rounded bg-muted p-4 text-xs">
+            <pre className="overflow-auto rounded-xl bg-muted p-5 text-xs">
               {JSON.stringify(currentExecution.trigger.payload, null, 2)}
             </pre>
           </CardContent>
