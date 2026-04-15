@@ -12,6 +12,10 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { createWorkflow } from '@/stores/workflow-slice';
+import { useToast } from '@/hooks/use-toast';
 
 // ─── App Icons ───────────────────────────────────────────────────
 
@@ -225,11 +229,15 @@ function WorkflowSection({
   titleNode,
   workflows,
   onDismiss,
+  onUse,
+  usingTemplateId,
 }: {
   title: string;
   titleNode?: React.ReactNode;
   workflows: WorkflowCard[];
   onDismiss: (id: string) => void;
+  onUse: (id: string) => void;
+  usingTemplateId: string | null;
 }) {
   if (workflows.length === 0) return null;
   return (
@@ -252,6 +260,8 @@ function WorkflowSection({
                 title={wf.title}
                 apps={wf.apps}
                 onDismiss={onDismiss}
+                onUse={onUse}
+                isUsing={usingTemplateId === wf.id}
               />
             </CarouselItem>
           ))}
@@ -276,10 +286,16 @@ const DISMISS_OPTIONS = [
 // ─── Page ───────────────────────────────────────────────────────
 
 export default function TemplatesPage() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { toast } = useToast();
+
   const [recommended, setRecommended] = useState(RECOMMENDED);
   const [worksWell, setWorksWell] = useState(WORKS_WELL);
   const [marketing, setMarketing] = useState(MARKETING);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [usingTemplateId, setUsingTemplateId] = useState<string | null>(null);
 
   const handleDismissConfirm = (_reason: string) => {
     if (!dismissingId) return;
@@ -287,6 +303,38 @@ export default function TemplatesPage() {
     setWorksWell((prev) => prev.filter((w) => w.id !== dismissingId));
     setMarketing((prev) => prev.filter((w) => w.id !== dismissingId));
     setDismissingId(null);
+  };
+
+  const handleUseTemplate = async (templateId: string) => {
+    if (!currentWorkspace?.id) return;
+
+    const allTemplates = [...RECOMMENDED, ...WORKS_WELL, ...MARKETING];
+    const template = allTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+
+    setUsingTemplateId(templateId);
+    try {
+      const result = await dispatch(
+        createWorkflow({
+          workspaceId: currentWorkspace.id,
+          input: {
+            name: template.title,
+            description: '',
+            trigger: { type: 'manual', config: {} },
+            steps: [],
+          },
+        }),
+      ).unwrap();
+
+      router.push(`/workflows/${result.id || (result as { _id?: string })._id}/edit`);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create workflow',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
+      setUsingTemplateId(null);
+    }
   };
 
   return (
@@ -330,6 +378,8 @@ export default function TemplatesPage() {
                   title={template.title}
                   apps={template.apps}
                   onDismiss={setDismissingId}
+                  onUse={handleUseTemplate}
+                  isUsing={usingTemplateId === template.id}
                 />
               </CarouselItem>
             ))}
@@ -343,6 +393,8 @@ export default function TemplatesPage() {
         title="Recommended for you"
         workflows={recommended}
         onDismiss={setDismissingId}
+        onUse={handleUseTemplate}
+        usingTemplateId={usingTemplateId}
       />
 
       <WorkflowSection
@@ -368,12 +420,16 @@ export default function TemplatesPage() {
         }
         workflows={worksWell}
         onDismiss={setDismissingId}
+        onUse={handleUseTemplate}
+        usingTemplateId={usingTemplateId}
       />
 
       <WorkflowSection
         title="Marketing &amp; Leads"
         workflows={marketing}
         onDismiss={setDismissingId}
+        onUse={handleUseTemplate}
+        usingTemplateId={usingTemplateId}
       />
 
       {/* ── Dismiss feedback modal ── */}

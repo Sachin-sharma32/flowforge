@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MoreVertical, X } from 'lucide-react';
+import { MoreVertical, X, ArrowRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -42,6 +42,10 @@ export interface SuggestedWorkflowCardProps {
   apps: AppInfo[];
   /** Called when the user clicks "Dismiss" from the 3-dot menu */
   onDismiss?: (id: string) => void;
+  /** Called when the user clicks "Use Template" */
+  onUse?: (id: string) => void;
+  /** When true the "Use Template" button shows a loading spinner */
+  isUsing?: boolean;
 }
 
 // --- Sub-components --- //
@@ -81,7 +85,14 @@ function ExtraAppsBadge({ app }: { app: AppInfo }) {
 
 // --- Main card --- //
 
-export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedWorkflowCardProps) {
+export function SuggestedWorkflowCard({
+  id,
+  title,
+  apps,
+  onDismiss,
+  onUse,
+  isUsing,
+}: SuggestedWorkflowCardProps) {
   const [isDropdown, setIsDropdown] = useState(false);
 
   return (
@@ -147,6 +158,28 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
           })}
         </div>
       </div>
+
+      {/* Use Template button */}
+      {onUse && (
+        <div className="mt-5 pt-4 border-t border-border/40">
+          <Button
+            size="sm"
+            className="w-full gap-1.5"
+            disabled={isUsing}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUse(id);
+            }}
+          >
+            {isUsing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ArrowRight className="h-3.5 w-3.5" />
+            )}
+            {isUsing ? 'Creating…' : 'Use Template'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
