@@ -326,7 +326,11 @@ export default function TemplatesPage() {
         }),
       ).unwrap();
 
-      router.push(`/workflows/${result.id || (result as { _id?: string })._id}/edit`);
+      const workflowId = result.id || (result as { _id?: string })._id;
+      if (!workflowId) {
+        throw new Error('Workflow was created but no ID was returned.');
+      }
+      router.push(`/workflows/${workflowId}/edit`);
     } catch (err) {
       toast({
         variant: 'destructive',
