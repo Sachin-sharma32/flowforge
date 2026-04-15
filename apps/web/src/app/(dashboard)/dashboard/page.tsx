@@ -1,299 +1,398 @@
 'use client';
 
-import { RefreshCcw, Sparkles, MessageSquare, Video, Trello } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  CalendarRange,
+  CheckCircle2,
+  FolderKanban,
+  Link2,
+  TrendingUp,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FeedbackModal } from '@/components/ui/feedback-modal';
-import { SuggestedWorkflowCard, type AppInfo } from '@/components/workflow/suggested-workflow-card';
-import React, { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import {
+  selectCurrentWorkspaceId,
+  selectExecutionStats,
+  selectExecutionTimeline,
+  selectExecutionWorkflowStats,
+  selectExecutions,
+  selectFolders,
+  selectWorkflows,
+} from '@/stores/selectors';
+import {
+  fetchExecutionStats,
+  fetchExecutionTimeline,
+  fetchExecutions,
+  fetchWorkflowExecutionStats,
+} from '@/stores/execution-slice';
+import { fetchWorkflows } from '@/stores/workflow-slice';
+import { fetchFolders } from '@/stores/folder-slice';
+import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
+import { WorkflowPerformanceChart } from '@/components/charts/workflow-performance-chart';
+import { ExecutionStatusChart } from '@/components/charts/execution-status-chart';
+import { formatDuration } from '@/lib/utils';
 
-// ─── App Icons ───────────────────────────────────────────────────
+type RangeMode = '7' | '30' | 'custom';
 
-const GCalIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="16" rx="2" fill="white" stroke="#E0E0E0" strokeWidth="1" />
-    <path d="M21 9H3V6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V9Z" fill="#4285F4" />
-    <path d="M3 9H8V20H5C3.89543 20 3 19.1046 3 18V9Z" fill="#34A853" />
-    <path d="M21 9H16V20H19C20.1046 20 21 19.1046 21 18V9Z" fill="#FBBC04" />
-    <path d="M8 9H16V20H8V9Z" fill="#EA4335" />
-    <rect x="3" y="4" width="18" height="16" rx="2" stroke="#E0E0E0" strokeWidth="1" />
-  </svg>
-);
-
-const NotionIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M19.5 4H4.5V20H19.5V4ZM3 2.5C3 1.67157 3.67157 1 4.5 1H19.5C20.3284 1 21 1.67157 21 2.5V21.5C21 22.3284 20.3284 23 19.5 23H4.5C3.67157 23 3 22.3284 3 21.5V2.5Z"
-      fill="currentColor"
-    />
-    <path d="M8 6H10.5L16 14.5V6H18V18H15.5L10 9.5V18H8V6Z" fill="currentColor" />
-  </svg>
-);
-
-const GmailIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M20 5H4C2.89543 5 2 5.89543 2 7V17C2 18.1046 2.89543 19 4 19H20C21.1046 19 22 18.1046 22 17V7C22 5.89543 21.1046 5 20 5Z"
-      fill="white"
-      stroke="#EA4335"
-      strokeWidth="1.5"
-    />
-    <path
-      d="M2.5 6.5L12 13L21.5 6.5"
-      stroke="#EA4335"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const CalendlyIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="9" fill="white" stroke="#006BFF" strokeWidth="1.5" />
-    <path
-      d="M12 7V12L15 15"
-      stroke="#006BFF"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-// ─── Workflow Data ───────────────────────────────────────────────
-
-type WorkflowCard = { id: string; title: string; apps: AppInfo[] };
-
-const RECOMMENDED: WorkflowCard[] = [
-  {
-    id: '1',
-    title: 'Create logged schedule items from updated calendar events',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Create meeting records from new calendar events in log',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Create event records from calendar every hour',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '4',
-    title: 'Sync new calendar attendees to Notion database',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-];
-
-const WORKS_WELL: WorkflowCard[] = [
-  {
-    id: '5',
-    title: 'Add booked attendees to host calendar events instantly',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Calendly', icon: <CalendlyIcon /> },
-    ],
-  },
-  {
-    id: '6',
-    title: 'Create booking task and performer outreach for paid events',
-    apps: [
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      {
-        name: '+4',
-        icon: null,
-        extraApps: [
-          { name: 'Slack', icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" /> },
-          { name: 'Zoom', icon: <Video className="w-3.5 h-3.5 text-blue-500" /> },
-          { name: 'Trello', icon: <Trello className="w-3.5 h-3.5 text-blue-700" /> },
-          { name: 'Asana', icon: <div className="w-3.5 h-3.5 bg-red-400 rounded-full" /> },
-        ],
-      },
-    ],
-  },
-  {
-    id: '7',
-    title: 'Create production calendar exports to spreadsheet rows',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Google Sheets', icon: <GCalIcon /> },
-    ],
-  },
-];
-
-const MARKETING: WorkflowCard[] = [
-  {
-    id: '8',
-    title: 'Track new website leads in CRM instantly',
-    apps: [
-      { name: 'HubSpot', icon: <div className="h-3.5 w-3.5 bg-orange-500 rounded-full" /> },
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-    ],
-  },
-  {
-    id: '9',
-    title: 'Send welcome email sequence to new newsletter subscribers',
-    apps: [
-      { name: 'Mailchimp', icon: <div className="h-3.5 w-3.5 bg-yellow-400 rounded-full" /> },
-      { name: 'Slack', icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" /> },
-    ],
-  },
-  {
-    id: '10',
-    title: 'Automatically post blog updates to company social media',
-    apps: [
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-      { name: 'Twitter', icon: <div className="h-3.5 w-3.5 bg-sky-500 rounded-sm" /> },
-    ],
-  },
-];
-
-// ─── Section Component ──────────────────────────────────────────
-
-function WorkflowSection({
-  title,
-  titleNode,
-  workflows,
-  onDismiss,
-}: {
-  title: string;
-  titleNode?: React.ReactNode;
-  workflows: WorkflowCard[];
-  onDismiss: (id: string) => void;
-}) {
-  if (workflows.length === 0) return null;
-  return (
-    <section className="w-full">
-      <div className="mb-6">
-        {titleNode ?? <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-        {workflows.map((wf) => (
-          <SuggestedWorkflowCard
-            key={wf.id}
-            id={wf.id}
-            title={wf.title}
-            apps={wf.apps}
-            onDismiss={onDismiss}
-          />
-        ))}
-      </div>
-    </section>
-  );
+function diffDays(from: string, to: string): number {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  const diff = toDate.getTime() - fromDate.getTime();
+  if (!Number.isFinite(diff) || diff < 0) {
+    return 14;
+  }
+  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-// ─── Dismiss feedback options ───────────────────────────────────
-
-const DISMISS_OPTIONS = [
-  'Too complex',
-  'Not relevant to my role',
-  "Don't use these apps",
-  'Already automated this',
-  'Other',
-];
-
-// ─── Page ───────────────────────────────────────────────────────
-
 export default function DashboardPage() {
-  const [recommended, setRecommended] = useState(RECOMMENDED);
-  const [worksWell, setWorksWell] = useState(WORKS_WELL);
-  const [marketing, setMarketing] = useState(MARKETING);
-  const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const workspaceId = useAppSelector(selectCurrentWorkspaceId);
 
-  const handleDismissConfirm = (_reason: string) => {
-    if (!dismissingId) return;
-    setRecommended((prev) => prev.filter((w) => w.id !== dismissingId));
-    setWorksWell((prev) => prev.filter((w) => w.id !== dismissingId));
-    setMarketing((prev) => prev.filter((w) => w.id !== dismissingId));
-    setDismissingId(null);
-  };
+  const stats = useAppSelector(selectExecutionStats);
+  const timeline = useAppSelector(selectExecutionTimeline);
+  const workflowStats = useAppSelector(selectExecutionWorkflowStats);
+  const workflows = useAppSelector(selectWorkflows);
+  const executions = useAppSelector(selectExecutions);
+  const folders = useAppSelector(selectFolders);
+
+  const [rangeMode, setRangeMode] = useState<RangeMode>('30');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  const timelineDays = useMemo(() => {
+    if (rangeMode === '7') return 7;
+    if (rangeMode === '30') return 30;
+
+    if (!customFrom || !customTo) {
+      return 14;
+    }
+
+    return diffDays(customFrom, customTo);
+  }, [rangeMode, customFrom, customTo]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    dispatch(fetchExecutionStats({ workspaceId }));
+    dispatch(fetchWorkflowExecutionStats({ workspaceId }));
+    dispatch(fetchWorkflows({ workspaceId, params: { limit: '100', sortBy: 'updatedAt' } }));
+    dispatch(
+      fetchExecutions({
+        workspaceId,
+        params: {
+          limit: '100',
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        },
+      }),
+    );
+    dispatch(fetchFolders({ workspaceId }));
+  }, [workspaceId, dispatch]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    dispatch(fetchExecutionTimeline({ workspaceId, days: timelineDays }));
+  }, [workspaceId, timelineDays, dispatch]);
+
+  const timeSavedHours = useMemo(() => {
+    const totalExecutions = stats?.total || 0;
+    const avgDuration = stats?.avgDurationMs || 0;
+
+    const baselineManualMinutes = 4;
+    const automatedMinutes = avgDuration / (1000 * 60);
+    const savedMinutesPerRun = Math.max(0, baselineManualMinutes - automatedMinutes);
+
+    return Math.round((savedMinutesPerRun * totalExecutions) / 60);
+  }, [stats]);
+
+  const folderUsage = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const workflow of workflows) {
+      const folderId = workflow.folderId || 'uncategorized';
+      counts.set(folderId, (counts.get(folderId) || 0) + 1);
+    }
+
+    const rows = folders.map((folder) => ({
+      id: folder.id,
+      name: folder.name,
+      count: counts.get(folder.id) || 0,
+      color: folder.color,
+    }));
+
+    const uncategorizedCount = counts.get('uncategorized') || 0;
+    if (uncategorizedCount > 0) {
+      rows.push({
+        id: 'uncategorized',
+        name: 'Uncategorized',
+        count: uncategorizedCount,
+        color: '#6b7280',
+      });
+    }
+
+    return rows.sort((a, b) => b.count - a.count).slice(0, 6);
+  }, [workflows, folders]);
+
+  const failedAlerts = useMemo(
+    () => executions.filter((execution) => execution.status === 'failed').slice(0, 5),
+    [executions],
+  );
+
+  const activeConnectors = [
+    { name: 'Google Calendar', status: 'Connected', color: 'bg-blue-500' },
+    { name: 'Slack', status: 'Connected', color: 'bg-pink-500' },
+    { name: 'Notion', status: 'Connected', color: 'bg-zinc-600' },
+    { name: 'Gmail', status: 'Connected', color: 'bg-red-500' },
+    { name: 'Google Drive', status: 'Connected', color: 'bg-green-500' },
+    { name: 'Webhook', status: 'Connected', color: 'bg-emerald-500' },
+  ];
 
   return (
-    <div className="mx-auto w-full space-y-16 pb-24 animate-in fade-in duration-500">
-      {/* ── Hero header ── */}
-      <div className="stagger-fade-in pt-4" style={{ animationDelay: '0ms' }}>
-        <div className="flex items-center gap-4 mb-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-glow">
-            <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
+            Dashboard
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Real-time workflow performance, reliability, and usage intelligence.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border/60 bg-card/50 p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <CalendarRange className="h-3.5 w-3.5" />
+            Time Window
           </div>
-          <div>
-            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-              Suggested Workflows
-            </h1>
-            <p className="text-base text-muted-foreground mt-1">
-              Start fast with pre-built automations — customize any template to match your exact
-              needs.
-            </p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: '7', label: 'Last 7 Days' },
+              { key: '30', label: 'Last 30 Days' },
+              { key: 'custom', label: 'Custom Range' },
+            ].map((option) => (
+              <Button
+                key={option.key}
+                type="button"
+                size="sm"
+                variant={rangeMode === option.key ? 'default' : 'outline'}
+                onClick={() => setRangeMode(option.key as RangeMode)}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
+
+          {rangeMode === 'custom' && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Sections ── */}
-      <WorkflowSection
-        title="Recommended for you"
-        workflows={recommended}
-        onDismiss={setDismissingId}
-      />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Total Executions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{stats?.total ?? 0}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Across all workflows</p>
+          </CardContent>
+        </Card>
 
-      <WorkflowSection
-        title="Works well with Google Calendar"
-        titleNode={
-          <div className="flex flex-wrap items-center gap-4">
-            <h2 className="flex flex-wrap items-center gap-2.5 text-2xl font-bold tracking-tight">
-              Works well with
-              <span className="inline-flex items-center gap-1.5 text-xl font-semibold">
-                <GCalIcon className="h-5 w-5" />
-                Google Calendar
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Success Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{stats?.successRate ?? 0}%</p>
+            <p className="mt-1 text-xs text-muted-foreground">Stable workflow reliability</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Avg Runtime</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatDuration(stats?.avgDurationMs ?? 0)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Mean completion time</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Estimated Time Saved</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{timeSavedHours}h</p>
+            <p className="mt-1 text-xs text-muted-foreground">Manual effort avoided this month</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Execution Volume</CardTitle>
+            <p className="text-xs text-muted-foreground">Completed vs failed over time</p>
+          </CardHeader>
+          <CardContent>
+            <ExecutionTimelineChart data={timeline} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Execution Status Mix</CardTitle>
+            <p className="text-xs text-muted-foreground">Current distribution snapshot</p>
+          </CardHeader>
+          <CardContent>{stats ? <ExecutionStatusChart stats={stats} /> : null}</CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Workflow Performance</CardTitle>
+            <p className="text-xs text-muted-foreground">Top workflows by execution volume</p>
+          </CardHeader>
+          <CardContent>
+            <WorkflowPerformanceChart data={workflowStats} />
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Critical Alerts</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {failedAlerts.length === 0 ? (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
+                  No failed executions in the latest runs.
+                </div>
+              ) : (
+                failedAlerts.map((execution) => (
+                  <div
+                    key={execution.id}
+                    className="rounded-xl border border-destructive/20 bg-destructive/10 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        Execution failed
+                      </div>
+                      <Badge variant="destructive">Failed</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-destructive/80">Run ID: {execution.id}</p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Active Connectors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2">
+                {activeConnectors.map((connector) => (
+                  <div
+                    key={connector.name}
+                    className="rounded-xl border border-border/60 bg-background/50 p-3"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <span className={`h-2.5 w-2.5 rounded-full ${connector.color}`} />
+                      {connector.name}
+                    </div>
+                    <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                      {connector.status}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Usage By Folder</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {folderUsage.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No folders or workflows yet.</p>
+            ) : (
+              folderUsage.map((folder) => (
+                <div
+                  key={folder.id}
+                  className="flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-3 py-2"
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: folder.color }}
+                    />
+                    {folder.name}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{folder.count} workflows</p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Operational Health</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                Folder coverage
+              </div>
+              <span className="text-muted-foreground">
+                {workflows.filter((workflow) => !!workflow.folderId).length}/{workflows.length}
               </span>
-            </h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-primary hover:text-primary/80"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Change App
-            </Button>
-          </div>
-        }
-        workflows={worksWell}
-        onDismiss={setDismissingId}
-      />
-
-      <WorkflowSection
-        title="Marketing &amp; Leads"
-        workflows={marketing}
-        onDismiss={setDismissingId}
-      />
-
-      {/* ── Dismiss feedback modal ── */}
-      {dismissingId && (
-        <FeedbackModal
-          title="Why isn't this relevant?"
-          description="Help us improve your recommendations by telling us why you are dismissing this card."
-          options={DISMISS_OPTIONS}
-          confirmLabel="Dismiss card"
-          onConfirm={handleDismissConfirm}
-          onClose={() => setDismissingId(null)}
-        />
-      )}
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-primary" />
+                Total folders
+              </div>
+              <span className="text-muted-foreground">{folders.length}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-amber-500" />
+                Running executions
+              </div>
+              <span className="text-muted-foreground">{stats?.running ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-blue-500" />
+                Connected integrations
+              </div>
+              <span className="text-muted-foreground">{activeConnectors.length}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

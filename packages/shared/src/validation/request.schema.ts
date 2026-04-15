@@ -35,6 +35,13 @@ export const executionParamsSchema = z
   })
   .strict();
 
+export const folderParamsSchema = z
+  .object({
+    workspaceId: objectIdSchema,
+    id: objectIdSchema,
+  })
+  .strict();
+
 export const webhookIngressParamsSchema = z
   .object({
     workspaceId: objectIdSchema,
@@ -50,18 +57,32 @@ const limitSchema = z.coerce.number().int().min(1);
 export const workflowListQuerySchema = z
   .object({
     status: workflowStatusSchema.optional(),
+    folderId: objectIdSchema.optional(),
     page: pageSchema.optional(),
     limit: limitSchema.optional(),
     search: z.string().trim().max(200).optional(),
+    sortBy: z.enum(['updatedAt', 'createdAt', 'name', 'lastExecutedAt']).optional(),
+    sortOrder: z.enum(['asc', 'desc']).optional(),
+    dateFrom: z.string().trim().max(40).optional(),
+    dateTo: z.string().trim().max(40).optional(),
   })
   .strict();
 
 export const executionListQuerySchema = z
   .object({
     workflowId: objectIdSchema.optional(),
+    folderId: objectIdSchema.optional(),
     status: queryStatusSchema.optional(),
+    triggerType: z.enum(['manual', 'webhook', 'cron']).optional(),
     page: pageSchema.optional(),
     limit: limitSchema.optional(),
+    search: z.string().trim().max(200).optional(),
+    sortBy: z.enum(['createdAt', 'status', 'durationMs']).optional(),
+    sortOrder: z.enum(['asc', 'desc']).optional(),
+    dateFrom: z.string().trim().max(40).optional(),
+    dateTo: z.string().trim().max(40).optional(),
+    durationMin: z.coerce.number().min(0).optional(),
+    durationMax: z.coerce.number().min(0).optional(),
   })
   .strict();
 

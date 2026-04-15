@@ -32,6 +32,9 @@ export interface IExecutionStats {
   total: number;
   completed: number;
   failed: number;
+  running: number;
+  pending: number;
+  cancelled: number;
   avgDurationMs: number;
   successRate: number;
 }

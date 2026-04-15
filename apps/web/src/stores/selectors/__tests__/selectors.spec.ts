@@ -123,6 +123,11 @@ function createState(): RootState {
         totalPages: 1,
       },
     },
+    folder: {
+      folders: [],
+      isLoading: false,
+      error: null,
+    },
   } as unknown as RootState;
 }
 

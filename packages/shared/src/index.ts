@@ -32,6 +32,7 @@ export type {
   IStepConnection,
   IWorkflowListItem,
 } from './types/workflow.types';
+export type { IFolder, IFolderAccessControl } from './types/folder.types';
 export type {
   IExecution,
   IExecutionStep,
@@ -72,6 +73,9 @@ export type {
 export { createWorkflowSchema, updateWorkflowSchema } from './validation/workflow.schema';
 export type { CreateWorkflowInput, UpdateWorkflowInput } from './validation/workflow.schema';
 
+export { createFolderSchema, updateFolderSchema } from './validation/folder.schema';
+export type { CreateFolderInput, UpdateFolderInput } from './validation/folder.schema';
+
 export {
   createWorkspaceSchema,
   updateWorkspaceSchema,
@@ -91,6 +95,7 @@ export {
   workspaceMemberParamsSchema,
   workflowParamsSchema,
   executionParamsSchema,
+  folderParamsSchema,
   webhookIngressParamsSchema,
   workflowListQuerySchema,
   executionListQuerySchema,

@@ -3,6 +3,7 @@ import { authReducer } from './auth-store';
 import { workspaceReducer } from './workspace-slice';
 import { workflowReducer } from './workflow-slice';
 import { executionReducer } from './execution-slice';
+import { folderReducer } from './folder-slice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     workspace: workspaceReducer,
     workflow: workflowReducer,
     execution: executionReducer,
+    folder: folderReducer,
   },
 });
 

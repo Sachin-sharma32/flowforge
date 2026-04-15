@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createWorkflow } from '@/stores/workflow-slice';
+import { fetchFolders } from '@/stores/folder-slice';
 import {
   Webhook,
   Clock,
@@ -42,10 +43,18 @@ export default function NewWorkflowPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [triggerType, setTriggerType] = useState('manual');
+  const [folderId, setFolderId] = useState('');
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const folders = useAppSelector((state) => state.folder.folders);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentWorkspace?.id) {
+      dispatch(fetchFolders({ workspaceId: currentWorkspace.id }));
+    }
+  }, [currentWorkspace?.id, dispatch]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +70,7 @@ export default function NewWorkflowPage() {
           input: {
             name: name.trim(),
             description,
+            folderId: folderId || undefined,
             trigger: { type: triggerType, config: {} },
             steps: [],
           },
@@ -140,6 +150,24 @@ export default function NewWorkflowPage() {
                     onChange={(e) => setDescription(e.target.value)}
                     data-testid="workflow-description-input"
                   />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="folder" className="text-sm font-medium">
+                    Folder
+                  </label>
+                  <select
+                    id="folder"
+                    value={folderId}
+                    onChange={(event) => setFolderId(event.target.value)}
+                    className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                  >
+                    <option value="">Uncategorized</option>
+                    {folders.map((folder) => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWorkflowDocument extends Document {
   workspaceId: mongoose.Types.ObjectId;
+  folderId?: mongoose.Types.ObjectId | null;
   name: string;
   description: string;
   status: 'draft' | 'active' | 'paused' | 'archived';
@@ -29,6 +30,7 @@ export interface IWorkflowDocument extends Document {
 const workflowSchema = new Schema<IWorkflowDocument>(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
+    folderId: { type: Schema.Types.ObjectId, ref: 'Folder', index: true, default: null },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
     status: {
@@ -74,6 +76,7 @@ const workflowSchema = new Schema<IWorkflowDocument>(
 );
 
 workflowSchema.index({ workspaceId: 1, status: 1 });
+workflowSchema.index({ workspaceId: 1, folderId: 1 });
 workflowSchema.index({ 'trigger.type': 1 });
 
 workflowSchema.set('toJSON', {

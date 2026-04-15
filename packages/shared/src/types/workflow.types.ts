@@ -23,6 +23,7 @@ export interface IWorkflowTrigger {
 export interface IWorkflow {
   id: string;
   workspaceId: string;
+  folderId?: string | null;
   name: string;
   description: string;
   status: WorkflowStatusValue;
@@ -38,6 +39,7 @@ export interface IWorkflow {
 
 export interface IWorkflowListItem {
   id: string;
+  folderId?: string | null;
   name: string;
   description: string;
   status: WorkflowStatusValue;

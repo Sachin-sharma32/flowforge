@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { DM_Sans } from 'next/font/google';
+import { DM_Sans, Spline_Sans } from 'next/font/google';
 import Script from 'next/script';
 import { RouteProgressBar } from '@/components/layout/route-progress-bar';
 import { DevClickToComponent } from '@/components/layout/click-to-component';
@@ -12,6 +12,13 @@ const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   display: 'swap',
+});
+
+const splineSans = Spline_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-spline-sans',
 });
 
 export const metadata: Metadata = {
@@ -78,8 +85,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={dmSans.className}>
+    <html lang="en" suppressHydrationWarning className={splineSans.variable}>
+      <body className="font-sans">
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>

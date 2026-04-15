@@ -53,6 +53,7 @@ export const createWorkflowSchema = z
   .object({
     name: z.string().min(1, 'Name is required').max(200),
     description: z.string().max(1000).default(''),
+    folderId: z.string().optional(),
     trigger: triggerSchema,
     steps: z.array(workflowStepSchema).default([]),
     variables: z.array(workflowVariableSchema).default([]),
@@ -63,6 +64,7 @@ export const updateWorkflowSchema = z
   .object({
     name: z.string().min(1).max(200).optional(),
     description: z.string().max(1000).optional(),
+    folderId: z.string().nullable().optional(),
     trigger: triggerSchema.optional(),
     steps: z.array(workflowStepSchema).optional(),
     variables: z.array(workflowVariableSchema).optional(),

@@ -3,10 +3,20 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, GitBranch, PlayCircle, Settings, Zap } from 'lucide-react';
+import {
+  LayoutDashboard,
+  GitBranch,
+  PlayCircle,
+  Settings,
+  Zap,
+  LayoutTemplate,
+  FolderKanban,
+} from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Templates', href: '/templates', icon: LayoutTemplate },
+  { name: 'Folders', href: '/folders', icon: FolderKanban },
   { name: 'Workflows', href: '/workflows', icon: GitBranch },
   { name: 'Executions', href: '/executions', icon: PlayCircle },
   { name: 'Settings', href: '/settings', icon: Settings },
