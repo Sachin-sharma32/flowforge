@@ -18,6 +18,7 @@ interface ConfirmActionDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  destructive?: boolean;
   onConfirm: () => void;
 }
 
@@ -28,6 +29,7 @@ export function ConfirmActionDialog({
   description,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
+  destructive = false,
   onConfirm,
 }: ConfirmActionDialogProps) {
   return (
@@ -39,7 +41,16 @@ export function ConfirmActionDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
+          <AlertDialogAction
+            className={
+              destructive
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : undefined
+            }
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

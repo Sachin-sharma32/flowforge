@@ -195,6 +195,64 @@
     background-image: radial-gradient(hsl(var(--foreground) / 0.03) 1px, transparent 1px);
   }
 
+  /* Dense workflow-builder dot pattern (matches run-area reference) */
+  .builder-dot-grid {
+    background-color: hsl(var(--surface-container-lowest));
+    background-image: radial-gradient(hsl(var(--foreground) / 0.14) 1px, transparent 1px);
+    background-size: 16px 16px;
+    background-position: 0 0;
+  }
+
+  .dark .builder-dot-grid {
+    background-color: hsl(var(--surface));
+    background-image: radial-gradient(hsl(var(--foreground) / 0.24) 1px, transparent 1px);
+  }
+
+  .builder-dot-grid-spotlight {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    --builder-spot-x: 50%;
+    --builder-spot-y: 50%;
+    --builder-spot-opacity: 0;
+  }
+
+  .builder-dot-grid-spotlight::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 260px;
+    border-radius: 9999px;
+    transform: translate3d(
+      calc(var(--builder-spot-x) - 130px),
+      calc(var(--builder-spot-y) - 130px),
+      0
+    );
+    background: radial-gradient(
+      circle,
+      hsl(var(--foreground) / 0.09) 0%,
+      hsl(var(--foreground) / 0.04) 26%,
+      transparent 66%
+    );
+    opacity: 0;
+    z-index: 0;
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 220ms ease;
+  }
+
+  .builder-dot-grid-spotlight > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dark .builder-dot-grid-spotlight::after {
+    opacity: var(--builder-spot-opacity);
+  }
+
   /* Glassmorphism surfaces */
   .glass {
     background-color: hsl(var(--surface-variant) / 0.7);

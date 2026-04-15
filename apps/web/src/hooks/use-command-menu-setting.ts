@@ -3,17 +3,20 @@
 import { useEffect, useState } from 'react';
 import {
   PREFERENCES_EVENT,
+  type CommandMenuPreference,
   readCommandMenuPreference,
   writeCommandMenuPreference,
 } from '@/lib/preferences';
 
 export function useCommandMenuSetting() {
-  const [enabled, setEnabled] = useState<boolean>(true);
+  const [preference, setPreference] = useState<CommandMenuPreference>(() =>
+    readCommandMenuPreference(),
+  );
 
   useEffect(() => {
-    setEnabled(readCommandMenuPreference());
+    setPreference(readCommandMenuPreference());
 
-    const handler = () => setEnabled(readCommandMenuPreference());
+    const handler = () => setPreference(readCommandMenuPreference());
     window.addEventListener('storage', handler);
     window.addEventListener(PREFERENCES_EVENT, handler);
 
@@ -23,10 +26,19 @@ export function useCommandMenuSetting() {
     };
   }, []);
 
-  const update = (next: boolean) => {
+  const update = (next: CommandMenuPreference) => {
     writeCommandMenuPreference(next);
-    setEnabled(next);
+    setPreference(next);
   };
 
-  return { enabled, setEnabled: update };
+  const setEnabled = (enabled: boolean) => update({ ...preference, enabled });
+  const setShortcut = (modifier: CommandMenuPreference['modifier'], key: string) =>
+    update({ ...preference, modifier, key });
+
+  return {
+    enabled: preference.enabled,
+    shortcut: { modifier: preference.modifier, key: preference.key },
+    setEnabled,
+    setShortcut,
+  };
 }

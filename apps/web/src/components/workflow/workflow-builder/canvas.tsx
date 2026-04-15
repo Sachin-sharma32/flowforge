@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -240,6 +240,9 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
   const [pendingDeleteStepId, setPendingDeleteStepId] = useState<string | null>(null);
   const [draggedStepId, setDraggedStepId] = useState<string | null>(null);
   const [dragOverStepId, setDragOverStepId] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const isSavingRef = useRef(false);
+  const latestStepsRef = useRef(steps);
   const { toast } = useToast();
 
   const selectedStep = steps.find((step) => step.id === selectedStepId) || null;
@@ -331,46 +334,98 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
     setHasUnsavedChanges(true);
   };
 
+  const persistSteps = useCallback(
+    async (nextSteps: BuilderStep[]) => {
+      if (isSavingRef.current) return;
+
+      isSavingRef.current = true;
+      if (mountedRef.current) {
+        setIsSaving(true);
+        setAutoSaveStatus('saving');
+      }
+
+      try {
+        const payload = fromBuilderSteps(nextSteps);
+        await onSave(payload);
+        if (mountedRef.current) {
+          setAutoSaveStatus('saved');
+          setHasUnsavedChanges(false);
+        }
+      } catch (error) {
+        if (mountedRef.current) {
+          setAutoSaveStatus('error');
+          toast({
+            variant: 'destructive',
+            title: 'Auto-save failed',
+            description: error instanceof Error ? error.message : 'Failed to save workflow.',
+          });
+        }
+      } finally {
+        isSavingRef.current = false;
+        if (mountedRef.current) {
+          setIsSaving(false);
+        }
+      }
+    },
+    [onSave, toast],
+  );
+
+  useEffect(() => {
+    latestStepsRef.current = steps;
+  }, [steps]);
+
   useEffect(() => {
     if (!hasUnsavedChanges) return;
 
-    const timeout = window.setTimeout(async () => {
-      const flowIssues = collectFlowIssues(steps);
-      if (flowIssues.length > 0) {
-        setAutoSaveStatus('error');
-        return;
-      }
-
-      setIsSaving(true);
-      setAutoSaveStatus('saving');
-
-      try {
-        const payload = fromBuilderSteps(steps);
-        await onSave(payload);
-        setAutoSaveStatus('saved');
-        setHasUnsavedChanges(false);
-      } catch (error) {
-        setAutoSaveStatus('error');
-        toast({
-          variant: 'destructive',
-          title: 'Auto-save failed',
-          description: error instanceof Error ? error.message : 'Failed to save workflow.',
-        });
-      } finally {
-        setIsSaving(false);
-      }
+    const timeout = window.setTimeout(() => {
+      void persistSteps(latestStepsRef.current);
     }, 900);
 
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [hasUnsavedChanges, onSave, steps, toast]);
+  }, [hasUnsavedChanges, persistSteps]);
+
+  useEffect(() => {
+    const flushOnLeave = () => {
+      if (!hasUnsavedChanges || isSavingRef.current) return;
+      void persistSteps(latestStepsRef.current);
+    };
+
+    window.addEventListener('beforeunload', flushOnLeave);
+    window.addEventListener('pagehide', flushOnLeave);
+    return () => {
+      window.removeEventListener('beforeunload', flushOnLeave);
+      window.removeEventListener('pagehide', flushOnLeave);
+    };
+  }, [hasUnsavedChanges, persistSteps]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (hasUnsavedChanges && !isSavingRef.current) {
+        void persistSteps(latestStepsRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, persistSteps]);
 
   const selectedIndex = selectedStep ? steps.findIndex((step) => step.id === selectedStep.id) : -1;
   const branchTargets =
     selectedIndex === -1
       ? []
       : steps.filter((step, index) => step.id !== selectedStep?.id && index > selectedIndex);
+
+  const handleBuilderSpotlightMove = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    const surface = event.currentTarget;
+    const rect = surface.getBoundingClientRect();
+    surface.style.setProperty('--builder-spot-x', `${event.clientX - rect.left}px`);
+    surface.style.setProperty('--builder-spot-y', `${event.clientY - rect.top}px`);
+    surface.style.setProperty('--builder-spot-opacity', '0.55');
+  }, []);
+
+  const handleBuilderSpotlightLeave = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    event.currentTarget.style.setProperty('--builder-spot-opacity', '0');
+  }, []);
 
   return (
     <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)_380px]">
@@ -418,7 +473,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
         </div>
       </aside>
 
-      <section className="flex min-h-0 flex-col border-b border-border/50 lg:border-b-0 lg:border-r">
+      <section className="relative flex min-h-0 flex-col border-b border-border/50 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between border-b border-border/50 px-5 py-4 lg:px-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -433,14 +488,18 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
               : autoSaveStatus === 'saved'
                 ? 'Auto-saved'
                 : autoSaveStatus === 'error'
-                  ? 'Fix flow issues to save'
+                  ? 'Auto-save failed'
                   : hasUnsavedChanges
                     ? 'Unsaved changes'
                     : 'All changes saved'}
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 lg:px-8 lg:py-6">
+        <div
+          className="builder-dot-grid builder-dot-grid-spotlight relative min-h-0 flex-1 overflow-y-auto px-5 py-4 lg:px-8 lg:py-6"
+          onMouseMove={handleBuilderSpotlightMove}
+          onMouseLeave={handleBuilderSpotlightLeave}
+        >
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
@@ -1603,6 +1662,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
         title="Delete step?"
         description="This step will be permanently removed from the workflow."
         confirmLabel="Delete step"
+        destructive
         onConfirm={() => {
           if (!pendingDeleteStepId) return;
           removeStep(pendingDeleteStepId);

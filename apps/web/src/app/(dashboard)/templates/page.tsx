@@ -237,17 +237,28 @@ function WorkflowSection({
       <div className="mb-6">
         {titleNode ?? <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-        {workflows.map((wf) => (
-          <SuggestedWorkflowCard
-            key={wf.id}
-            id={wf.id}
-            title={wf.title}
-            apps={wf.apps}
-            onDismiss={onDismiss}
-          />
-        ))}
-      </div>
+      <Carousel
+        opts={{
+          align: 'start',
+          loop: false,
+        }}
+        className="w-full"
+      >
+        <CarouselContent>
+          {workflows.map((wf) => (
+            <CarouselItem key={wf.id} className="md:basis-1/2 xl:basis-1/3">
+              <SuggestedWorkflowCard
+                id={wf.id}
+                title={wf.title}
+                apps={wf.apps}
+                onDismiss={onDismiss}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious />
+        <CarouselNext />
+      </Carousel>
     </section>
   );
 }

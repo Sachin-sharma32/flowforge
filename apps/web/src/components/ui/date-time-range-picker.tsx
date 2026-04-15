@@ -41,8 +41,27 @@ function parseLocalInputValue(value: string) {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
+function toDayStart(date: Date) {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+}
+
+function toDayEnd(date: Date) {
+  const normalized = new Date(date);
+  normalized.setHours(23, 59, 59, 999);
+  return normalized;
+}
+
 export function DateTimeRangePicker({ value, onChange, className }: DateTimeRangePickerProps) {
   const [open, setOpen] = useState(false);
+  const selectedRange = useMemo<DateRange>(
+    () => ({
+      from: value.from ? toDayStart(value.from) : undefined,
+      to: value.to ? toDayStart(value.to) : undefined,
+    }),
+    [value.from, value.to],
+  );
 
   const label = useMemo(() => {
     if (!value.from && !value.to) return 'Select range';
@@ -73,7 +92,7 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[360px] p-3" align="start">
+      <PopoverContent className="w-auto max-w-[min(100vw-2rem,760px)] p-3" align="start">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             {PRESETS.map((preset) => (
@@ -90,9 +109,16 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
 
           <Calendar
             mode="range"
-            numberOfMonths={1}
-            selected={{ from: value.from, to: value.to } as DateRange}
-            onSelect={(range) => onChange({ from: range?.from, to: range?.to })}
+            numberOfMonths={2}
+            defaultMonth={selectedRange.from || new Date()}
+            selected={selectedRange}
+            onSelect={(range) =>
+              onChange({
+                from: range?.from ? toDayStart(range.from) : undefined,
+                to: range?.to ? toDayEnd(range.to) : undefined,
+              })
+            }
+            className="rounded-xl border border-border/50 p-2"
           />
 
           <div className="grid grid-cols-2 gap-2">

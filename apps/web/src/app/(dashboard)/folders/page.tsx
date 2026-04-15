@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { FolderPlus, ShieldCheck, Trash2 } from 'lucide-react';
+import { Folder, FolderPlus, MoreHorizontal, Pin, PinOff, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -12,11 +12,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createFolder, deleteFolder, fetchFolders, updateFolder } from '@/stores/folder-slice';
-import { fetchWorkflows } from '@/stores/workflow-slice';
+import { fetchWorkflows, updateWorkflow } from '@/stores/workflow-slice';
 import { useToast } from '@/hooks/use-toast';
+
+const PINNED_FOLDERS_KEY = 'flowforge.pinned_folders';
 
 const ROLE_OPTIONS = [
   { value: 'viewer', label: 'Viewer' },
@@ -24,6 +45,32 @@ const ROLE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
   { value: 'owner', label: 'Owner' },
 ] as const;
+
+const COLOR_OPTIONS = [
+  { value: '#60a5fa', label: 'Ocean', icon: '🌊' },
+  { value: '#34d399', label: 'Mint', icon: '🌿' },
+  { value: '#f59e0b', label: 'Honey', icon: '🍯' },
+  { value: '#f87171', label: 'Rose', icon: '🌹' },
+  { value: '#a78bfa', label: 'Lavender', icon: '🪻' },
+  { value: '#fb7185', label: 'Coral', icon: '🪸' },
+] as const;
+
+function readPinnedFolders(): string[] {
+  if (typeof window === 'undefined') return [];
+  const raw = window.localStorage.getItem(PINNED_FOLDERS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as string[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePinnedFolders(folderIds: string[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(PINNED_FOLDERS_KEY, JSON.stringify(folderIds));
+}
 
 export default function FoldersPage() {
   const dispatch = useAppDispatch();
@@ -33,11 +80,13 @@ export default function FoldersPage() {
   const workflows = useAppSelector((state) => state.workflow.workflows);
   const { toast } = useToast();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#3b82f6');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [search, setSearch] = useState('');
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderColor, setNewFolderColor] = useState<string>(COLOR_OPTIONS[0].value);
+  const [pinNewFolder, setPinNewFolder] = useState(false);
+  const [newFolderWorkflowId, setNewFolderWorkflowId] = useState('none');
+  const [pinnedFolders, setPinnedFolders] = useState<string[]>([]);
   const [folderToDelete, setFolderToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
@@ -47,10 +96,14 @@ export default function FoldersPage() {
   }, [currentWorkspace?.id, dispatch]);
 
   useEffect(() => {
+    setPinnedFolders(readPinnedFolders());
+  }, []);
+
+  useEffect(() => {
     if (!error) return;
     toast({
       variant: 'destructive',
-      title: 'Folder operation failed',
+      title: 'Folder action failed',
       description: error,
     });
   }, [error, toast]);
@@ -72,29 +125,42 @@ export default function FoldersPage() {
     return map;
   }, [workflows]);
 
-  const filteredFolders = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return folders;
-    return folders.filter(
-      (folder) =>
-        folder.name.toLowerCase().includes(q) ||
-        folder.description.toLowerCase().includes(q) ||
-        folder.slug.toLowerCase().includes(q),
-    );
-  }, [folders, search]);
+  const uncategorizedWorkflows = useMemo(
+    () => workflows.filter((workflow) => !workflow.folderId),
+    [workflows],
+  );
 
-  const handleCreate = async () => {
-    if (!currentWorkspace?.id || !name.trim()) return;
+  const sortedFolders = useMemo(() => {
+    return [...folders].sort((a, b) => {
+      const aPinned = pinnedFolders.includes(a.id);
+      const bPinned = pinnedFolders.includes(b.id);
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [folders, pinnedFolders]);
+
+  const togglePinnedFolder = (folderId: string) => {
+    setPinnedFolders((current) => {
+      const next = current.includes(folderId)
+        ? current.filter((id) => id !== folderId)
+        : [folderId, ...current];
+      writePinnedFolders(next);
+      return next;
+    });
+  };
+
+  const handleCreateFolder = async () => {
+    if (!currentWorkspace?.id || !newFolderName.trim()) return;
 
     setIsCreating(true);
     try {
-      await dispatch(
+      const created = await dispatch(
         createFolder({
           workspaceId: currentWorkspace.id,
           input: {
-            name: name.trim(),
-            description,
-            color,
+            name: newFolderName.trim(),
+            description: '',
+            color: newFolderColor,
             accessControl: {
               minViewRole: 'viewer',
               minEditRole: 'editor',
@@ -104,26 +170,47 @@ export default function FoldersPage() {
         }),
       ).unwrap();
 
-      setName('');
-      setDescription('');
-      setColor('#3b82f6');
+      if (pinNewFolder) {
+        const nextPinned = [created.id, ...pinnedFolders.filter((id) => id !== created.id)];
+        writePinnedFolders(nextPinned);
+        setPinnedFolders(nextPinned);
+      }
+
+      if (newFolderWorkflowId !== 'none') {
+        await dispatch(
+          updateWorkflow({
+            workspaceId: currentWorkspace.id,
+            workflowId: newFolderWorkflowId,
+            input: { folderId: created.id },
+          }),
+        ).unwrap();
+      }
+
       toast({
         variant: 'success',
         title: 'Folder created',
-        description: 'The folder is ready to organize workflows.',
+        description: `${created.name} is ready.`,
+      });
+
+      setNewFolderName('');
+      setNewFolderColor(COLOR_OPTIONS[0].value);
+      setPinNewFolder(false);
+      setNewFolderWorkflowId('none');
+      setIsCreateOpen(false);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not create folder',
+        description: err instanceof Error ? err.message : 'Please try again.',
       });
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleAccessChange = async (
+  const handleSetAccess = async (
     folderId: string,
-    accessControl: {
-      minViewRole: string;
-      minEditRole: string;
-      minExecuteRole: string;
-    },
+    role: (typeof ROLE_OPTIONS)[number]['value'],
   ) => {
     if (!currentWorkspace?.id || !canManageFolders) return;
     try {
@@ -131,18 +218,24 @@ export default function FoldersPage() {
         updateFolder({
           workspaceId: currentWorkspace.id,
           folderId,
-          input: { accessControl },
+          input: {
+            accessControl: {
+              minViewRole: role,
+              minEditRole: role,
+              minExecuteRole: role,
+            },
+          },
         }),
       ).unwrap();
       toast({
         variant: 'success',
         title: 'Access updated',
-        description: 'Folder permissions were updated.',
+        description: `Folder access is now ${role}.`,
       });
     } catch (err) {
       toast({
         variant: 'destructive',
-        title: 'Failed to update access',
+        title: 'Could not update access',
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     }
@@ -154,60 +247,14 @@ export default function FoldersPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Folders</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Organize workflows by domain and apply folder-level access controls.
+            Organize workflows with cleaner folder-level permissions.
           </p>
         </div>
+        <Button onClick={() => setIsCreateOpen(true)} disabled={!canManageFolders}>
+          <FolderPlus className="mr-2 h-4 w-4" />
+          New Folder
+        </Button>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Create Folder</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-[1.2fr_1.4fr_120px_auto]">
-          <Input
-            placeholder="Folder name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            disabled={!canManageFolders}
-          />
-          <Input
-            placeholder="Description"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            disabled={!canManageFolders}
-          />
-          <Input
-            type="color"
-            value={color}
-            onChange={(event) => setColor(event.target.value)}
-            disabled={!canManageFolders}
-          />
-          <Button
-            type="button"
-            onClick={handleCreate}
-            disabled={!canManageFolders || isCreating || !name.trim()}
-          >
-            <FolderPlus className="mr-2 h-4 w-4" />
-            {isCreating ? 'Creating...' : 'Add Folder'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search folders by name, slug, or description"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </CardContent>
-      </Card>
-
-      {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
 
       {isLoading ? (
         <Card>
@@ -215,90 +262,193 @@ export default function FoldersPage() {
             Loading folders...
           </CardContent>
         </Card>
-      ) : filteredFolders.length === 0 ? (
+      ) : sortedFolders.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            No folders found.
+            No folders yet. Create one to organize workflows.
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {filteredFolders.map((folder) => (
-            <Card key={folder.id} className="overflow-hidden">
-              <div className="h-1.5 w-full" style={{ backgroundColor: folder.color }} />
-              <CardContent className="space-y-4 p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{folder.name}</h3>
-                    <p className="text-xs text-muted-foreground">/{folder.slug}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {folder.description || 'No description'}
-                    </p>
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground">
-                    <p>{workflowCounts.get(folder.id) || folder.workflowCount || 0} workflows</p>
-                  </div>
-                </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {sortedFolders.map((folder) => {
+            const isPinned = pinnedFolders.includes(folder.id);
+            const minRole = folder.accessControl.minViewRole;
 
-                <div className="rounded-xl border border-border/60 bg-background/40 p-3">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Access Control
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {[
-                      { key: 'minViewRole', label: 'View' },
-                      { key: 'minEditRole', label: 'Edit' },
-                      { key: 'minExecuteRole', label: 'Execute' },
-                    ].map((item) => (
-                      <div key={item.key} className="space-y-1">
-                        <p className="text-xs text-muted-foreground">{item.label}</p>
-                        <Select
-                          value={
-                            folder.accessControl[item.key as keyof typeof folder.accessControl]
-                          }
-                          onValueChange={(value) =>
-                            handleAccessChange(folder.id, {
-                              ...folder.accessControl,
-                              [item.key]: value,
-                            })
-                          }
-                          disabled={!canManageFolders}
-                        >
-                          <SelectTrigger className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ROLE_OPTIONS.map((role) => (
-                              <SelectItem key={role.value} value={role.value}>
-                                {role.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+            return (
+              <Card key={folder.id} className="overflow-visible">
+                <CardContent className="relative space-y-4 p-4">
+                  <div
+                    className="absolute left-4 top-0 h-3 w-16 -translate-y-1/2 rounded-t-lg border border-border/50 border-b-0"
+                    style={{ backgroundColor: `${folder.color}22` }}
+                  />
+
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: `${folder.color}33` }}
+                      >
+                        <Folder className="h-5 w-5" style={{ color: folder.color }} />
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div>
+                        <p className="text-sm font-semibold">{folder.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {workflowCounts.get(folder.id) || folder.workflowCount || 0} workflows
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    disabled={!canManageFolders}
-                    onClick={() => {
-                      setFolderToDelete({ id: folder.id, name: folder.name });
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Folder
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => togglePinnedFolder(folder.id)}>
+                          {isPinned ? (
+                            <>
+                              <PinOff className="h-4 w-4" /> Unpin folder
+                            </>
+                          ) : (
+                            <>
+                              <Pin className="h-4 w-4" /> Pin folder
+                            </>
+                          )}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>
+                          <span className="inline-flex items-center gap-1.5">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Access
+                          </span>
+                        </DropdownMenuLabel>
+                        {ROLE_OPTIONS.map((role) => (
+                          <DropdownMenuCheckboxItem
+                            key={role.value}
+                            checked={minRole === role.value}
+                            disabled={!canManageFolders}
+                            onCheckedChange={() => handleSetAccess(folder.id, role.value)}
+                          >
+                            {role.label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          disabled={!canManageFolders}
+                          onClick={() => setFolderToDelete({ id: folder.id, name: folder.name })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete folder
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg bg-surface-container-high px-3 py-2 text-xs">
+                    <span className="text-muted-foreground">Minimum role</span>
+                    <span className="font-medium capitalize">{minRole}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Folder</DialogTitle>
+            <DialogDescription>
+              Create a compact folder and optionally assign one uncategorized workflow.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Folder Name</label>
+              <Input
+                value={newFolderName}
+                onChange={(event) => setNewFolderName(event.target.value)}
+                placeholder="e.g. Sales Ops"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Folder Color</label>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_OPTIONS.map((colorOption) => (
+                  <button
+                    key={colorOption.value}
+                    type="button"
+                    onClick={() => setNewFolderColor(colorOption.value)}
+                    className={`rounded-full p-0.5 transition ${
+                      newFolderColor === colorOption.value
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                        : 'ring-1 ring-border/60'
+                    }`}
+                    aria-label={`Select ${colorOption.label} color`}
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback
+                        style={{
+                          backgroundColor: `${colorOption.value}33`,
+                          color: colorOption.value,
+                        }}
+                      >
+                        {colorOption.icon}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Move Uncategorized Workflow</label>
+              <Select value={newFolderWorkflowId} onValueChange={setNewFolderWorkflowId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Do not move any workflow</SelectItem>
+                  {uncategorizedWorkflows.map((workflow) => (
+                    <SelectItem key={workflow.id} value={workflow.id}>
+                      {workflow.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between rounded-md bg-surface-container-high px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Pin this folder</p>
+                <p className="text-xs text-muted-foreground">
+                  Pinned folders appear first in the list.
+                </p>
+              </div>
+              <Switch checked={pinNewFolder} onCheckedChange={setPinNewFolder} />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateFolder}
+              disabled={!canManageFolders || isCreating || !newFolderName.trim()}
+            >
+              {isCreating ? 'Creating...' : 'Create Folder'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmActionDialog
         open={Boolean(folderToDelete)}
@@ -308,16 +458,22 @@ export default function FoldersPage() {
         title="Delete folder?"
         description={
           folderToDelete
-            ? `This will permanently delete "${folderToDelete.name}". Workflows inside it will be uncategorized.`
+            ? `This will permanently delete "${folderToDelete.name}". Workflows inside it will become uncategorized.`
             : ''
         }
         confirmLabel="Delete folder"
+        destructive
         onConfirm={async () => {
           if (!currentWorkspace?.id || !folderToDelete) return;
           try {
             await dispatch(
               deleteFolder({ workspaceId: currentWorkspace.id, folderId: folderToDelete.id }),
             ).unwrap();
+            setPinnedFolders((current) => {
+              const next = current.filter((id) => id !== folderToDelete.id);
+              writePinnedFolders(next);
+              return next;
+            });
             toast({
               variant: 'success',
               title: 'Folder deleted',

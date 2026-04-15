@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/command';
 import { useCommandMenuSetting } from '@/hooks/use-command-menu-setting';
 import { getRecentRoutes } from '@/lib/recent-routes';
+import { formatShortcutLabel, matchesShortcut } from '@/lib/preferences';
 
 const DASHBOARD_ROUTES = [
   { label: 'Dashboard', href: '/dashboard', shortcut: 'D' },
@@ -41,7 +42,7 @@ export function DashboardCommandMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const { enabled } = useCommandMenuSetting();
+  const { enabled, shortcut } = useCommandMenuSetting();
   const [recentRoutes, setRecentRoutes] = useState(() => getRecentRoutes());
 
   useEffect(() => {
@@ -50,20 +51,22 @@ export function DashboardCommandMenu() {
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      const isCommandSpace = (event.metaKey || event.ctrlKey) && event.code === 'Space';
-      if (!enabled || !isCommandSpace) return;
+      if (!enabled || !matchesShortcut(event, { ...shortcut, enabled })) return;
       event.preventDefault();
       setOpen((prev) => !prev);
     };
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, [enabled]);
+  }, [enabled, shortcut]);
 
-  const recent = useMemo(
-    () => recentRoutes.filter((route) => route.path.startsWith('/')).map((route) => route.path),
-    [recentRoutes],
-  );
+  const recent = useMemo(() => {
+    const paths = recentRoutes
+      .filter((route) => route.path.startsWith('/'))
+      .map((route) => route.path);
+    return Array.from(new Set(paths));
+  }, [recentRoutes]);
+  const shortcutLabel = formatShortcutLabel(shortcut);
 
   const navigate = (href: string) => {
     setOpen(false);
@@ -81,7 +84,7 @@ export function DashboardCommandMenu() {
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Search</span>
         <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-          ⌘ Space
+          {shortcutLabel}
         </span>
       </Button>
 
@@ -89,21 +92,6 @@ export function DashboardCommandMenu() {
         <CommandInput placeholder="Find page or jump to recent route..." />
         <CommandList>
           <CommandEmpty>No matching route found.</CommandEmpty>
-
-          <CommandGroup heading="Pages">
-            {DASHBOARD_ROUTES.map((route) => (
-              <CommandItem
-                key={route.href}
-                value={route.label}
-                onSelect={() => navigate(route.href)}
-              >
-                {route.label}
-                <CommandShortcut>{route.shortcut}</CommandShortcut>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
 
           <CommandGroup heading="Recent">
             {recent.length === 0 ? (
@@ -118,6 +106,21 @@ export function DashboardCommandMenu() {
                 </CommandItem>
               ))
             )}
+          </CommandGroup>
+
+          <CommandSeparator />
+
+          <CommandGroup heading="Pages">
+            {DASHBOARD_ROUTES.map((route) => (
+              <CommandItem
+                key={route.href}
+                value={route.label}
+                onSelect={() => navigate(route.href)}
+              >
+                {route.label}
+                <CommandShortcut>{route.shortcut}</CommandShortcut>
+              </CommandItem>
+            ))}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

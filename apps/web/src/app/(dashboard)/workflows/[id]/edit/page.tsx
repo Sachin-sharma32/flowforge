@@ -54,7 +54,6 @@ export default function WorkflowEditPage() {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
       <div className="flex items-center gap-3 border-b border-border/60 px-6 py-4 lg:px-8">
         <Button variant="ghost" size="icon" onClick={() => router.push(`/workflows/${workflowId}`)}>
           <ArrowLeft className="h-4 w-4" />

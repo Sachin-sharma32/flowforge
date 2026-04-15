@@ -17,6 +17,9 @@ const dmSansHeading = DM_Sans({
   weight: ['600', '700'],
 });
 
+const ROUTE_PROGRESS_START_EVENT = 'flowforge:route-progress:start';
+const ROUTE_PROGRESS_STOP_EVENT = 'flowforge:route-progress:stop';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,12 +49,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    window.dispatchEvent(new Event(ROUTE_PROGRESS_START_EVENT));
     dispatch(clearError());
     dispatch(clearNotice());
     const result = await dispatch(login({ email, password }));
     if (login.fulfilled.match(result)) {
       router.push('/dashboard');
+      return;
     }
+    window.dispatchEvent(new Event(ROUTE_PROGRESS_STOP_EVENT));
   };
 
   return (
@@ -73,6 +79,7 @@ export default function LoginPage() {
         transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
         onSubmit={handleSubmit}
         data-testid="login-form"
+        data-route-progress
         className="space-y-5"
       >
         <SocialAuthButtons disabled={isLoading} />

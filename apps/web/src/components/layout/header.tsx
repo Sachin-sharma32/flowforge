@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -9,11 +10,13 @@ import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 import { DashboardCommandMenu } from '@/components/layout/dashboard-command-menu';
 import { DashboardBreadcrumbs } from '@/components/layout/dashboard-breadcrumbs';
 import { AvatarWithStatus } from '@/components/ui/avatar-with-status';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 
 export function Header() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
@@ -39,7 +42,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-full hover:bg-surface hover:text-foreground"
-              onClick={handleLogout}
+              onClick={() => setConfirmLogoutOpen(true)}
               aria-label="Sign out"
             >
               <LogOut className="h-4 w-4" />
@@ -47,6 +50,15 @@ export function Header() {
           </div>
         )}
       </div>
+      <ConfirmActionDialog
+        open={confirmLogoutOpen}
+        onOpenChange={setConfirmLogoutOpen}
+        title="Log out now?"
+        description="You can sign back in anytime with the same account."
+        confirmLabel="Log out"
+        destructive
+        onConfirm={handleLogout}
+      />
     </header>
   );
 }

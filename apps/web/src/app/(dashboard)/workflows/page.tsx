@@ -19,6 +19,14 @@ import {
   type DateTimeRangeValue,
 } from '@/components/ui/date-time-range-picker';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -66,6 +74,7 @@ export default function WorkflowsPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [timeRange, setTimeRange] = useState<DateTimeRangeValue>({});
   const [page, setPage] = useState(1);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [workflowToDelete, setWorkflowToDelete] = useState<{ id: string; name: string } | null>(
     null,
@@ -128,6 +137,17 @@ export default function WorkflowsPage() {
     return { total, active, paused, draft };
   }, [workflows]);
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (search.trim()) count += 1;
+    if (status) count += 1;
+    if (folderId) count += 1;
+    if (sortBy !== 'updatedAt') count += 1;
+    if (sortOrder !== 'desc') count += 1;
+    if (timeRange.from || timeRange.to) count += 1;
+    return count;
+  }, [search, status, folderId, sortBy, sortOrder, timeRange.from, timeRange.to]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -175,85 +195,102 @@ export default function WorkflowsPage() {
       </div>
 
       <Card>
-        <CardContent className="space-y-4 p-4">
+        <CardContent className="flex items-center justify-between gap-3 p-4">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filters & Sorting
+            {activeFilterCount > 0 ? `${activeFilterCount} active filters` : 'No filters applied'}
           </div>
+          <Button variant="outline" onClick={() => setIsFiltersOpen(true)}>
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Sort & Filter
+          </Button>
+        </CardContent>
+      </Card>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="relative xl:col-span-2">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by workflow name"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
+      <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Sort & Filter Workflows</DialogTitle>
+            <DialogDescription>Adjust filters to narrow the workflow list.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-1">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="relative xl:col-span-2">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by workflow name"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select
+                value={status || 'all'}
+                onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={folderId || 'all'}
+                onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All folders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All folders</SelectItem>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <Select
-              value={status || 'all'}
-              onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="paused">Paused</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updatedAt">Sort: Last updated</SelectItem>
+                  <SelectItem value="createdAt">Sort: Created date</SelectItem>
+                  <SelectItem value="name">Sort: Name</SelectItem>
+                  <SelectItem value="lastExecutedAt">Sort: Last executed</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select
-              value={folderId || 'all'}
-              onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All folders" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All folders</SelectItem>
-                {folders.map((folder) => (
-                  <SelectItem key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort order" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">Descending</SelectItem>
+                  <SelectItem value="asc">Ascending</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <DateTimeRangePicker
+                value={timeRange}
+                onChange={setTimeRange}
+                className="xl:col-span-2"
+              />
+            </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="updatedAt">Sort: Last updated</SelectItem>
-                <SelectItem value="createdAt">Sort: Created date</SelectItem>
-                <SelectItem value="name">Sort: Name</SelectItem>
-                <SelectItem value="lastExecutedAt">Sort: Last executed</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort order" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Descending</SelectItem>
-                <SelectItem value="asc">Ascending</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <DateTimeRangePicker
-              value={timeRange}
-              onChange={setTimeRange}
-              className="xl:col-span-2"
-            />
-
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -266,13 +303,15 @@ export default function WorkflowsPage() {
                 setTimeRange({});
                 setPage(1);
               }}
-              className="xl:col-span-2"
             >
-              Reset Filters
+              Reset
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <Button type="button" onClick={() => setIsFiltersOpen(false)}>
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -465,6 +504,7 @@ export default function WorkflowsPage() {
             : ''
         }
         confirmLabel="Delete workflow"
+        destructive
         onConfirm={async () => {
           if (!currentWorkspace || !workflowToDelete) return;
           try {

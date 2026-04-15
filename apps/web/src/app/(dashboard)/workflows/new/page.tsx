@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +60,18 @@ export default function NewWorkflowPage() {
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
+  const handleBuilderSpotlightMove = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    const surface = event.currentTarget;
+    const rect = surface.getBoundingClientRect();
+    surface.style.setProperty('--builder-spot-x', `${event.clientX - rect.left}px`);
+    surface.style.setProperty('--builder-spot-y', `${event.clientY - rect.top}px`);
+    surface.style.setProperty('--builder-spot-opacity', '0.55');
+  }, []);
+
+  const handleBuilderSpotlightLeave = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    event.currentTarget.style.setProperty('--builder-spot-opacity', '0');
+  }, []);
+
   useEffect(() => {
     if (currentWorkspace?.id) {
       dispatch(fetchFolders({ workspaceId: currentWorkspace.id }));
@@ -100,8 +112,11 @@ export default function NewWorkflowPage() {
 
   return (
     <div className="relative grid h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
-      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
-      <section className="relative border-b border-border/60 px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10">
+      <section
+        className="builder-dot-grid builder-dot-grid-spotlight relative border-b border-border/60 px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10"
+        onMouseMove={handleBuilderSpotlightMove}
+        onMouseLeave={handleBuilderSpotlightLeave}
+      >
         <div className="mx-auto flex h-full w-full max-w-4xl flex-col">
           <div className="mb-5">
             <Button
@@ -243,29 +258,35 @@ export default function NewWorkflowPage() {
 
       <aside className="relative hidden bg-gradient-to-br from-primary/10 via-background to-background px-8 py-10 lg:block">
         <div className="space-y-4">
-          <Alert>
-            <Lightbulb className="h-4 w-4" />
-            <AlertTitle>Start with a clear trigger</AlertTitle>
-            <AlertDescription>
-              Choose how the flow starts first, then add steps in order. Trigger choice affects what
-              inputs are available in later steps.
-            </AlertDescription>
+          <Alert className="flex items-start gap-3">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <AlertTitle>Start with a clear trigger</AlertTitle>
+              <AlertDescription>
+                Choose how the flow starts first, then add steps in order. Trigger choice affects
+                what inputs are available in later steps.
+              </AlertDescription>
+            </div>
           </Alert>
-          <Alert>
-            <Lightbulb className="h-4 w-4" />
-            <AlertTitle>Keep step names action-oriented</AlertTitle>
-            <AlertDescription>
-              Use names like “Fetch New Lead” and “Send Slack Alert” so debugging and handoffs stay
-              fast for your team.
-            </AlertDescription>
+          <Alert className="flex items-start gap-3">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <AlertTitle>Keep step names action-oriented</AlertTitle>
+              <AlertDescription>
+                Use names like “Fetch New Lead” and “Send Slack Alert” so debugging and handoffs
+                stay fast for your team.
+              </AlertDescription>
+            </div>
           </Alert>
-          <Alert>
-            <Lightbulb className="h-4 w-4" />
-            <AlertTitle>Validate branch paths early</AlertTitle>
-            <AlertDescription>
-              If you add condition steps, set true/false branches right away to prevent broken flow
-              checks when autosave runs.
-            </AlertDescription>
+          <Alert className="flex items-start gap-3">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <AlertTitle>Validate branch paths early</AlertTitle>
+              <AlertDescription>
+                If you add condition steps, set true/false branches right away to prevent broken
+                flow checks when autosave runs.
+              </AlertDescription>
+            </div>
           </Alert>
         </div>
       </aside>

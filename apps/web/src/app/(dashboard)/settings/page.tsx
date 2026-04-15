@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
@@ -14,6 +21,15 @@ import { Settings, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useCommandMenuSetting } from '@/hooks/use-command-menu-setting';
+import { formatShortcutLabel } from '@/lib/preferences';
+
+const SHORTCUT_KEY_OPTIONS = ['Space', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
+
+function friendlyBillingError(action: 'checkout' | 'portal') {
+  return action === 'checkout'
+    ? 'We could not open checkout right now. Please try again in a moment or contact support if this keeps happening.'
+    : 'We could not open the billing portal right now. Please try again in a moment.';
+}
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
@@ -21,8 +37,12 @@ export default function SettingsPage() {
   const [name, setName] = useState(currentWorkspace?.name || '');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
-  const { enabled: commandMenuEnabled, setEnabled: setCommandMenuEnabled } =
-    useCommandMenuSetting();
+  const {
+    enabled: commandMenuEnabled,
+    shortcut: commandMenuShortcut,
+    setEnabled: setCommandMenuEnabled,
+    setShortcut: setCommandMenuShortcut,
+  } = useCommandMenuSetting();
 
   const [billingSummary, setBillingSummary] = useState<IWorkspaceBillingSummary | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -115,11 +135,11 @@ export default function SettingsPage() {
         throw new Error('Missing checkout URL');
       }
       window.location.href = url;
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       toast({
         variant: 'destructive',
         title: 'Checkout failed',
-        description: getApiErrorMessage(err, 'Failed to start checkout'),
+        description: friendlyBillingError('checkout'),
       });
       setBillingAction(null);
     }
@@ -137,11 +157,11 @@ export default function SettingsPage() {
         throw new Error('Missing portal URL');
       }
       window.location.href = url;
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       toast({
         variant: 'destructive',
         title: 'Portal unavailable',
-        description: getApiErrorMessage(err, 'Failed to open billing portal'),
+        description: friendlyBillingError('portal'),
       });
       setBillingAction(null);
     }
@@ -181,10 +201,55 @@ export default function SettingsPage() {
             <div>
               <p className="text-sm font-medium">Command Menu Shortcut</p>
               <p className="text-xs text-muted-foreground">
-                Enable or disable Cmd/Ctrl + Space quick navigation.
+                Enable quick navigation and customize the keyboard shortcut.
               </p>
             </div>
             <Switch checked={commandMenuEnabled} onCheckedChange={setCommandMenuEnabled} />
+          </div>
+          <div className="grid gap-3 rounded-md border border-border/70 bg-background/50 p-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Modifier</p>
+              <Select
+                value={commandMenuShortcut.modifier}
+                onValueChange={(value: 'meta' | 'ctrl' | 'alt') =>
+                  setCommandMenuShortcut(value, commandMenuShortcut.key)
+                }
+                disabled={!commandMenuEnabled}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="meta">Command (Mac)</SelectItem>
+                  <SelectItem value="ctrl">Control</SelectItem>
+                  <SelectItem value="alt">Alt (Windows)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Key</p>
+              <Select
+                value={commandMenuShortcut.key}
+                onValueChange={(value) =>
+                  setCommandMenuShortcut(commandMenuShortcut.modifier, value)
+                }
+                disabled={!commandMenuEnabled}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SHORTCUT_KEY_OPTIONS.map((keyOption) => (
+                    <SelectItem key={keyOption} value={keyOption}>
+                      {keyOption}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="sm:col-span-2 text-xs text-muted-foreground">
+              Current shortcut: {formatShortcutLabel(commandMenuShortcut)}
+            </p>
           </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}

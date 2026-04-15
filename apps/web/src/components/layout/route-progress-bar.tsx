@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
+const START_EVENT = 'flowforge:route-progress:start';
+const STOP_EVENT = 'flowforge:route-progress:stop';
 const MIN_VISIBLE_MS = 280;
 const SAFETY_TIMEOUT_MS = 12000;
 const LOADING_TARGET = 0.84;
@@ -85,6 +87,12 @@ export function RouteProgressBar() {
   }, [pathname, stop]);
 
   useEffect(() => {
+    const onManualStart = () => start();
+    const onManualStop = () => stop();
+
+    window.addEventListener(START_EVENT, onManualStart);
+    window.addEventListener(STOP_EVENT, onManualStop);
+
     const onClick = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -114,12 +122,23 @@ export function RouteProgressBar() {
       start();
     };
 
+    const onSubmit = (event: SubmitEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLFormElement)) return;
+      if (!target.hasAttribute('data-route-progress')) return;
+      start();
+    };
+
     document.addEventListener('click', onClick, true);
+    document.addEventListener('submit', onSubmit, true);
     return () => {
+      window.removeEventListener(START_EVENT, onManualStart);
+      window.removeEventListener(STOP_EVENT, onManualStop);
       document.removeEventListener('click', onClick, true);
+      document.removeEventListener('submit', onSubmit, true);
       clearTimeoutRef();
     };
-  }, [clearTimeoutRef, start]);
+  }, [clearTimeoutRef, start, stop]);
 
   return (
     <div

@@ -1,7 +1,14 @@
 'use client';
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import type { IExecutionStats } from '@flowforge/shared';
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 
 const STATUS_COLORS = {
   completed: 'hsl(var(--success))',
@@ -32,40 +39,34 @@ export function ExecutionStatusChart({ stats, totalExecutions }: ExecutionStatus
     );
   }
 
+  const chartConfig = {
+    Completed: { label: 'Completed', color: STATUS_COLORS.completed },
+    Failed: { label: 'Failed', color: STATUS_COLORS.failed },
+    Other: { label: 'Other', color: STATUS_COLORS.pending },
+  };
+
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={50}
-          outerRadius={80}
-          paddingAngle={3}
-          dataKey="value"
-          strokeWidth={0}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--outline-variant) / 0.2)',
-            borderRadius: '8px',
-            fontSize: '12px',
-          }}
-          formatter={(value: number, name: string) => [`${value} executions`, name]}
-        />
-        <Legend
-          verticalAlign="bottom"
-          height={36}
-          iconType="circle"
-          iconSize={8}
-          formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <ChartContainer config={chartConfig} className="h-[200px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={50}
+            outerRadius={80}
+            paddingAngle={3}
+            dataKey="value"
+            strokeWidth={0}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <ChartTooltip content={<ChartTooltipContent className="min-w-[150px]" />} />
+          <ChartLegend content={<ChartLegendContent />} verticalAlign="bottom" height={36} />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartContainer>
   );
 }

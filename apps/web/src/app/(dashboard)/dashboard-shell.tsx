@@ -65,7 +65,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isWorkflowBuilderRoute) {
     return (
       <div className="app-background relative h-screen w-screen overflow-hidden">
-        <div className="dot-grid pointer-events-none absolute inset-0 opacity-45" />
         <main className="relative h-full w-full overflow-hidden">
           <PageTransition className="h-full">{children}</PageTransition>
         </main>

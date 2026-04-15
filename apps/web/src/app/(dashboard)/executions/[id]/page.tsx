@@ -163,6 +163,7 @@ export default function ExecutionDetailPage() {
         title="Cancel execution?"
         description="The running execution will stop and any pending steps will not run."
         confirmLabel="Cancel execution"
+        destructive
         onConfirm={async () => {
           if (!currentWorkspace) return;
           try {
