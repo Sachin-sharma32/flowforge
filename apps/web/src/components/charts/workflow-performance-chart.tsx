@@ -43,7 +43,11 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
         layout="vertical"
         margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="hsl(var(--outline-variant) / 0.25)"
+          horizontal={false}
+        />
         <XAxis
           type="number"
           stroke="hsl(var(--muted-foreground))"
@@ -64,7 +68,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
         <Tooltip
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
+            border: '1px solid hsl(var(--outline-variant) / 0.2)',
             borderRadius: '8px',
             fontSize: '12px',
           }}
@@ -78,12 +82,24 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
           iconSize={8}
           wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
         />
-        <Bar dataKey="completed" name="Completed" stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]}>
+        <Bar
+          dataKey="completed"
+          name="Completed"
+          stackId="a"
+          fill="hsl(var(--primary))"
+          radius={[0, 0, 0, 0]}
+        >
           {chartData.map((_, i) => (
             <Cell key={`c-${i}`} />
           ))}
         </Bar>
-        <Bar dataKey="failed" name="Failed" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} />
+        <Bar
+          dataKey="failed"
+          name="Failed"
+          stackId="a"
+          fill="hsl(var(--on-surface-variant))"
+          radius={[0, 4, 4, 0]}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

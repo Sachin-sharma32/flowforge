@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="app-background flex h-screen items-center justify-center">
         <div className="relative">
           <div className="absolute inset-0 animate-pulse-ring rounded-full" />
-          <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground/20 border-t-primary" />
         </div>
       </div>
     );
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isWorkflowBuilderRoute) {
     return (
       <div className="app-background relative h-screen w-screen overflow-hidden">
-        <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
+        <div className="dot-grid pointer-events-none absolute inset-0 opacity-45" />
         <main className="relative h-full w-full overflow-hidden">
           <PageTransition className="h-full">{children}</PageTransition>
         </main>
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="app-background relative flex h-screen overflow-hidden">
       {/* Subtle dot grid texture */}
-      <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
+      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
       <Sidebar />
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <Header />

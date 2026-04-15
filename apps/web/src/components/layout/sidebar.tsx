@@ -26,10 +26,10 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="relative flex h-screen w-[272px] flex-col border-r border-border/50 bg-card/40 backdrop-blur-xl">
+    <aside className="relative flex h-screen w-[272px] flex-col bg-surface-container-low shadow-soft-lg">
       {/* Brand */}
-      <div className="flex h-[72px] items-center gap-3 border-b border-border/50 px-7">
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-glow transition-transform duration-300 hover:scale-105">
+      <div className="flex h-[72px] items-center gap-3 px-7">
+        <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-b from-primary to-primary-container shadow-soft transition-transform duration-300 hover:scale-105">
           <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
         </div>
         <span className="text-lg font-bold tracking-tight">FlowForge</span>
@@ -48,8 +48,8 @@ export function Sidebar() {
                 'group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium',
                 'transition-all duration-200 ease-spring stagger-fade-in',
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground hover:translate-x-0.5',
+                  ? 'bg-surface-container-high text-foreground'
+                  : 'text-muted-foreground hover:bg-surface-bright hover:text-foreground hover:translate-x-0.5',
               )}
             >
               {/* Active pill indicator */}
@@ -57,7 +57,7 @@ export function Sidebar() {
                 className={cn(
                   'absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary',
                   'transition-all duration-300 ease-spring',
-                  isActive ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0',
+                  isActive ? 'scale-y-100 opacity-80' : 'scale-y-0 opacity-0',
                 )}
               />
               <item.icon
@@ -74,13 +74,13 @@ export function Sidebar() {
       </nav>
 
       {/* Plan card */}
-      <div className="border-t border-border/50 p-4">
-        <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-accent/40 to-accent/10 p-5 transition-colors duration-300 hover:border-primary/30">
+      <div className="p-4">
+        <div className="group relative overflow-hidden rounded-xl bg-surface-container-high p-5 transition-colors duration-300 hover:bg-surface-container-highest/70">
           <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-primary/10 blur-2xl transition-all duration-500 group-hover:bg-primary/20" />
           <p className="label-uppercase text-muted-foreground">Free Plan</p>
           <p className="mt-1 text-sm font-medium">0 / 1,000 runs</p>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-0 rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-700" />
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
+            <div className="h-full w-0 rounded-full bg-gradient-to-r from-primary to-primary-container transition-all duration-700" />
           </div>
         </div>
       </div>

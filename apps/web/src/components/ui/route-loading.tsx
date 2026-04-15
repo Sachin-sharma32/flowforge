@@ -17,7 +17,7 @@ export function RouteLoading({
         'relative flex items-center justify-center overflow-hidden',
         fullscreen
           ? 'app-background min-h-screen'
-          : 'min-h-[52vh] rounded-2xl border border-border/60 bg-card/70 backdrop-blur',
+          : 'min-h-[52vh] rounded-xl bg-surface-container-low',
         className,
       )}
     >
@@ -28,7 +28,7 @@ export function RouteLoading({
       <div className="relative z-10 flex flex-col items-center gap-3">
         <div className="relative h-12 w-12">
           <div className="absolute inset-0 animate-pulse-ring rounded-full" />
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-foreground/20 border-t-primary" />
         </div>
         <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
       </div>

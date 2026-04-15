@@ -4,11 +4,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import type { IExecutionStats } from '@flowforge/shared';
 
 const STATUS_COLORS = {
-  completed: '#22c55e',
-  failed: '#ef4444',
-  running: '#f59e0b',
-  pending: '#94a3b8',
-  cancelled: '#6b7280',
+  completed: 'hsl(var(--primary))',
+  failed: 'hsl(var(--on-surface-variant))',
+  running: 'hsl(var(--secondary))',
+  pending: 'hsl(var(--surface-container-highest))',
+  cancelled: 'hsl(var(--surface-container))',
 };
 
 interface ExecutionStatusChartProps {
@@ -52,7 +52,7 @@ export function ExecutionStatusChart({ stats, totalExecutions }: ExecutionStatus
         <Tooltip
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
+            border: '1px solid hsl(var(--outline-variant) / 0.2)',
             borderRadius: '8px',
             fontSize: '12px',
           }}

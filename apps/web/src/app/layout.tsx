@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { DM_Sans, Spline_Sans } from 'next/font/google';
+import { Spline_Sans } from 'next/font/google';
 import Script from 'next/script';
 import { RouteProgressBar } from '@/components/layout/route-progress-bar';
 import { DevClickToComponent } from '@/components/layout/click-to-component';
@@ -7,12 +7,6 @@ import { Providers } from '@/components/layout/providers';
 import { siteConfig } from '@/lib/seo';
 import { themeInitScript } from '@/lib/theme';
 import './globals.css';
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
 
 const splineSans = Spline_Sans({
   subsets: ['latin'],
@@ -78,8 +72,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f6f7fb' },
-    { media: '(prefers-color-scheme: dark)', color: '#0b0d12' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#131313' },
   ],
 };
 

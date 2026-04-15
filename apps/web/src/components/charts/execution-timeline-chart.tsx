@@ -35,15 +35,19 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
       <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="completedGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#22c55e" stopOpacity={0.4} />
-            <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="failedGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
-            <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+            <stop offset="0%" stopColor="hsl(var(--on-surface-variant))" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="hsl(var(--on-surface-variant))" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="hsl(var(--outline-variant) / 0.25)"
+          vertical={false}
+        />
         <XAxis
           dataKey="date"
           tickFormatter={formatDay}
@@ -62,7 +66,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
         <Tooltip
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
+            border: '1px solid hsl(var(--outline-variant) / 0.2)',
             borderRadius: '8px',
             fontSize: '12px',
           }}
@@ -77,7 +81,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
           type="monotone"
           dataKey="completed"
           name="Completed"
-          stroke="#22c55e"
+          stroke="hsl(var(--primary))"
           strokeWidth={2}
           fill="url(#completedGradient)"
           stackId="1"
@@ -86,7 +90,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
           type="monotone"
           dataKey="failed"
           name="Failed"
-          stroke="#ef4444"
+          stroke="hsl(var(--on-surface-variant))"
           strokeWidth={2}
           fill="url(#failedGradient)"
           stackId="1"

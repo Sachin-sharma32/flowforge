@@ -99,7 +99,7 @@ export function RouteProgressBar() {
         active ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <div className="route-progress-bar h-full w-full bg-gradient-to-r from-primary via-info to-primary" />
+      <div className="route-progress-bar h-full w-full bg-gradient-to-r from-primary via-primary-container to-primary" />
     </div>
   );
 }

@@ -20,7 +20,7 @@ export function ThemeToggleButton({ className }: ThemeToggleButtonProps) {
       aria-pressed={isDark}
       data-testid="theme-toggle"
       className={cn(
-        'relative flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/60 text-muted-foreground backdrop-blur-sm transition-all duration-300 ease-spring hover:scale-105 hover:border-primary/40 hover:text-foreground active:scale-95',
+        'relative flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high text-muted-foreground transition-all duration-300 ease-spring hover:scale-105 hover:bg-surface-container-highest hover:text-foreground active:scale-95',
         className,
       )}
     >
