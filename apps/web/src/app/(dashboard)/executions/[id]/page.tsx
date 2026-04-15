@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExecutionTimeline } from '@/components/execution/execution-timeline';
 import { LiveIndicator } from '@/components/execution/live-indicator';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchExecution, cancelExecution } from '@/stores/execution-slice';
 import type { IExecution } from '@flowforge/shared';
@@ -14,6 +15,8 @@ import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { getSocket } from '@/lib/socket-client';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ExecutionDetailPage() {
   const params = useParams();
@@ -22,6 +25,8 @@ export default function ExecutionDetailPage() {
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { currentExecution, isLoading } = useAppSelector((state) => state.execution);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const { toast } = useToast();
 
   useExecutionSocket(currentWorkspace?.id);
 
@@ -62,9 +67,7 @@ export default function ExecutionDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-              Execution Detail
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight">Execution Detail</h1>
             <Badge
               variant={
                 currentExecution.status === 'completed'
@@ -82,13 +85,7 @@ export default function ExecutionDetailPage() {
           </div>
         </div>
         {isRunning && (
-          <Button
-            variant="destructive"
-            onClick={() =>
-              currentWorkspace &&
-              dispatch(cancelExecution({ workspaceId: currentWorkspace.id, executionId }))
-            }
-          >
+          <Button variant="destructive" onClick={() => setConfirmCancelOpen(true)}>
             <XCircle className="mr-2 h-4 w-4" /> Cancel
           </Button>
         )}
@@ -159,6 +156,35 @@ export default function ExecutionDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmActionDialog
+        open={confirmCancelOpen}
+        onOpenChange={setConfirmCancelOpen}
+        title="Cancel execution?"
+        description="The running execution will stop and any pending steps will not run."
+        confirmLabel="Cancel execution"
+        onConfirm={async () => {
+          if (!currentWorkspace) return;
+          try {
+            await dispatch(
+              cancelExecution({ workspaceId: currentWorkspace.id, executionId }),
+            ).unwrap();
+            toast({
+              variant: 'success',
+              title: 'Execution cancelled',
+              description: 'The workflow run was cancelled.',
+            });
+          } catch (error) {
+            toast({
+              variant: 'destructive',
+              title: 'Failed to cancel execution',
+              description: error instanceof Error ? error.message : 'Please try again.',
+            });
+          } finally {
+            setConfirmCancelOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }

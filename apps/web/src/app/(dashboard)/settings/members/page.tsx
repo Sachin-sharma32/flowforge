@@ -5,12 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { AvatarWithStatus } from '@/components/ui/avatar-with-status';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 const roleColors: Record<string, 'default' | 'success' | 'warning' | 'secondary'> = {
   owner: 'default',
@@ -25,23 +34,27 @@ export default function MembersPage() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [inviting, setInviting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { toast } = useToast();
 
   const members = currentWorkspace?.members || [];
 
   const handleInvite = async () => {
     if (!currentWorkspace?.id || !email.trim()) return;
     setInviting(true);
-    setMessage(null);
     try {
       await api.post(`/workspaces/${currentWorkspace.id}/members`, { email: email.trim(), role });
       setEmail('');
       await dispatch(fetchWorkspaces()).unwrap();
-      setMessage({ type: 'success', text: 'Member invited successfully' });
+      toast({
+        variant: 'success',
+        title: 'Member invited',
+        description: `${email.trim()} was invited to the workspace.`,
+      });
     } catch (err: unknown) {
-      setMessage({
-        type: 'error',
-        text: getApiErrorMessage(err, 'Failed to invite member'),
+      toast({
+        variant: 'destructive',
+        title: 'Failed to invite member',
+        description: getApiErrorMessage(err, 'Failed to invite member'),
       });
     } finally {
       setInviting(false);
@@ -57,9 +70,7 @@ export default function MembersPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-            Members
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight">Members</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">Manage workspace members and roles</p>
         </div>
       </div>
@@ -78,26 +89,20 @@ export default function MembersPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1"
             />
-            <select
-              className="rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="admin">Admin</option>
-              <option value="editor">Editor</option>
-              <option value="viewer">Viewer</option>
-            </select>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="editor">Editor</SelectItem>
+                <SelectItem value="viewer">Viewer</SelectItem>
+              </SelectContent>
+            </Select>
             <Button onClick={handleInvite} disabled={inviting || !email.trim()}>
               {inviting ? 'Inviting...' : 'Invite'}
             </Button>
           </div>
-          {message && (
-            <p
-              className={`text-sm ${message.type === 'error' ? 'text-destructive' : 'text-green-600'}`}
-            >
-              {message.text}
-            </p>
-          )}
         </CardContent>
       </Card>
 
@@ -113,9 +118,7 @@ export default function MembersPage() {
                 className="flex items-center justify-between rounded-2xl border border-border/60 p-4"
               >
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-bold text-primary-foreground">
-                    {(member.userId?.name || 'U').charAt(0).toUpperCase()}
-                  </div>
+                  <AvatarWithStatus name={member.userId?.name || 'User'} status="online" />
                   <div>
                     <p className="text-sm font-medium">{member.userId?.name || 'User'}</p>
                     <p className="text-xs text-muted-foreground">{member.userId?.email || ''}</p>

@@ -7,6 +7,25 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DateTimeRangePicker,
+  type DateTimeRangeValue,
+} from '@/components/ui/date-time-range-picker';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchExecutions } from '@/stores/execution-slice';
 import { fetchFolders } from '@/stores/folder-slice';
@@ -20,7 +39,7 @@ export default function ExecutionsPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
-  const { executions, isLoading } = useAppSelector((state) => state.execution);
+  const { executions, isLoading, pagination } = useAppSelector((state) => state.execution);
   const workflows = useAppSelector((state) => state.workflow.workflows);
   const folders = useAppSelector((state) => state.folder.folders);
 
@@ -31,8 +50,8 @@ export default function ExecutionsPage() {
   const [triggerType, setTriggerType] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [timeRange, setTimeRange] = useState<DateTimeRangeValue>({});
+  const [page, setPage] = useState(1);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -48,7 +67,8 @@ export default function ExecutionsPage() {
     if (!currentWorkspace?.id) return;
 
     const params: Record<string, string> = {
-      limit: '120',
+      limit: '20',
+      page: String(page),
       sortBy,
       sortOrder,
     };
@@ -58,8 +78,8 @@ export default function ExecutionsPage() {
     if (workflowId) params.workflowId = workflowId;
     if (folderId) params.folderId = folderId;
     if (triggerType) params.triggerType = triggerType;
-    if (dateFrom) params.dateFrom = dateFrom;
-    if (dateTo) params.dateTo = dateTo;
+    if (timeRange.from) params.dateFrom = timeRange.from.toISOString();
+    if (timeRange.to) params.dateTo = timeRange.to.toISOString();
 
     dispatch(fetchExecutions({ workspaceId: currentWorkspace.id, params }));
   }, [
@@ -71,9 +91,24 @@ export default function ExecutionsPage() {
     triggerType,
     sortBy,
     sortOrder,
-    dateFrom,
-    dateTo,
+    timeRange.from,
+    timeRange.to,
+    page,
     dispatch,
+  ]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    debouncedSearch,
+    status,
+    workflowId,
+    folderId,
+    triggerType,
+    sortBy,
+    sortOrder,
+    timeRange.from,
+    timeRange.to,
   ]);
 
   const statusVariant = (executionStatus: string) => {
@@ -106,9 +141,7 @@ export default function ExecutionsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-          Executions
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight">Executions</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Inspect execution runs with advanced filtering and operational visibility.
         </p>
@@ -159,83 +192,100 @@ export default function ExecutionsPage() {
               />
             </div>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
+            <Select
+              value={status || 'all'}
+              onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
             >
-              <option value="">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="running">Running</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="running">Running</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={triggerType}
-              onChange={(event) => setTriggerType(event.target.value)}
+            <Select
+              value={triggerType || 'all'}
+              onValueChange={(value) => setTriggerType(value === 'all' ? '' : value)}
             >
-              <option value="">All triggers</option>
-              <option value="manual">Manual</option>
-              <option value="webhook">Webhook</option>
-              <option value="cron">Schedule</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All triggers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All triggers</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+                <SelectItem value="webhook">Webhook</SelectItem>
+                <SelectItem value="cron">Schedule</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={workflowId}
-              onChange={(event) => setWorkflowId(event.target.value)}
+            <Select
+              value={workflowId || 'all'}
+              onValueChange={(value) => setWorkflowId(value === 'all' ? '' : value)}
             >
-              <option value="">All workflows</option>
-              {workflows.map((workflow) => (
-                <option key={workflow.id} value={workflow.id}>
-                  {workflow.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All workflows" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All workflows</SelectItem>
+                {workflows.map((workflow) => (
+                  <SelectItem key={workflow.id} value={workflow.id}>
+                    {workflow.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={folderId}
-              onChange={(event) => setFolderId(event.target.value)}
+            <Select
+              value={folderId || 'all'}
+              onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
             >
-              <option value="">All folders</option>
-              {folders.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All folders" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All folders</SelectItem>
+                {folders.map((folder) => (
+                  <SelectItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={sortBy}
-              onChange={(event) => setSortBy(event.target.value)}
-            >
-              <option value="createdAt">Sort: Created at</option>
-              <option value="status">Sort: Status</option>
-              <option value="durationMs">Sort: Duration</option>
-            </select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Sort: Created at</SelectItem>
+                <SelectItem value="status">Sort: Status</SelectItem>
+                <SelectItem value="durationMs">Sort: Duration</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value)}
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Descending</SelectItem>
+                <SelectItem value="asc">Ascending</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
+            <DateTimeRangePicker
+              value={timeRange}
+              onChange={setTimeRange}
+              className="xl:col-span-2"
             />
-            <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
           </div>
 
           <Button
@@ -248,8 +298,8 @@ export default function ExecutionsPage() {
               setTriggerType('');
               setSortBy('createdAt');
               setSortOrder('desc');
-              setDateFrom('');
-              setDateTo('');
+              setTimeRange({});
+              setPage(1);
             }}
           >
             Reset Filters
@@ -340,6 +390,44 @@ export default function ExecutionsPage() {
           </CardContent>
         </Card>
       )}
+
+      {pagination.totalPages > 1 ? (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1}
+              />
+            </PaginationItem>
+            {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
+              .filter((pageNumber) => {
+                if (pagination.totalPages <= 7) return true;
+                return (
+                  pageNumber === 1 ||
+                  pageNumber === pagination.totalPages ||
+                  Math.abs(pageNumber - page) <= 1
+                );
+              })
+              .map((pageNumber) => (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    isActive={page === pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
+                disabled={page >= pagination.totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      ) : null}
     </div>
   );
 }

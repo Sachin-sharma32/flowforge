@@ -1,10 +1,29 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, CircleDot, Plus, Save, Trash2, ArrowDown, ArrowUp } from 'lucide-react';
+import {
+  CheckCircle2,
+  CircleDot,
+  Plus,
+  Trash2,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+} from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
+import { useToast } from '@/hooks/use-toast';
 import {
   STEP_TEMPLATES,
   STEP_TEMPLATE_BY_TYPE,
@@ -206,16 +225,22 @@ function createStepId(): string {
   return `step-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+const SELECT_NONE_VALUE = '__flowforge_none__';
+
 export function Canvas({ workflow, onSave }: CanvasProps) {
   const [steps, setSteps] = useState<BuilderStep[]>(() => toBuilderSteps(workflow.steps));
   const [selectedStepId, setSelectedStepId] = useState<string | null>(
     workflow.steps[0]?.id || null,
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: 'error' | 'success';
-    text: string;
-  } | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle',
+  );
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingDeleteStepId, setPendingDeleteStepId] = useState<string | null>(null);
+  const [draggedStepId, setDraggedStepId] = useState<string | null>(null);
+  const [dragOverStepId, setDragOverStepId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const selectedStep = steps.find((step) => step.id === selectedStepId) || null;
 
@@ -245,7 +270,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       return next;
     });
     setSelectedStepId(newStep.id);
-    setSaveMessage(null);
+    setHasUnsavedChanges(true);
   };
 
   const removeStep = (stepId: string) => {
@@ -263,7 +288,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       setSelectedStepId(nextSelected?.id || null);
     }
 
-    setSaveMessage(null);
+    setHasUnsavedChanges(true);
   };
 
   const moveStep = (stepId: string, direction: 'up' | 'down') => {
@@ -284,37 +309,62 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       return next;
     });
 
-    setSaveMessage(null);
+    setHasUnsavedChanges(true);
   };
 
   const updateStep = (stepId: string, updater: (step: BuilderStep) => BuilderStep) => {
     setSteps((current) => current.map((step) => (step.id === stepId ? updater(step) : step)));
-    setSaveMessage(null);
+    setHasUnsavedChanges(true);
   };
 
-  const handleSave = async () => {
-    const flowIssues = collectFlowIssues(steps);
-    if (flowIssues.length > 0) {
-      setSaveMessage({ type: 'error', text: flowIssues[0] });
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveMessage(null);
-
-    try {
-      const payload = fromBuilderSteps(steps);
-      await onSave(payload);
-      setSaveMessage({ type: 'success', text: 'Workflow saved successfully.' });
-    } catch (error) {
-      setSaveMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to save workflow.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const reorderSteps = (sourceStepId: string, targetStepId: string) => {
+    if (sourceStepId === targetStepId) return;
+    setSteps((current) => {
+      const sourceIndex = current.findIndex((step) => step.id === sourceStepId);
+      const targetIndex = current.findIndex((step) => step.id === targetStepId);
+      if (sourceIndex === -1 || targetIndex === -1) return current;
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setHasUnsavedChanges(true);
   };
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const timeout = window.setTimeout(async () => {
+      const flowIssues = collectFlowIssues(steps);
+      if (flowIssues.length > 0) {
+        setAutoSaveStatus('error');
+        return;
+      }
+
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+
+      try {
+        const payload = fromBuilderSteps(steps);
+        await onSave(payload);
+        setAutoSaveStatus('saved');
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        setAutoSaveStatus('error');
+        toast({
+          variant: 'destructive',
+          title: 'Auto-save failed',
+          description: error instanceof Error ? error.message : 'Failed to save workflow.',
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    }, 900);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [hasUnsavedChanges, onSave, steps, toast]);
 
   const selectedIndex = selectedStep ? steps.findIndex((step) => step.id === selectedStep.id) : -1;
   const branchTargets =
@@ -329,19 +379,25 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Step Library
           </p>
-          <h2 className="mt-2 text-xl font-semibold">Build A Static Flow</h2>
+          <h2 className="mt-2 text-xl font-semibold">Build Your Flow</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Steps run top-to-bottom. No drag canvas, no floating windows.
+            Steps run top-to-bottom. Reorder cleanly with drag-and-drop.
           </p>
         </div>
 
-        <div className="space-y-5 overflow-y-auto lg:max-h-[calc(100vh-16rem)]">
+        <div className="no-scrollbar space-y-5 overflow-y-auto lg:max-h-[calc(100vh-16rem)]">
           {(['core', 'communication', 'integrations'] as const).map((category) => (
-            <div key={category}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {category}
-              </p>
-              <div className="space-y-2">
+            <Collapsible key={category} defaultOpen>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                >
+                  {category}
+                  <ChevronsUpDown className="h-3.5 w-3.5" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2">
                 {groupedTemplates[category].map((template) => (
                   <button
                     key={template.type}
@@ -356,8 +412,8 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     <p className="mt-1 text-xs text-muted-foreground">{template.description}</p>
                   </button>
                 ))}
-              </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           ))}
         </div>
       </aside>
@@ -371,24 +427,18 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
             <h2 className="mt-1 text-lg font-semibold">Trigger + Steps</h2>
           </div>
 
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save Workflow'}
-          </Button>
+          <p className="text-xs text-muted-foreground">
+            {isSaving
+              ? 'Saving...'
+              : autoSaveStatus === 'saved'
+                ? 'Auto-saved'
+                : autoSaveStatus === 'error'
+                  ? 'Fix flow issues to save'
+                  : hasUnsavedChanges
+                    ? 'Unsaved changes'
+                    : 'All changes saved'}
+          </p>
         </div>
-
-        {saveMessage && (
-          <div
-            className={cn(
-              'mx-5 mt-4 rounded-xl border px-4 py-3 text-sm lg:mx-8',
-              saveMessage.type === 'error'
-                ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                : 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',
-            )}
-          >
-            {saveMessage.text}
-          </div>
-        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 lg:px-8 lg:py-6">
           <div className="mx-auto max-w-3xl space-y-4">
@@ -413,12 +463,34 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 <button
                   key={step.id}
                   type="button"
+                  draggable
                   onClick={() => setSelectedStepId(step.id)}
+                  onDragStart={() => setDraggedStepId(step.id)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragOverStepId(step.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedStepId(null);
+                    setDragOverStepId(null);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (draggedStepId) {
+                      reorderSteps(draggedStepId, step.id);
+                    }
+                    setDraggedStepId(null);
+                    setDragOverStepId(null);
+                  }}
                   className={cn(
                     'w-full rounded-2xl border p-4 text-left transition-colors',
                     isSelected
                       ? 'border-primary/50 bg-primary/5 ring-2 ring-primary/15'
                       : 'border-border/60 bg-card/40 hover:border-primary/30 hover:bg-accent/30',
+                    draggedStepId === step.id && 'opacity-60',
+                    dragOverStepId === step.id &&
+                      draggedStepId !== step.id &&
+                      'border-primary/60 ring-2 ring-primary/20',
                   )}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -436,6 +508,9 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     </div>
 
                     <div className="flex items-center gap-1">
+                      <span className="px-1 text-muted-foreground" aria-hidden>
+                        ⋮⋮
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -471,7 +546,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={(event) => {
                           event.stopPropagation();
-                          removeStep(step.id);
+                          setPendingDeleteStepId(step.id);
                         }}
                         aria-label="Delete step"
                       >
@@ -497,11 +572,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
             <div className="rounded-2xl border border-dashed border-border/70 bg-card/20 p-5 text-center">
               <p className="text-sm font-medium">Add another step from the library</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                No freeform dragging, just deterministic step order.
+                Drag steps up or down to reorder execution.
               </p>
               <div className="mt-3 flex justify-center">
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">
-                  <Plus className="h-3.5 w-3.5" /> Step list stays static
+                  <Plus className="h-3.5 w-3.5" /> Order snaps after drop
                 </span>
               </div>
             </div>
@@ -573,22 +648,26 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Method
                       </label>
-                      <select
-                        className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                      <Select
                         value={String(selectedStep.config.method || 'GET')}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateStep(selectedStep.id, (current) => ({
                             ...current,
-                            config: { ...current.config, method: event.target.value },
+                            config: { ...current.config, method: value },
                           }))
                         }
                       >
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                        <option value="PUT">PUT</option>
-                        <option value="PATCH">PATCH</option>
-                        <option value="DELETE">DELETE</option>
-                      </select>
+                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="GET">GET</SelectItem>
+                          <SelectItem value="POST">POST</SelectItem>
+                          <SelectItem value="PUT">PUT</SelectItem>
+                          <SelectItem value="PATCH">PATCH</SelectItem>
+                          <SelectItem value="DELETE">DELETE</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </>
                 )}
@@ -614,24 +693,28 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Operator
                       </label>
-                      <select
-                        className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                      <Select
                         value={String(selectedStep.config.operator || 'equals')}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateStep(selectedStep.id, (current) => ({
                             ...current,
-                            config: { ...current.config, operator: event.target.value },
+                            config: { ...current.config, operator: value },
                           }))
                         }
                       >
-                        <option value="equals">Equals</option>
-                        <option value="not_equals">Not equals</option>
-                        <option value="contains">Contains</option>
-                        <option value="greater_than">Greater than</option>
-                        <option value="less_than">Less than</option>
-                        <option value="exists">Exists</option>
-                        <option value="not_exists">Not exists</option>
-                      </select>
+                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="equals">Equals</SelectItem>
+                          <SelectItem value="not_equals">Not equals</SelectItem>
+                          <SelectItem value="contains">Contains</SelectItem>
+                          <SelectItem value="greater_than">Greater than</SelectItem>
+                          <SelectItem value="less_than">Less than</SelectItem>
+                          <SelectItem value="exists">Exists</SelectItem>
+                          <SelectItem value="not_exists">Not exists</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -654,46 +737,54 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                         <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                           True Branch
                         </label>
-                        <select
-                          className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
-                          value={selectedStep.trueStepId || ''}
-                          onChange={(event) =>
+                        <Select
+                          value={selectedStep.trueStepId || SELECT_NONE_VALUE}
+                          onValueChange={(value) =>
                             updateStep(selectedStep.id, (current) => ({
                               ...current,
-                              trueStepId: event.target.value || null,
+                              trueStepId: value === SELECT_NONE_VALUE ? null : value,
                             }))
                           }
                         >
-                          <option value="">End flow</option>
-                          {branchTargets.map((target) => (
-                            <option key={target.id} value={target.id}>
-                              {getStepDisplayName(target)}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={SELECT_NONE_VALUE}>End flow</SelectItem>
+                            {branchTargets.map((target) => (
+                              <SelectItem key={target.id} value={target.id}>
+                                {getStepDisplayName(target)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                           False Branch
                         </label>
-                        <select
-                          className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
-                          value={selectedStep.falseStepId || ''}
-                          onChange={(event) =>
+                        <Select
+                          value={selectedStep.falseStepId || SELECT_NONE_VALUE}
+                          onValueChange={(value) =>
                             updateStep(selectedStep.id, (current) => ({
                               ...current,
-                              falseStepId: event.target.value || null,
+                              falseStepId: value === SELECT_NONE_VALUE ? null : value,
                             }))
                           }
                         >
-                          <option value="">End flow</option>
-                          {branchTargets.map((target) => (
-                            <option key={target.id} value={target.id}>
-                              {getStepDisplayName(target)}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={SELECT_NONE_VALUE}>End flow</SelectItem>
+                            {branchTargets.map((target) => (
+                              <SelectItem key={target.id} value={target.id}>
+                                {getStepDisplayName(target)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </>
@@ -756,16 +847,18 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Transform
                       </label>
-                      <select
-                        className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
-                        value={String((selectedStep.config.mappings as any)?.[0]?.transform || '')}
-                        onChange={(event) =>
+                      <Select
+                        value={String(
+                          (selectedStep.config.mappings as any)?.[0]?.transform ||
+                            SELECT_NONE_VALUE,
+                        )}
+                        onValueChange={(value) =>
                           updateStep(selectedStep.id, (current) => {
                             const previous =
                               (current.config.mappings as Array<Record<string, string>>) || [];
                             const mapping = { ...(previous[0] || {}) };
-                            if (event.target.value) {
-                              mapping.transform = event.target.value;
+                            if (value !== SELECT_NONE_VALUE) {
+                              mapping.transform = value;
                             } else {
                               delete mapping.transform;
                             }
@@ -776,15 +869,20 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           })
                         }
                       >
-                        <option value="">No transform</option>
-                        <option value="lowercase">lowercase</option>
-                        <option value="uppercase">uppercase</option>
-                        <option value="trim">trim</option>
-                        <option value="number">number</option>
-                        <option value="boolean">boolean</option>
-                        <option value="json_parse">json_parse</option>
-                        <option value="stringify">stringify</option>
-                      </select>
+                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={SELECT_NONE_VALUE}>No transform</SelectItem>
+                          <SelectItem value="lowercase">lowercase</SelectItem>
+                          <SelectItem value="uppercase">uppercase</SelectItem>
+                          <SelectItem value="trim">trim</SelectItem>
+                          <SelectItem value="number">number</SelectItem>
+                          <SelectItem value="boolean">boolean</SelectItem>
+                          <SelectItem value="json_parse">json_parse</SelectItem>
+                          <SelectItem value="stringify">stringify</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </>
                 )}
@@ -818,20 +916,24 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                         <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                           Gmail Operation
                         </label>
-                        <select
-                          className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                        <Select
                           value={String(selectedStep.config.operation || 'send_email')}
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             updateStep(selectedStep.id, (current) => ({
                               ...current,
-                              config: { ...current.config, operation: event.target.value },
+                              config: { ...current.config, operation: value },
                             }))
                           }
                         >
-                          <option value="send_email">send_email</option>
-                          <option value="create_draft">create_draft</option>
-                          <option value="list_messages">list_messages</option>
-                        </select>
+                          <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="send_email">send_email</SelectItem>
+                            <SelectItem value="create_draft">create_draft</SelectItem>
+                            <SelectItem value="list_messages">list_messages</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
 
@@ -888,8 +990,8 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                             Body
                           </label>
-                          <textarea
-                            className="min-h-[110px] w-full rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
+                          <Textarea
+                            className="min-h-[110px] rounded-xl bg-background/60"
                             value={String(selectedStep.config.body || '')}
                             onChange={(event) =>
                               updateStep(selectedStep.id, (current) => ({
@@ -965,8 +1067,8 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Message
                       </label>
-                      <textarea
-                        className="min-h-[110px] w-full rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
+                      <Textarea
+                        className="min-h-[110px] rounded-xl bg-background/60"
                         value={String(selectedStep.config.message || '')}
                         onChange={(event) =>
                           updateStep(selectedStep.id, (current) => ({
@@ -1001,20 +1103,24 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Operation
                       </label>
-                      <select
-                        className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                      <Select
                         value={String(selectedStep.config.operation || 'list_files')}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateStep(selectedStep.id, (current) => ({
                             ...current,
-                            config: { ...current.config, operation: event.target.value },
+                            config: { ...current.config, operation: value },
                           }))
                         }
                       >
-                        <option value="list_files">list_files</option>
-                        <option value="create_folder">create_folder</option>
-                        <option value="upload_text_file">upload_text_file</option>
-                      </select>
+                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="list_files">list_files</SelectItem>
+                          <SelectItem value="create_folder">create_folder</SelectItem>
+                          <SelectItem value="upload_text_file">upload_text_file</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -1108,8 +1214,8 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                               <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                                 Content
                               </label>
-                              <textarea
-                                className="min-h-[110px] w-full rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
+                              <Textarea
+                                className="min-h-[110px] rounded-xl bg-background/60"
                                 value={String(selectedStep.config.content || '')}
                                 onChange={(event) =>
                                   updateStep(selectedStep.id, (current) => ({
@@ -1147,19 +1253,23 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Operation
                       </label>
-                      <select
-                        className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                      <Select
                         value={String(selectedStep.config.operation || 'create_event')}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateStep(selectedStep.id, (current) => ({
                             ...current,
-                            config: { ...current.config, operation: event.target.value },
+                            config: { ...current.config, operation: value },
                           }))
                         }
                       >
-                        <option value="create_event">create_event</option>
-                        <option value="list_events">list_events</option>
-                      </select>
+                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="create_event">create_event</SelectItem>
+                          <SelectItem value="list_events">list_events</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -1314,20 +1424,24 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Operation
                       </label>
-                      <select
-                        className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                      <Select
                         value={String(selectedStep.config.operation || 'create_page')}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateStep(selectedStep.id, (current) => ({
                             ...current,
-                            config: { ...current.config, operation: event.target.value },
+                            config: { ...current.config, operation: value },
                           }))
                         }
                       >
-                        <option value="create_page">create_page</option>
-                        <option value="append_block">append_block</option>
-                        <option value="query_database">query_database</option>
-                      </select>
+                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="create_page">create_page</SelectItem>
+                          <SelectItem value="append_block">append_block</SelectItem>
+                          <SelectItem value="query_database">query_database</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {String(selectedStep.config.operation || 'create_page') === 'create_page' && (
@@ -1336,19 +1450,23 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                             Parent Type
                           </label>
-                          <select
-                            className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                          <Select
                             value={String(selectedStep.config.parentType || 'page_id')}
-                            onChange={(event) =>
+                            onValueChange={(value) =>
                               updateStep(selectedStep.id, (current) => ({
                                 ...current,
-                                config: { ...current.config, parentType: event.target.value },
+                                config: { ...current.config, parentType: value },
                               }))
                             }
                           >
-                            <option value="page_id">page_id</option>
-                            <option value="database_id">database_id</option>
-                          </select>
+                            <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="page_id">page_id</SelectItem>
+                              <SelectItem value="database_id">database_id</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -1382,8 +1500,8 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                             Content
                           </label>
-                          <textarea
-                            className="min-h-[110px] w-full rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
+                          <Textarea
+                            className="min-h-[110px] rounded-xl bg-background/60"
                             value={String(selectedStep.config.content || '')}
                             onChange={(event) =>
                               updateStep(selectedStep.id, (current) => ({
@@ -1416,8 +1534,8 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                             Content
                           </label>
-                          <textarea
-                            className="min-h-[110px] w-full rounded-xl border border-input bg-background/60 px-4 py-3 text-sm"
+                          <Textarea
+                            className="min-h-[110px] rounded-xl bg-background/60"
                             value={String(selectedStep.config.content || '')}
                             onChange={(event) =>
                               updateStep(selectedStep.id, (current) => ({
@@ -1463,7 +1581,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
               Flow Checks
             </p>
             {issues.length === 0 ? (
-              <p className="mt-2 text-sm text-green-700 dark:text-green-300">
+              <p className="mt-2 text-sm text-success">
                 No issues found. Workflow is ready to save.
               </p>
             ) : (
@@ -1476,6 +1594,21 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
           </div>
         </div>
       </aside>
+
+      <ConfirmActionDialog
+        open={Boolean(pendingDeleteStepId)}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteStepId(null);
+        }}
+        title="Delete step?"
+        description="This step will be permanently removed from the workflow."
+        confirmLabel="Delete step"
+        onConfirm={() => {
+          if (!pendingDeleteStepId) return;
+          removeStep(pendingDeleteStepId);
+          setPendingDeleteStepId(null);
+        }}
+      />
     </div>
   );
 }

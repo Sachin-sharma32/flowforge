@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Sparkles, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 interface AuthFormShellProps {
   badge: string;
@@ -33,6 +35,26 @@ export function AuthFormShell({
   children,
 }: AuthFormShellProps) {
   const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (notice) {
+      toast({
+        variant: 'success',
+        title: 'Notice',
+        description: notice,
+      });
+    }
+  }, [notice]);
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Something went wrong',
+        description: error,
+      });
+    }
+  }, [error]);
 
   const containerVariants: Variants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 16 },
@@ -77,24 +99,6 @@ export function AuthFormShell({
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
       </motion.div>
-
-      {notice ? (
-        <motion.div
-          variants={itemVariants}
-          className="mt-6 rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-primary"
-        >
-          {notice}
-        </motion.div>
-      ) : null}
-
-      {error ? (
-        <motion.div
-          variants={itemVariants}
-          className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
-        >
-          {error}
-        </motion.div>
-      ) : null}
 
       <motion.div variants={itemVariants} className="relative z-10 mt-8">
         {children}

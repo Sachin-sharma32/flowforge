@@ -7,11 +7,32 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DateTimeRangePicker,
+  type DateTimeRangeValue,
+} from '@/components/ui/date-time-range-picker';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkflows, deleteWorkflow, duplicateWorkflow } from '@/stores/workflow-slice';
 import { fetchFolders } from '@/stores/folder-slice';
 import { useDebounce } from '@/hooks/use-debounce';
 import { formatDate } from '@/lib/utils';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
+import { useToast } from '@/hooks/use-toast';
 import {
   Plus,
   Search,
@@ -34,17 +55,21 @@ export default function WorkflowsPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
-  const { workflows, isLoading } = useAppSelector((state) => state.workflow);
+  const { workflows, isLoading, pagination } = useAppSelector((state) => state.workflow);
   const folders = useAppSelector((state) => state.folder.folders);
+  const { toast } = useToast();
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [folderId, setFolderId] = useState('');
   const [sortBy, setSortBy] = useState('updatedAt');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [timeRange, setTimeRange] = useState<DateTimeRangeValue>({});
+  const [page, setPage] = useState(1);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [workflowToDelete, setWorkflowToDelete] = useState<{ id: string; name: string } | null>(
+    null,
+  );
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -57,7 +82,8 @@ export default function WorkflowsPage() {
     if (!currentWorkspace?.id) return;
 
     const params: Record<string, string> = {
-      limit: '100',
+      limit: '18',
+      page: String(page),
       sortBy,
       sortOrder,
     };
@@ -65,8 +91,8 @@ export default function WorkflowsPage() {
     if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
     if (status) params.status = status;
     if (folderId) params.folderId = folderId;
-    if (dateFrom) params.dateFrom = dateFrom;
-    if (dateTo) params.dateTo = dateTo;
+    if (timeRange.from) params.dateFrom = timeRange.from.toISOString();
+    if (timeRange.to) params.dateTo = timeRange.to.toISOString();
 
     dispatch(fetchWorkflows({ workspaceId: currentWorkspace.id, params }));
   }, [
@@ -76,10 +102,15 @@ export default function WorkflowsPage() {
     folderId,
     sortBy,
     sortOrder,
-    dateFrom,
-    dateTo,
+    timeRange.from,
+    timeRange.to,
+    page,
     dispatch,
   ]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status, folderId, sortBy, sortOrder, timeRange.from, timeRange.to]);
 
   const folderMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -101,9 +132,7 @@ export default function WorkflowsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-            Workflows
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight">Workflows</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Manage workflow lifecycle with filterable views, folders, and operational context.
           </p>
@@ -163,58 +192,67 @@ export default function WorkflowsPage() {
               />
             </div>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
+            <Select
+              value={status || 'all'}
+              onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
             >
-              <option value="">All statuses</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="draft">Draft</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="paused">Paused</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={folderId}
-              onChange={(event) => setFolderId(event.target.value)}
+            <Select
+              value={folderId || 'all'}
+              onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
             >
-              <option value="">All folders</option>
-              {folders.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="All folders" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All folders</SelectItem>
+                {folders.map((folder) => (
+                  <SelectItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={sortBy}
-              onChange={(event) => setSortBy(event.target.value)}
-            >
-              <option value="updatedAt">Sort: Last updated</option>
-              <option value="createdAt">Sort: Created date</option>
-              <option value="name">Sort: Name</option>
-              <option value="lastExecutedAt">Sort: Last executed</option>
-            </select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updatedAt">Sort: Last updated</SelectItem>
+                <SelectItem value="createdAt">Sort: Created date</SelectItem>
+                <SelectItem value="name">Sort: Name</SelectItem>
+                <SelectItem value="lastExecutedAt">Sort: Last executed</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              className="h-12 rounded-xl border border-input bg-background/60 px-3 text-sm"
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value)}
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Descending</SelectItem>
+                <SelectItem value="asc">Ascending</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
+            <DateTimeRangePicker
+              value={timeRange}
+              onChange={setTimeRange}
+              className="xl:col-span-2"
             />
-            <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
 
             <Button
               type="button"
@@ -225,8 +263,8 @@ export default function WorkflowsPage() {
                 setFolderId('');
                 setSortBy('updatedAt');
                 setSortOrder('desc');
-                setDateFrom('');
-                setDateTo('');
+                setTimeRange({});
+                setPage(1);
               }}
               className="xl:col-span-2"
             >
@@ -309,15 +347,30 @@ export default function WorkflowsPage() {
                       <div className="absolute right-0 top-9 z-10 w-44 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-border/60 bg-popover/95 p-1 shadow-soft-lg backdrop-blur-xl">
                         <button
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (currentWorkspace)
-                              dispatch(
-                                duplicateWorkflow({
-                                  workspaceId: currentWorkspace.id,
-                                  workflowId: workflow.id || workflow._id,
-                                }),
-                              );
+                            if (currentWorkspace) {
+                              try {
+                                await dispatch(
+                                  duplicateWorkflow({
+                                    workspaceId: currentWorkspace.id,
+                                    workflowId: workflow.id || workflow._id,
+                                  }),
+                                ).unwrap();
+                                toast({
+                                  variant: 'success',
+                                  title: 'Workflow duplicated',
+                                  description: `${workflow.name} was duplicated.`,
+                                });
+                              } catch (error) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: 'Failed to duplicate workflow',
+                                  description:
+                                    error instanceof Error ? error.message : 'Please try again.',
+                                });
+                              }
+                            }
                             setOpenMenu(null);
                           }}
                         >
@@ -327,13 +380,10 @@ export default function WorkflowsPage() {
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (currentWorkspace)
-                              dispatch(
-                                deleteWorkflow({
-                                  workspaceId: currentWorkspace.id,
-                                  workflowId: workflow.id || workflow._id,
-                                }),
-                              );
+                            setWorkflowToDelete({
+                              id: workflow.id || workflow._id,
+                              name: workflow.name,
+                            });
                             setOpenMenu(null);
                           }}
                         >
@@ -364,6 +414,82 @@ export default function WorkflowsPage() {
           ))}
         </div>
       )}
+
+      {pagination.totalPages > 1 ? (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1}
+              />
+            </PaginationItem>
+            {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
+              .filter((pageNumber) => {
+                if (pagination.totalPages <= 7) return true;
+                return (
+                  pageNumber === 1 ||
+                  pageNumber === pagination.totalPages ||
+                  Math.abs(pageNumber - page) <= 1
+                );
+              })
+              .map((pageNumber) => (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    isActive={page === pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
+                disabled={page >= pagination.totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      ) : null}
+
+      <ConfirmActionDialog
+        open={Boolean(workflowToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setWorkflowToDelete(null);
+        }}
+        title="Delete workflow?"
+        description={
+          workflowToDelete
+            ? `This will permanently delete "${workflowToDelete.name}". This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete workflow"
+        onConfirm={async () => {
+          if (!currentWorkspace || !workflowToDelete) return;
+          try {
+            await dispatch(
+              deleteWorkflow({
+                workspaceId: currentWorkspace.id,
+                workflowId: workflowToDelete.id,
+              }),
+            ).unwrap();
+            toast({
+              variant: 'success',
+              title: 'Workflow deleted',
+              description: `${workflowToDelete.name} was removed.`,
+            });
+          } catch (error) {
+            toast({
+              variant: 'destructive',
+              title: 'Failed to delete workflow',
+              description: error instanceof Error ? error.message : 'Please try again.',
+            });
+          } finally {
+            setWorkflowToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

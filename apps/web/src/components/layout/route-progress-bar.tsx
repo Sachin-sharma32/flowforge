@@ -6,17 +6,27 @@ import { cn } from '@/lib/utils';
 
 const MIN_VISIBLE_MS = 280;
 const SAFETY_TIMEOUT_MS = 12000;
+const LOADING_TARGET = 0.84;
+const LOADING_MS = 950;
+const COMPLETE_MS = 220;
 
 export function RouteProgressBar() {
   const pathname = usePathname();
   const [active, setActive] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [transitionMs, setTransitionMs] = useState(0);
   const startedAtRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const clearTimeoutRef = useCallback(() => {
     if (timeoutRef.current !== null) {
       window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+    if (rafRef.current !== null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
   }, []);
 
@@ -24,10 +34,24 @@ export function RouteProgressBar() {
     clearTimeoutRef();
     startedAtRef.current = performance.now();
     setActive(true);
+    setTransitionMs(0);
+    setProgress(0.06);
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      setTransitionMs(LOADING_MS);
+      setProgress(LOADING_TARGET);
+    });
 
     timeoutRef.current = window.setTimeout(() => {
       startedAtRef.current = null;
-      setActive(false);
+      setTransitionMs(COMPLETE_MS);
+      setProgress(1);
+      timeoutRef.current = window.setTimeout(() => {
+        setActive(false);
+        setTransitionMs(0);
+        setProgress(0);
+        timeoutRef.current = null;
+      }, COMPLETE_MS);
       timeoutRef.current = null;
     }, SAFETY_TIMEOUT_MS);
   }, [clearTimeoutRef]);
@@ -45,8 +69,14 @@ export function RouteProgressBar() {
 
     timeoutRef.current = window.setTimeout(() => {
       startedAtRef.current = null;
-      setActive(false);
-      timeoutRef.current = null;
+      setTransitionMs(COMPLETE_MS);
+      setProgress(1);
+      timeoutRef.current = window.setTimeout(() => {
+        setActive(false);
+        setTransitionMs(0);
+        setProgress(0);
+        timeoutRef.current = null;
+      }, COMPLETE_MS);
     }, remaining);
   }, [clearTimeoutRef]);
 
@@ -99,7 +129,15 @@ export function RouteProgressBar() {
         active ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <div className="route-progress-bar h-full w-full bg-gradient-to-r from-primary via-primary-container to-primary" />
+      <div
+        className="route-progress-bar h-full w-full bg-gradient-to-r from-primary via-primary-container to-primary"
+        style={{
+          transform: `scaleX(${progress})`,
+          transitionProperty: 'transform',
+          transitionDuration: `${transitionMs}ms`,
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      />
     </div>
   );
 }

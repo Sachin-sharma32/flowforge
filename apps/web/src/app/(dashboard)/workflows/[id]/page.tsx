@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ import {
 import { fetchExecutions } from '@/stores/execution-slice';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, Edit, Play, Pause, Copy } from 'lucide-react';
-import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
+import { useToast } from '@/hooks/use-toast';
 
 export default function WorkflowDetailPage() {
   const params = useParams();
@@ -35,9 +35,7 @@ export default function WorkflowDetailPage() {
   const workflowLoading = useAppSelector(selectWorkflowLoading);
   const executionLoading = useAppSelector(selectExecutionLoading);
   const workflowExecutionAnalytics = useAppSelector(selectWorkflowExecutionAnalytics);
-  const [runMessage, setRunMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
-    null,
-  );
+  const { toast } = useToast();
 
   useEffect(() => {
     if (currentWorkspaceId && workflowId) {
@@ -58,17 +56,21 @@ export default function WorkflowDetailPage() {
 
   const handleExecute = async () => {
     if (!currentWorkspaceId) return;
-    setRunMessage(null);
     const result = await dispatch(executeWorkflow({ workspaceId: currentWorkspaceId, workflowId }));
     if (executeWorkflow.fulfilled.match(result)) {
-      setRunMessage({ type: 'success', text: 'Execution queued successfully.' });
+      toast({
+        variant: 'success',
+        title: 'Execution queued',
+        description: 'Workflow execution started successfully.',
+      });
       router.push(`/executions/${result.payload}`);
       return;
     }
 
-    setRunMessage({
-      type: 'error',
-      text:
+    toast({
+      variant: 'destructive',
+      title: 'Failed to run workflow',
+      description:
         (typeof result.payload === 'string' && result.payload) ||
         'Failed to run workflow. Please try again.',
     });
@@ -82,9 +84,7 @@ export default function WorkflowDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-              {currentWorkflow.name}
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight">{currentWorkflow.name}</h1>
             <Badge
               variant={
                 currentWorkflow.status === 'active'
@@ -141,18 +141,6 @@ export default function WorkflowDetailPage() {
         </div>
       </div>
 
-      {runMessage && (
-        <div
-          className={`rounded-xl border px-5 py-3.5 text-sm ${
-            runMessage.type === 'error'
-              ? 'border-destructive/30 bg-destructive/10 text-destructive'
-              : 'border-success/30 bg-success/10 text-success'
-          }`}
-        >
-          {runMessage.text}
-        </div>
-      )}
-
       {/* Execution Stats Row */}
       <div className="grid gap-6 sm:grid-cols-4">
         <Card>
@@ -180,7 +168,7 @@ export default function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Failed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">
+            <div className="text-2xl font-bold text-destructive">
               {workflowExecutionAnalytics.summary.failed}
             </div>
           </CardContent>
@@ -200,17 +188,6 @@ export default function WorkflowDetailPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Execution History Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Execution History</CardTitle>
-          <p className="text-xs text-muted-foreground">Last 14 days of runs for this workflow</p>
-        </CardHeader>
-        <CardContent>
-          <ExecutionTimelineChart data={workflowExecutionAnalytics.timeline} />
-        </CardContent>
-      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

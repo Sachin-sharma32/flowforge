@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createWorkflow } from '@/stores/workflow-slice';
 import { fetchFolders } from '@/stores/folder-slice';
@@ -15,7 +23,9 @@ import {
   ArrowRight,
   LayoutTemplate,
   ArrowLeft,
+  Lightbulb,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const triggerTypes = [
   {
@@ -48,7 +58,7 @@ export default function NewWorkflowPage() {
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const folders = useAppSelector((state) => state.folder.folders);
   const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (currentWorkspace?.id) {
@@ -60,7 +70,6 @@ export default function NewWorkflowPage() {
     e.preventDefault();
     if (!currentWorkspace?.id || !name.trim()) return;
 
-    setError(null);
     setIsCreating(true);
 
     try {
@@ -79,15 +88,20 @@ export default function NewWorkflowPage() {
 
       router.push(`/workflows/${result.id || (result as any)._id}/edit`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create workflow');
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create workflow',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <div className="grid h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
-      <section className="border-b border-border/60 px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10">
+    <div className="relative grid h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
+      <section className="relative border-b border-border/60 px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10">
         <div className="mx-auto flex h-full w-full max-w-4xl flex-col">
           <div className="mb-5">
             <Button
@@ -155,19 +169,22 @@ export default function NewWorkflowPage() {
                   <label htmlFor="folder" className="text-sm font-medium">
                     Folder
                   </label>
-                  <select
-                    id="folder"
-                    value={folderId}
-                    onChange={(event) => setFolderId(event.target.value)}
-                    className="h-12 w-full rounded-xl border border-input bg-background/60 px-4 text-sm"
+                  <Select
+                    value={folderId || 'uncategorized'}
+                    onValueChange={(value) => setFolderId(value === 'uncategorized' ? '' : value)}
                   >
-                    <option value="">Uncategorized</option>
-                    {folders.map((folder) => (
-                      <option key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger id="folder" className="h-12 rounded-xl bg-background/60">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                      {folders.map((folder) => (
+                        <SelectItem key={folder.id} value={folder.id}>
+                          {folder.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -202,12 +219,6 @@ export default function NewWorkflowPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
             <div className="flex flex-wrap gap-3">
               <Button
                 type="button"
@@ -230,15 +241,32 @@ export default function NewWorkflowPage() {
         </div>
       </section>
 
-      <aside className="hidden bg-gradient-to-br from-primary/10 via-background to-background px-8 py-10 lg:block">
-        <div className="rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur">
-          <h2 className="text-lg font-semibold">What changed in the new builder</h2>
-          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-            <li>• Static, vertical step order with predictable execution.</li>
-            <li>• Full-screen workspace instead of tiny card-contained editor.</li>
-            <li>• Built-in flow checks for missing config and broken branches.</li>
-            <li>• New integrations: Google Drive, Google Calendar, Gmail, and Notion.</li>
-          </ul>
+      <aside className="relative hidden bg-gradient-to-br from-primary/10 via-background to-background px-8 py-10 lg:block">
+        <div className="space-y-4">
+          <Alert>
+            <Lightbulb className="h-4 w-4" />
+            <AlertTitle>Start with a clear trigger</AlertTitle>
+            <AlertDescription>
+              Choose how the flow starts first, then add steps in order. Trigger choice affects what
+              inputs are available in later steps.
+            </AlertDescription>
+          </Alert>
+          <Alert>
+            <Lightbulb className="h-4 w-4" />
+            <AlertTitle>Keep step names action-oriented</AlertTitle>
+            <AlertDescription>
+              Use names like “Fetch New Lead” and “Send Slack Alert” so debugging and handoffs stay
+              fast for your team.
+            </AlertDescription>
+          </Alert>
+          <Alert>
+            <Lightbulb className="h-4 w-4" />
+            <AlertTitle>Validate branch paths early</AlertTitle>
+            <AlertDescription>
+              If you add condition steps, set true/false branches right away to prevent broken flow
+              checks when autosave runs.
+            </AlertDescription>
+          </Alert>
         </div>
       </aside>
     </div>

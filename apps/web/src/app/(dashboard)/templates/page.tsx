@@ -4,6 +4,13 @@ import { RefreshCcw, Sparkles, MessageSquare, Video, Trello } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { FeedbackModal } from '@/components/ui/feedback-modal';
 import { SuggestedWorkflowCard, type AppInfo } from '@/components/workflow/suggested-workflow-card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import React, { useState } from 'react';
 
 // ─── App Icons ───────────────────────────────────────────────────
@@ -99,6 +106,26 @@ const RECOMMENDED: WorkflowCard[] = [
       { name: 'Notion', icon: <NotionIcon />, verified: true },
     ],
   },
+  {
+    id: '11',
+    title: 'Send failed workflow alerts to Slack and email',
+    apps: [
+      {
+        name: 'Slack',
+        icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" />,
+        verified: true,
+      },
+      { name: 'Gmail', icon: <GmailIcon />, verified: true },
+    ],
+  },
+  {
+    id: '12',
+    title: 'Auto-summarize customer updates into weekly digest docs',
+    apps: [
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+      { name: 'Gmail', icon: <GmailIcon />, verified: true },
+    ],
+  },
 ];
 
 const WORKS_WELL: WorkflowCard[] = [
@@ -163,6 +190,32 @@ const MARKETING: WorkflowCard[] = [
       { name: 'Twitter', icon: <div className="h-3.5 w-3.5 bg-sky-500 rounded-sm" /> },
     ],
   },
+  {
+    id: '13',
+    title: 'Push high-intent lead signals to sales channel instantly',
+    apps: [
+      {
+        name: 'Slack',
+        icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" />,
+        verified: true,
+      },
+      { name: 'Notion', icon: <NotionIcon />, verified: true },
+    ],
+  },
+  {
+    id: '14',
+    title: 'Create webinar follow-up tasks and invite reminders',
+    apps: [
+      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
+      { name: 'Gmail', icon: <GmailIcon />, verified: true },
+    ],
+  },
+];
+
+const FEATURED: WorkflowCard[] = [
+  ...RECOMMENDED.slice(0, 3),
+  ...WORKS_WELL.slice(0, 2),
+  ...MARKETING.slice(0, 1),
 ];
 
 // ─── Section Component ──────────────────────────────────────────
@@ -234,9 +287,7 @@ export default function TemplatesPage() {
             <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-              Workflow Templates
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight">Workflow Templates</h1>
             <p className="text-base text-muted-foreground mt-1">
               Start fast with pre-built automations — customize any template to match your exact
               needs.
@@ -246,6 +297,37 @@ export default function TemplatesPage() {
       </div>
 
       {/* ── Sections ── */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold tracking-tight">Featured This Week</h2>
+          <p className="text-sm text-muted-foreground">
+            Quick-start templates curated for high-velocity teams.
+          </p>
+        </div>
+        <Carousel
+          opts={{
+            align: 'start',
+            loop: false,
+          }}
+          className="w-full"
+        >
+          <CarouselContent>
+            {FEATURED.map((template) => (
+              <CarouselItem key={template.id} className="md:basis-1/2 xl:basis-1/3">
+                <SuggestedWorkflowCard
+                  id={template.id}
+                  title={template.title}
+                  apps={template.apps}
+                  onDismiss={setDismissingId}
+                />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+      </section>
+
       <WorkflowSection
         title="Recommended for you"
         workflows={recommended}

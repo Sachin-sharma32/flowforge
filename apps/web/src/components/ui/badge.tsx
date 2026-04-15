@@ -13,9 +13,9 @@ const badgeVariants = cva(
       variant: {
         default: 'bg-tertiary text-on-tertiary',
         secondary: 'bg-secondary-container text-on-secondary-container',
-        destructive: 'bg-destructive/20 text-foreground',
+        destructive: 'bg-destructive/18 text-destructive',
         outline: 'border border-border/20 bg-transparent text-foreground',
-        success: 'bg-success/20 text-foreground',
+        success: 'bg-success/18 text-success',
         warning: 'bg-warning/20 text-foreground',
       },
     },

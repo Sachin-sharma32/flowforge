@@ -10,9 +10,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import {
   selectCurrentWorkspaceId,
@@ -35,8 +33,10 @@ import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-c
 import { WorkflowPerformanceChart } from '@/components/charts/workflow-performance-chart';
 import { ExecutionStatusChart } from '@/components/charts/execution-status-chart';
 import { formatDuration } from '@/lib/utils';
-
-type RangeMode = '7' | '30' | 'custom';
+import {
+  DateTimeRangePicker,
+  type DateTimeRangeValue,
+} from '@/components/ui/date-time-range-picker';
 
 function diffDays(from: string, to: string): number {
   const fromDate = new Date(from);
@@ -59,20 +59,18 @@ export default function DashboardPage() {
   const executions = useAppSelector(selectExecutions);
   const folders = useAppSelector(selectFolders);
 
-  const [rangeMode, setRangeMode] = useState<RangeMode>('30');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
+  const [timeRange, setTimeRange] = useState<DateTimeRangeValue>(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - 29);
+    from.setHours(0, 0, 0, 0);
+    return { from, to };
+  });
 
   const timelineDays = useMemo(() => {
-    if (rangeMode === '7') return 7;
-    if (rangeMode === '30') return 30;
-
-    if (!customFrom || !customTo) {
-      return 14;
-    }
-
-    return diffDays(customFrom, customTo);
-  }, [rangeMode, customFrom, customTo]);
+    if (!timeRange.from || !timeRange.to) return 30;
+    return diffDays(timeRange.from.toISOString(), timeRange.to.toISOString());
+  }, [timeRange.from, timeRange.to]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -165,34 +163,7 @@ export default function DashboardPage() {
             <CalendarRange className="h-3.5 w-3.5" />
             Time Window
           </div>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: '7', label: 'Last 7 Days' },
-              { key: '30', label: 'Last 30 Days' },
-              { key: 'custom', label: 'Custom Range' },
-            ].map((option) => (
-              <Button
-                key={option.key}
-                type="button"
-                size="sm"
-                variant={rangeMode === option.key ? 'default' : 'outline'}
-                onClick={() => setRangeMode(option.key as RangeMode)}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-
-          {rangeMode === 'custom' && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-              />
-              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
-            </div>
-          )}
+          <DateTimeRangePicker value={timeRange} onChange={setTimeRange} />
         </div>
       </div>
 

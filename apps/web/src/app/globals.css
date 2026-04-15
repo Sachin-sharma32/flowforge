@@ -46,10 +46,10 @@
     --accent: var(--surface-container-high);
     --accent-foreground: var(--on-surface);
 
-    --destructive: 0 0% 22%;
+    --destructive: 2 66% 46%;
     --destructive-foreground: 0 0% 98%;
 
-    --success: 0 0% 30%;
+    --success: 142 48% 34%;
     --warning: 0 0% 38%;
     --info: 0 0% 46%;
 
@@ -103,10 +103,10 @@
     --accent: var(--surface-container-high);
     --accent-foreground: var(--on-surface);
 
-    --destructive: 0 0% 78%;
+    --destructive: 2 72% 62%;
     --destructive-foreground: 0 0% 8%;
 
-    --success: 0 0% 74%;
+    --success: 142 46% 62%;
     --warning: 0 0% 66%;
     --info: 0 0% 58%;
 
@@ -134,6 +134,16 @@
       'rlig' 1,
       'calt' 1,
       'ss01' 1; */
+  }
+
+  ::selection {
+    background: hsl(var(--surface-container-highest));
+    color: hsl(var(--on-surface));
+  }
+
+  .dark ::selection {
+    background: hsl(var(--surface-container-highest));
+    color: hsl(var(--on-surface));
   }
 
   /* Custom scrollbar */
@@ -470,6 +480,15 @@
   .landing-float {
     animation: landing-float 8s ease-in-out infinite;
   }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Keyframes */
@@ -522,22 +541,7 @@
   }
 }
 
-@keyframes route-progress {
-  0% {
-    transform: scaleX(0.08);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scaleX(0.64);
-    opacity: 1;
-  }
-  100% {
-    transform: scaleX(0.95);
-    opacity: 0.9;
-  }
-}
-
 .route-progress-bar {
   transform-origin: left center;
-  animation: route-progress 1.05s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  will-change: transform;
 }

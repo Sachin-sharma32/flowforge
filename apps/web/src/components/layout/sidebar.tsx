@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 import {
   LayoutDashboard,
   GitBranch,
@@ -12,6 +13,9 @@ import {
   LayoutTemplate,
   FolderKanban,
 } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchExecutionStats } from '@/stores/execution-slice';
+import { selectCurrentWorkspaceId, selectExecutionStats } from '@/stores/selectors';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -24,6 +28,18 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
+  const workspaceId = useAppSelector(selectCurrentWorkspaceId);
+  const stats = useAppSelector(selectExecutionStats);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    dispatch(fetchExecutionStats({ workspaceId }));
+  }, [dispatch, workspaceId]);
+
+  const usedRuns = stats?.total ?? 0;
+  const monthlyLimit = 1000;
+  const usageRatio = Math.min(100, Math.round((usedRuns / monthlyLimit) * 100));
 
   return (
     <aside className="relative flex h-screen w-[272px] flex-col bg-surface-container-low shadow-soft-lg">
@@ -78,9 +94,14 @@ export function Sidebar() {
         <div className="group relative overflow-hidden rounded-xl bg-surface-container-high p-5 transition-colors duration-300 hover:bg-surface-container-highest/70">
           <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-primary/10 blur-2xl transition-all duration-500 group-hover:bg-primary/20" />
           <p className="label-uppercase text-muted-foreground">Free Plan</p>
-          <p className="mt-1 text-sm font-medium">0 / 1,000 runs</p>
+          <p className="mt-1 text-sm font-medium">
+            {usedRuns.toLocaleString()} / {monthlyLimit.toLocaleString()} runs
+          </p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
-            <div className="h-full w-0 rounded-full bg-gradient-to-r from-primary to-primary-container transition-all duration-700" />
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary-container transition-all duration-700"
+              style={{ width: `${usageRatio}%` }}
+            />
           </div>
         </div>
       </div>

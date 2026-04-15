@@ -14,8 +14,8 @@ const statusIcons: Record<string, React.ElementType> = {
 };
 
 const statusColors: Record<string, string> = {
-  completed: 'text-green-500',
-  failed: 'text-red-500',
+  completed: 'text-success',
+  failed: 'text-destructive',
   running: 'text-yellow-500 animate-spin',
   pending: 'text-muted-foreground',
   skipped: 'text-muted-foreground',
@@ -40,9 +40,7 @@ export function ExecutionTimeline({ steps, workflowSteps }: ExecutionTimelinePro
           <div key={step.stepId} className="flex gap-3">
             <div className="flex flex-col items-center">
               <Icon className={`h-5 w-5 ${statusColors[step.status]}`} />
-              {i < steps.length - 1 && (
-                <div className="mt-1 h-full w-px bg-border" />
-              )}
+              {i < steps.length - 1 && <div className="mt-1 h-full w-px bg-border" />}
             </div>
             <div className="flex-1 pb-4">
               <div className="flex items-center justify-between">
@@ -55,9 +53,13 @@ export function ExecutionTimeline({ steps, workflowSteps }: ExecutionTimelinePro
                   )}
                   <Badge
                     variant={
-                      step.status === 'completed' ? 'success' :
-                      step.status === 'failed' ? 'destructive' :
-                      step.status === 'running' ? 'warning' : 'secondary'
+                      step.status === 'completed'
+                        ? 'success'
+                        : step.status === 'failed'
+                          ? 'destructive'
+                          : step.status === 'running'
+                            ? 'warning'
+                            : 'secondary'
                     }
                   >
                     {step.status}

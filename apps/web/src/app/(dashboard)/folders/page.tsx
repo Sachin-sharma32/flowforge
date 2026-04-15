@@ -5,9 +5,18 @@ import { FolderPlus, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createFolder, deleteFolder, fetchFolders, updateFolder } from '@/stores/folder-slice';
 import { fetchWorkflows } from '@/stores/workflow-slice';
+import { useToast } from '@/hooks/use-toast';
 
 const ROLE_OPTIONS = [
   { value: 'viewer', label: 'Viewer' },
@@ -22,18 +31,29 @@ export default function FoldersPage() {
   const { user } = useAppSelector((state) => state.auth);
   const { folders, isLoading, error } = useAppSelector((state) => state.folder);
   const workflows = useAppSelector((state) => state.workflow.workflows);
+  const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const [isCreating, setIsCreating] = useState(false);
   const [search, setSearch] = useState('');
+  const [folderToDelete, setFolderToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!currentWorkspace?.id) return;
     dispatch(fetchFolders({ workspaceId: currentWorkspace.id }));
     dispatch(fetchWorkflows({ workspaceId: currentWorkspace.id, params: { limit: '200' } }));
   }, [currentWorkspace?.id, dispatch]);
+
+  useEffect(() => {
+    if (!error) return;
+    toast({
+      variant: 'destructive',
+      title: 'Folder operation failed',
+      description: error,
+    });
+  }, [error, toast]);
 
   const currentRole = useMemo(() => {
     if (!user || !currentWorkspace) return 'viewer';
@@ -87,6 +107,11 @@ export default function FoldersPage() {
       setName('');
       setDescription('');
       setColor('#3b82f6');
+      toast({
+        variant: 'success',
+        title: 'Folder created',
+        description: 'The folder is ready to organize workflows.',
+      });
     } finally {
       setIsCreating(false);
     }
@@ -101,22 +126,33 @@ export default function FoldersPage() {
     },
   ) => {
     if (!currentWorkspace?.id || !canManageFolders) return;
-    await dispatch(
-      updateFolder({
-        workspaceId: currentWorkspace.id,
-        folderId,
-        input: { accessControl },
-      }),
-    );
+    try {
+      await dispatch(
+        updateFolder({
+          workspaceId: currentWorkspace.id,
+          folderId,
+          input: { accessControl },
+        }),
+      ).unwrap();
+      toast({
+        variant: 'success',
+        title: 'Access updated',
+        description: 'Folder permissions were updated.',
+      });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update access',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
+    }
   };
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-            Folders
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight">Folders</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Organize workflows by domain and apply folder-level access controls.
           </p>
@@ -217,25 +253,29 @@ export default function FoldersPage() {
                     ].map((item) => (
                       <div key={item.key} className="space-y-1">
                         <p className="text-xs text-muted-foreground">{item.label}</p>
-                        <select
-                          className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
-                          disabled={!canManageFolders}
+                        <Select
                           value={
                             folder.accessControl[item.key as keyof typeof folder.accessControl]
                           }
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             handleAccessChange(folder.id, {
                               ...folder.accessControl,
-                              [item.key]: event.target.value,
+                              [item.key]: value,
                             })
                           }
+                          disabled={!canManageFolders}
                         >
-                          {ROLE_OPTIONS.map((role) => (
-                            <option key={role.value} value={role.value}>
-                              {role.label}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger className="h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((role) => (
+                              <SelectItem key={role.value} value={role.value}>
+                                {role.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     ))}
                   </div>
@@ -248,10 +288,7 @@ export default function FoldersPage() {
                     className="text-destructive hover:text-destructive"
                     disabled={!canManageFolders}
                     onClick={() => {
-                      if (!currentWorkspace?.id) return;
-                      dispatch(
-                        deleteFolder({ workspaceId: currentWorkspace.id, folderId: folder.id }),
-                      );
+                      setFolderToDelete({ id: folder.id, name: folder.name });
                     }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Folder
@@ -262,6 +299,41 @@ export default function FoldersPage() {
           ))}
         </div>
       )}
+
+      <ConfirmActionDialog
+        open={Boolean(folderToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setFolderToDelete(null);
+        }}
+        title="Delete folder?"
+        description={
+          folderToDelete
+            ? `This will permanently delete "${folderToDelete.name}". Workflows inside it will be uncategorized.`
+            : ''
+        }
+        confirmLabel="Delete folder"
+        onConfirm={async () => {
+          if (!currentWorkspace?.id || !folderToDelete) return;
+          try {
+            await dispatch(
+              deleteFolder({ workspaceId: currentWorkspace.id, folderId: folderToDelete.id }),
+            ).unwrap();
+            toast({
+              variant: 'success',
+              title: 'Folder deleted',
+              description: `${folderToDelete.name} was deleted.`,
+            });
+          } catch (err) {
+            toast({
+              variant: 'destructive',
+              title: 'Failed to delete folder',
+              description: err instanceof Error ? err.message : 'Please try again.',
+            });
+          } finally {
+            setFolderToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

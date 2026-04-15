@@ -9,6 +9,7 @@ import { fetchProfile } from '@/stores/auth-store';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { cn } from '@/lib/utils';
+import { pushRecentRoute } from '@/lib/recent-routes';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -44,6 +45,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       cancelled = true;
     };
   }, [dispatch, router, user]);
+
+  useEffect(() => {
+    if (!pathname || pathname === '/') return;
+    pushRecentRoute(pathname);
+  }, [pathname]);
 
   if (!mounted) {
     return (

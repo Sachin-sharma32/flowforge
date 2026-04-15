@@ -4,8 +4,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import type { IExecutionStats } from '@flowforge/shared';
 
 const STATUS_COLORS = {
-  completed: 'hsl(var(--primary))',
-  failed: 'hsl(var(--on-surface-variant))',
+  completed: 'hsl(var(--success))',
+  failed: 'hsl(var(--destructive))',
   running: 'hsl(var(--secondary))',
   pending: 'hsl(var(--surface-container-highest))',
   cancelled: 'hsl(var(--surface-container))',

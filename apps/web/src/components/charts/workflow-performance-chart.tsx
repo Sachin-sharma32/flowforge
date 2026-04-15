@@ -86,7 +86,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
           dataKey="completed"
           name="Completed"
           stackId="a"
-          fill="hsl(var(--primary))"
+          fill="hsl(var(--success))"
           radius={[0, 0, 0, 0]}
         >
           {chartData.map((_, i) => (
@@ -97,7 +97,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
           dataKey="failed"
           name="Failed"
           stackId="a"
-          fill="hsl(var(--on-surface-variant))"
+          fill="hsl(var(--destructive))"
           radius={[0, 4, 4, 0]}
         />
       </BarChart>

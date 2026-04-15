@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
@@ -11,16 +12,17 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import type { IWorkspaceBillingSummary } from '@flowforge/shared';
 import { Settings, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { useCommandMenuSetting } from '@/hooks/use-command-menu-setting';
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const [name, setName] = useState(currentWorkspace?.name || '');
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
+  const { toast } = useToast();
+  const { enabled: commandMenuEnabled, setEnabled: setCommandMenuEnabled } =
+    useCommandMenuSetting();
 
   const [billingSummary, setBillingSummary] = useState<IWorkspaceBillingSummary | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -70,18 +72,31 @@ export default function SettingsPage() {
     };
   }, [currentWorkspace?.id]);
 
+  useEffect(() => {
+    if (!billingMessage) return;
+    toast({
+      variant: billingMessage.type === 'error' ? 'destructive' : 'success',
+      title: billingMessage.type === 'error' ? 'Billing issue' : 'Billing update',
+      description: billingMessage.text,
+    });
+  }, [billingMessage, toast]);
+
   const handleSave = async () => {
     if (!currentWorkspace?.id || !name.trim()) return;
     setSaving(true);
-    setSaveMessage(null);
     try {
       await api.patch(`/workspaces/${currentWorkspace.id}`, { name: name.trim() });
       await dispatch(fetchWorkspaces()).unwrap();
-      setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
+      toast({
+        variant: 'success',
+        title: 'Settings saved',
+        description: 'Workspace settings were updated successfully.',
+      });
     } catch (err: unknown) {
-      setSaveMessage({
-        type: 'error',
-        text: getApiErrorMessage(err, 'Failed to save settings'),
+      toast({
+        variant: 'destructive',
+        title: 'Failed to save settings',
+        description: getApiErrorMessage(err, 'Failed to save settings'),
       });
     } finally {
       setSaving(false);
@@ -101,9 +116,10 @@ export default function SettingsPage() {
       }
       window.location.href = url;
     } catch (err: unknown) {
-      setBillingMessage({
-        type: 'error',
-        text: getApiErrorMessage(err, 'Failed to start checkout'),
+      toast({
+        variant: 'destructive',
+        title: 'Checkout failed',
+        description: getApiErrorMessage(err, 'Failed to start checkout'),
       });
       setBillingAction(null);
     }
@@ -122,9 +138,10 @@ export default function SettingsPage() {
       }
       window.location.href = url;
     } catch (err: unknown) {
-      setBillingMessage({
-        type: 'error',
-        text: getApiErrorMessage(err, 'Failed to open billing portal'),
+      toast({
+        variant: 'destructive',
+        title: 'Portal unavailable',
+        description: getApiErrorMessage(err, 'Failed to open billing portal'),
       });
       setBillingAction(null);
     }
@@ -133,9 +150,7 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-          Settings
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">Manage your workspace settings</p>
       </div>
 
@@ -162,13 +177,15 @@ export default function SettingsPage() {
               Use this secret to verify incoming webhook requests.
             </p>
           </div>
-          {saveMessage && (
-            <p
-              className={`text-sm ${saveMessage.type === 'error' ? 'text-destructive' : 'text-green-600'}`}
-            >
-              {saveMessage.text}
-            </p>
-          )}
+          <div className="flex items-center justify-between rounded-md bg-surface-container-high px-3 py-2">
+            <div>
+              <p className="text-sm font-medium">Command Menu Shortcut</p>
+              <p className="text-xs text-muted-foreground">
+                Enable or disable Cmd/Ctrl + Space quick navigation.
+              </p>
+            </div>
+            <Switch checked={commandMenuEnabled} onCheckedChange={setCommandMenuEnabled} />
+          </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -257,14 +274,6 @@ export default function SettingsPage() {
             <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
               Billing summary unavailable. You may need owner billing permissions.
             </div>
-          )}
-
-          {billingMessage && (
-            <p
-              className={`text-sm ${billingMessage.type === 'error' ? 'text-destructive' : 'text-green-600'}`}
-            >
-              {billingMessage.text}
-            </p>
           )}
         </CardContent>
       </Card>

@@ -35,12 +35,12 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
       <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="completedGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+            <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="failedGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--on-surface-variant))" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="hsl(var(--on-surface-variant))" stopOpacity={0} />
+            <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid
@@ -81,7 +81,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
           type="monotone"
           dataKey="completed"
           name="Completed"
-          stroke="hsl(var(--primary))"
+          stroke="hsl(var(--success))"
           strokeWidth={2}
           fill="url(#completedGradient)"
           stackId="1"
@@ -90,7 +90,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
           type="monotone"
           dataKey="failed"
           name="Failed"
-          stroke="hsl(var(--on-surface-variant))"
+          stroke="hsl(var(--destructive))"
           strokeWidth={2}
           fill="url(#failedGradient)"
           stackId="1"

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Canvas } from '@/components/workflow/workflow-builder/canvas';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkflow, updateWorkflow } from '@/stores/workflow-slice';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function WorkflowEditPage() {
   const params = useParams();
@@ -15,7 +16,7 @@ export default function WorkflowEditPage() {
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { currentWorkflow, isLoading } = useAppSelector((state) => state.workflow);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
@@ -25,17 +26,21 @@ export default function WorkflowEditPage() {
 
   const handleSave = async (steps: unknown[]) => {
     if (!currentWorkspace?.id) return;
-    setSaveError(null);
     try {
       await dispatch(
         updateWorkflow({ workspaceId: currentWorkspace.id, workflowId, input: { steps } }),
       ).unwrap();
     } catch (err: unknown) {
-      if (typeof err === 'string') {
-        setSaveError(err);
-        return;
-      }
-      setSaveError(err instanceof Error ? err.message : 'Failed to save workflow');
+      toast({
+        variant: 'destructive',
+        title: 'Auto-save failed',
+        description:
+          typeof err === 'string'
+            ? err
+            : err instanceof Error
+              ? err.message
+              : 'Failed to save workflow',
+      });
     }
   };
 
@@ -48,7 +53,8 @@ export default function WorkflowEditPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="relative flex h-full min-h-0 flex-col">
+      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
       <div className="flex items-center gap-3 border-b border-border/60 px-6 py-4 lg:px-8">
         <Button variant="ghost" size="icon" onClick={() => router.push(`/workflows/${workflowId}`)}>
           <ArrowLeft className="h-4 w-4" />
@@ -63,12 +69,7 @@ export default function WorkflowEditPage() {
           </Button>
         </div>
       </div>
-      {saveError && (
-        <div className="mx-6 mt-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive lg:mx-8">
-          {saveError}
-        </div>
-      )}
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         <Canvas
           workflow={{
             trigger: currentWorkflow.trigger,
