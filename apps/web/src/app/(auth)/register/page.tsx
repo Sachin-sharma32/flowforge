@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { DM_Sans } from 'next/font/google';
 import { motion, useReducedMotion } from 'framer-motion';
 import { UserRoundPlus } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
@@ -17,11 +16,6 @@ import {
   clearPendingVerification,
   resendVerificationEmail,
 } from '@/stores/auth-store';
-
-const dmSansHeading = DM_Sans({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-});
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -56,7 +50,6 @@ export default function RegisterPage() {
       footerText="Already have an account?"
       footerLinkLabel="Sign in"
       footerLinkHref="/login"
-      headingFontClassName={dmSansHeading.className}
       icon={UserRoundPlus}
     >
       {pendingVerificationEmail ? (

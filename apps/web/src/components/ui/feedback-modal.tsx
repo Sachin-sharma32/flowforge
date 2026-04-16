@@ -35,15 +35,15 @@ export function FeedbackModal({
       onClick={onClose}
     >
       {/* Backdrop — strong blur so the entire page is visibly blurred */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+      <div className="absolute inset-0 bg-black/50" />
 
       {/* Dialog */}
       <div
-        className="relative z-10 w-full max-w-[500px] rounded-2xl border border-border/60 bg-card text-card-foreground shadow-soft-lg overflow-hidden animate-in zoom-in-95 duration-300"
+        className="relative z-10 w-full max-w-[500px] rounded-lg border border-border bg-card text-card-foreground shadow-sm overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-border/50">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-border">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
           <Button
             variant="ghost"
@@ -66,7 +66,7 @@ export function FeedbackModal({
                   'flex items-center border p-3.5 rounded-xl cursor-pointer transition-all duration-200',
                   selected === opt
                     ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                    : 'border-border/60 hover:bg-muted/40',
+                    : 'border-border hover:bg-muted/40',
                 ].join(' ')}
               >
                 <input
@@ -89,7 +89,7 @@ export function FeedbackModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 border-t border-border/50 bg-muted/10 p-6 pt-4">
+        <div className="flex justify-end gap-3 border-t border-border bg-muted/10 p-6 pt-4">
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>

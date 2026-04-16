@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkflow, updateWorkflow } from '@/stores/workflow-slice';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export default function WorkflowEditPage() {
   const params = useParams();
@@ -16,7 +16,6 @@ export default function WorkflowEditPage() {
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { currentWorkflow, isLoading } = useAppSelector((state) => state.workflow);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
@@ -31,9 +30,7 @@ export default function WorkflowEditPage() {
         updateWorkflow({ workspaceId: currentWorkspace.id, workflowId, input: { steps } }),
       ).unwrap();
     } catch (err: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Auto-save failed',
+      toast.error('Auto-save failed', {
         description:
           typeof err === 'string'
             ? err
@@ -54,7 +51,7 @@ export default function WorkflowEditPage() {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-3 border-b border-border/60 px-6 py-4 lg:px-8">
+      <div className="flex items-center gap-3 border-b border-border px-6 py-4 lg:px-8">
         <Button variant="ghost" size="icon" onClick={() => router.push(`/workflows/${workflowId}`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>

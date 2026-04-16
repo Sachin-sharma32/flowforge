@@ -1,9 +1,9 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { formatDuration } from '@/lib/utils';
 import { CheckCircle2, XCircle, Clock, Loader2, SkipForward } from 'lucide-react';
 import type { IExecutionStep } from '@flowforge/shared';
+import { formatDuration, intervalToDuration } from 'date-fns';
 
 const statusIcons: Record<string, React.ElementType> = {
   completed: CheckCircle2,
@@ -14,7 +14,7 @@ const statusIcons: Record<string, React.ElementType> = {
 };
 
 const statusColors: Record<string, string> = {
-  completed: 'text-success',
+  completed: 'text-foreground',
   failed: 'text-destructive',
   running: 'text-yellow-500 animate-spin',
   pending: 'text-muted-foreground',
@@ -48,7 +48,7 @@ export function ExecutionTimeline({ steps, workflowSteps }: ExecutionTimelinePro
                 <div className="flex items-center gap-2">
                   {step.durationMs !== undefined && (
                     <span className="text-xs text-muted-foreground">
-                      {formatDuration(step.durationMs)}
+                      {formatDuration(intervalToDuration({ start: 0, end: step.durationMs }))}
                     </span>
                   )}
                   <Badge

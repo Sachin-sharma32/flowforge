@@ -83,7 +83,7 @@ export function DashboardCommandMenu() {
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Search</span>
-        <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="text-[10px] uppercase tracking-normal text-muted-foreground">
           {shortcutLabel}
         </span>
       </Button>

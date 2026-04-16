@@ -23,6 +23,7 @@
     "kill-port": "^2.0.1",
     "lint-staged": "^16.4.0",
     "prettier": "^3.2.5",
+    "shadcn": "^4.2.0",
     "typescript": "^5.4.5"
   },
   "lint-staged": {

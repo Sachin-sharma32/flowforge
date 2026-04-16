@@ -23,10 +23,6 @@ import { setAccessToken } from '@/lib/auth-token-store';
 import { api } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
-interface LandingPageExperienceProps {
-  headingFontClassName: string;
-}
-
 interface FeatureCard {
   title: string;
   description: string;
@@ -103,25 +99,25 @@ const journey: JourneyStep[] = [
     title: 'Trigger',
     description: 'Ingest events from webhooks or app signals and normalize context for your run.',
     icon: Sparkles,
-    accent: 'from-primary/25 to-primary/5',
+    accent: 'bg-muted',
   },
   {
     title: 'Build',
     description: 'Compose the flow with conditions, transforms, and actions in the visual graph.',
     icon: Blocks,
-    accent: 'from-info/25 to-info/5',
+    accent: 'bg-muted',
   },
   {
     title: 'Run',
     description: 'Queue executions through BullMQ with deterministic step handlers and retries.',
     icon: Rocket,
-    accent: 'from-success/20 to-success/5',
+    accent: 'bg-muted',
   },
   {
     title: 'Observe',
     description: 'Track progress in real time and debug each execution from a timeline view.',
     icon: BellRing,
-    accent: 'from-warning/25 to-warning/5',
+    accent: 'bg-muted',
   },
 ] as const;
 
@@ -214,23 +210,18 @@ function SectionHeading({
   title,
   description,
   className,
-  headingFontClassName,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   className?: string;
-  headingFontClassName: string;
 }) {
   return (
     <div className={className}>
-      <p className="label-uppercase text-primary">{eyebrow}</p>
-      <h2
-        className={cn(
-          'mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl',
-          headingFontClassName,
-        )}
-      >
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
         {title}
       </h2>
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -240,7 +231,7 @@ function SectionHeading({
   );
 }
 
-export function LandingPageExperience({ headingFontClassName }: LandingPageExperienceProps) {
+export function LandingPageExperience() {
   const heroRef = useRef<HTMLElement | null>(null);
   const oneTapInFlightRef = useRef(false);
   const shouldReduceMotion = useReducedMotion();
@@ -328,14 +319,14 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
   }, []);
 
   return (
-    <div className="landing-shell relative min-h-screen overflow-x-clip">
-      <div className="landing-grid-overlay pointer-events-none absolute inset-0" />
-      <div className="landing-noise-overlay pointer-events-none absolute inset-0 opacity-30" />
+    <div className="bg-background relative min-h-screen overflow-x-clip">
+      <div className="hidden pointer-events-none absolute inset-0" />
+      <div className="hidden pointer-events-none absolute inset-0 opacity-30" />
 
       <motion.div
         aria-hidden
         style={{ y: heroOrbY, scale: heroOrbScale }}
-        className="landing-spotlight pointer-events-none absolute -top-36 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2"
+        className="hidden pointer-events-none absolute -top-36 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2"
       />
 
       <PublicNavbar />
@@ -344,15 +335,12 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
         <section ref={heroRef} className="relative">
           <div className="mx-auto grid w-full max-w-7xl gap-14 px-6 pb-16 pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-24">
             <SectionReveal>
-              <p className="label-uppercase text-primary">Automation Orchestration Platform</p>
-              <h1
-                className={cn(
-                  'mt-5 max-w-2xl text-5xl font-semibold leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl',
-                  headingFontClassName,
-                )}
-              >
+              <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+                Automation Orchestration Platform
+              </p>
+              <h1 className="mt-5 max-w-2xl text-5xl font-semibold leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">
                 Build reliable workflows with
-                <span className="landing-gradient-text"> cinematic clarity</span>
+                <span className="text-foreground"> cinematic clarity</span>
               </h1>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                 FlowForge helps engineering and operations teams launch event-driven automations
@@ -381,9 +369,9 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                       duration: shouldReduceMotion ? 0.05 : 0.5,
                       delay: 0.22 + index * 0.08,
                     }}
-                    className="landing-panel p-4"
+                    className="rounded-lg border border-border bg-card shadow-sm p-4"
                   >
-                    <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                    <p className="text-xs uppercase tracking-normal text-muted-foreground">
                       {highlight.label}
                     </p>
                     <p className="mt-2 text-sm font-semibold text-foreground">{highlight.value}</p>
@@ -393,17 +381,17 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
             </SectionReveal>
 
             <SectionReveal delay={0.1} className="relative">
-              <div className="landing-panel relative overflow-hidden p-5 sm:p-6">
-                <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-primary/15 to-transparent" />
+              <div className="rounded-lg border border-border bg-card shadow-sm relative overflow-hidden p-5 sm:p-6">
+                <div className="absolute inset-x-0 top-0 h-36 bg-muted" />
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.08em] text-primary">
+                    <p className="text-xs uppercase tracking-normal text-primary">
                       Workflow Preview
                     </p>
                     <p className="mt-2 text-lg font-semibold">Ecommerce Fulfillment Flow</p>
                   </div>
-                  <div className="flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-medium text-success">
-                    <span className="h-2 w-2 rounded-full bg-success" />
+                  <div className="flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-foreground">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
                     Live
                   </div>
                 </div>
@@ -430,7 +418,7 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                         delay: index * 0.3,
                         ease: 'easeInOut',
                       }}
-                      className="rounded-xl border border-border/60 bg-card/80 p-3 backdrop-blur"
+                      className="rounded-xl border border-border bg-card p-3"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
@@ -443,8 +431,8 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                   ))}
                 </div>
 
-                <div className="mt-5 rounded-xl border border-border/50 bg-muted/45 p-4">
-                  <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                <div className="mt-5 rounded-xl border border-border bg-muted/45 p-4">
+                  <p className="text-xs uppercase tracking-normal text-muted-foreground">
                     Runtime snapshot
                   </p>
                   <div className="mt-3 grid grid-cols-3 gap-3 text-center text-xs">
@@ -464,7 +452,6 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
               eyebrow="Platform capabilities"
               title="Everything your automation stack needs in one visual surface"
               description="From builder ergonomics to runtime observability, FlowForge keeps your teams fast without sacrificing operational safety."
-              headingFontClassName={headingFontClassName}
             />
           </SectionReveal>
 
@@ -482,12 +469,12 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                           }
                     }
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="landing-panel h-full p-5"
+                    className="rounded-lg border border-border bg-card shadow-sm h-full p-5"
                   >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-info/15 text-primary">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-primary">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <p className="mt-4 text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                    <p className="mt-4 text-xs uppercase tracking-normal text-muted-foreground">
                       {feature.label}
                     </p>
                     <h3 className="mt-2 text-lg font-semibold tracking-tight">{feature.title}</h3>
@@ -501,7 +488,7 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
           </div>
         </section>
 
-        <div className="landing-divider mx-auto mt-16 w-full max-w-7xl px-6" />
+        <div className="h-px bg-border mx-auto mt-16 w-full max-w-7xl px-6" />
 
         <section id="how-it-works" className="mx-auto w-full max-w-7xl px-6 pb-8 pt-16">
           <SectionReveal>
@@ -509,20 +496,19 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
               eyebrow="How it works"
               title="Trigger, build, run, and observe without context switching"
               description="FlowForge keeps each stage of workflow delivery connected, so product and platform teams collaborate on the same source of execution truth."
-              headingFontClassName={headingFontClassName}
             />
           </SectionReveal>
 
           <div className="relative mt-10 grid gap-4 lg:grid-cols-4">
-            <div className="pointer-events-none absolute left-8 right-8 top-12 hidden h-px bg-gradient-to-r from-primary/40 via-info/40 to-success/40 lg:block" />
+            <div className="pointer-events-none absolute left-8 right-8 top-12 hidden h-px bg-muted    lg:block" />
             {journey.map((step, index) => {
               const Icon = step.icon;
               return (
                 <SectionReveal key={step.title} delay={index * 0.08} className="relative">
-                  <div className="landing-panel h-full p-5">
+                  <div className="rounded-lg border border-border bg-card shadow-sm h-full p-5">
                     <div
                       className={cn(
-                        'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-primary ring-1 ring-border/70',
+                        'flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-primary ring-1 ring-border/70',
                         step.accent,
                       )}
                     >
@@ -545,22 +531,21 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
               eyebrow="Execution control"
               title="See every run unfold in a live operational narrative"
               description="Execution telemetry appears as an understandable story for humans, while retaining the technical fidelity your engineering team needs to debug quickly."
-              headingFontClassName={headingFontClassName}
             />
           </SectionReveal>
 
           <div className="mt-10 grid gap-5 lg:grid-cols-[1.12fr_0.88fr]">
             <SectionReveal>
-              <div className="landing-panel relative overflow-hidden p-6">
-                <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-info/15 to-transparent" />
+              <div className="rounded-lg border border-border bg-card shadow-sm relative overflow-hidden p-6">
+                <div className="absolute inset-x-0 top-0 h-36 bg-muted" />
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.08em] text-info">
+                    <p className="text-xs uppercase tracking-normal text-muted-foreground">
                       Live execution feed
                     </p>
                     <h3 className="mt-2 text-xl font-semibold">Production Pipeline 04</h3>
                   </div>
-                  <p className="rounded-full border border-success/25 bg-success/10 px-3 py-1 text-xs font-medium text-success">
+                  <p className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-foreground">
                     3 running
                   </p>
                 </div>
@@ -569,7 +554,7 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                   {executionFeed.map((event, index) => (
                     <motion.div
                       key={event.name}
-                      className="rounded-xl border border-border/60 bg-background/60 p-4"
+                      className="rounded-xl border border-border bg-background p-4"
                       initial={{ opacity: 0, x: shouldReduceMotion ? 0 : 14 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true, amount: 0.4 }}
@@ -598,8 +583,8 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
             </SectionReveal>
 
             <SectionReveal delay={0.1}>
-              <div className="landing-panel p-6">
-                <p className="text-xs uppercase tracking-[0.08em] text-primary">Activity pulse</p>
+              <div className="rounded-lg border border-border bg-card shadow-sm p-6">
+                <p className="text-xs uppercase tracking-normal text-primary">Activity pulse</p>
                 <h3 className="mt-2 text-xl font-semibold">Workflow throughput overview</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   A concise control surface for execution velocity, success health, and queue
@@ -623,22 +608,22 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
                             delay: 0.2 + index * 0.07,
                             ease: [0.16, 1, 0.3, 1],
                           }}
-                          className="h-full rounded-full bg-gradient-to-r from-primary to-info"
+                          className="h-full rounded-full bg-muted"
                         />
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-7 rounded-xl border border-border/60 bg-muted/45 p-4">
+                <div className="mt-7 rounded-xl border border-border bg-muted/45 p-4">
                   <p className="text-sm font-medium">Execution health</p>
                   <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <CheckCircle2 className="h-4 w-4 text-foreground" />
                       Mean completion time is stable below alert threshold.
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <CheckCircle2 className="h-4 w-4 text-foreground" />
                       Queue retry rate remains within expected baseline.
                     </li>
                   </ul>
@@ -650,19 +635,16 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
 
         <section className="mx-auto w-full max-w-7xl px-6 pb-20 pt-16">
           <SectionReveal>
-            <div className="landing-panel relative overflow-hidden p-8 sm:p-10">
-              <div className="absolute -left-24 top-0 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
-              <div className="absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-foreground/10 blur-3xl" />
+            <div className="rounded-lg border border-border bg-card shadow-sm relative overflow-hidden p-8 sm:p-10">
+              {/* <div className="absolute -left-24 top-0 h-64 w-64 rounded-full bg-primary/15 " />
+              <div className="absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-foreground/10 " /> */}
 
               <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="label-uppercase text-primary">Ready to launch</p>
-                  <h2
-                    className={cn(
-                      'mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl',
-                      headingFontClassName,
-                    )}
-                  >
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+                    Ready to launch
+                  </p>
+                  <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
                     Turn workflow complexity into a clear and reliable automation system
                   </h2>
                   <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -703,24 +685,24 @@ export function LandingPageExperience({ headingFontClassName }: LandingPageExper
 
 function StatusDot({ status }: { status: 'completed' | 'running' | 'queued' | string }) {
   if (status === 'completed') {
-    return <span className="h-2.5 w-2.5 rounded-full bg-success" aria-hidden />;
+    return <span className="h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />;
   }
 
   if (status === 'running') {
     return (
       <span className="relative flex h-2.5 w-2.5" aria-hidden>
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-80" />
-        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-info" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-80" />
+        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
       </span>
     );
   }
 
-  return <span className="h-2.5 w-2.5 rounded-full bg-warning" aria-hidden />;
+  return <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground" aria-hidden />;
 }
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-background/70 px-2 py-2">
+    <div className="rounded-lg border border-border bg-background px-2 py-2">
       <p className="text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>

@@ -149,7 +149,7 @@ export function RouteProgressBar() {
       )}
     >
       <div
-        className="route-progress-bar h-full w-full bg-gradient-to-r from-primary via-primary-container to-primary"
+        className="h-full w-full origin-left bg-muted   "
         style={{
           transform: `scaleX(${progress})`,
           transitionProperty: 'transform',

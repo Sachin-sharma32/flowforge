@@ -8,14 +8,10 @@ interface PageTransitionProps {
   className?: string;
 }
 
-/**
- * Wraps page content in a fade + slide-up animation.
- * Re-keys on pathname change so the animation replays between routes.
- */
 export function PageTransition({ children, className }: PageTransitionProps) {
   const pathname = usePathname();
   return (
-    <div key={pathname} className={cn('animate-fade-in-up', className)}>
+    <div key={pathname} className={cn('animate-in fade-in-0 duration-200', className)}>
       {children}
     </div>
   );

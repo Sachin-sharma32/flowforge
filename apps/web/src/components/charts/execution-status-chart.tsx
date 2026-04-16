@@ -11,11 +11,11 @@ import {
 } from '@/components/ui/chart';
 
 const STATUS_COLORS = {
-  completed: 'hsl(var(--success))',
+  completed: '#10b981',
   failed: 'hsl(var(--destructive))',
   running: 'hsl(var(--secondary))',
-  pending: 'hsl(var(--surface-container-highest))',
-  cancelled: 'hsl(var(--surface-container))',
+  pending: 'hsl(var(--muted))',
+  cancelled: 'hsl(var(--muted))',
 };
 
 interface ExecutionStatusChartProps {

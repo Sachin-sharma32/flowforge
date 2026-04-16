@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   STEP_TEMPLATES,
   STEP_TEMPLATE_BY_TYPE,
@@ -243,7 +243,6 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
   const mountedRef = useRef(true);
   const isSavingRef = useRef(false);
   const latestStepsRef = useRef(steps);
-  const { toast } = useToast();
 
   const selectedStep = steps.find((step) => step.id === selectedStepId) || null;
 
@@ -354,9 +353,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       } catch (error) {
         if (mountedRef.current) {
           setAutoSaveStatus('error');
-          toast({
-            variant: 'destructive',
-            title: 'Auto-save failed',
+          toast.error('Auto-save failed', {
             description: error instanceof Error ? error.message : 'Failed to save workflow.',
           });
         }
@@ -429,14 +426,14 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
 
   return (
     <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)_380px]">
-      <aside className="border-b border-border/50 bg-card/40 p-4 lg:border-b-0 lg:border-r lg:p-6">
+      <aside className="border-b border-border bg-card p-4 lg:border-b-0 lg:border-r lg:p-6">
         <div className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
             Step Library
           </p>
           <h2 className="mt-2 text-xl font-semibold">Build Your Flow</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Steps run top-to-bottom. Reorder cleanly with drag-and-drop.
+            Steps run top-. Reorder cleanly with drag-and-drop.
           </p>
         </div>
 
@@ -446,7 +443,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
-                  className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                  className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-normal text-muted-foreground"
                 >
                   {category}
                   <ChevronsUpDown className="h-3.5 w-3.5" />
@@ -458,7 +455,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     key={template.type}
                     type="button"
                     onClick={() => addStep(template.type)}
-                    className="w-full rounded-xl border border-border/70 bg-background/40 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                    className="w-full rounded-xl border border-border bg-background p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                   >
                     <div className="flex items-center gap-2.5">
                       <template.icon className="h-4 w-4 text-primary" />
@@ -473,10 +470,10 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
         </div>
       </aside>
 
-      <section className="relative flex min-h-0 flex-col border-b border-border/50 lg:border-b-0 lg:border-r">
-        <div className="flex items-center justify-between border-b border-border/50 px-5 py-4 lg:px-8">
+      <section className="relative flex min-h-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 lg:px-8">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               Workflow Flow
             </p>
             <h2 className="mt-1 text-lg font-semibold">Trigger + Steps</h2>
@@ -496,13 +493,13 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
         </div>
 
         <div
-          className="builder-dot-grid builder-dot-grid-spotlight relative min-h-0 flex-1 overflow-y-auto px-5 py-4 lg:px-8 lg:py-6"
+          className="bg-muted/30 relative min-h-0 flex-1 overflow-y-auto px-5 py-4 lg:px-8 lg:py-6"
           onMouseMove={handleBuilderSpotlightMove}
           onMouseLeave={handleBuilderSpotlightLeave}
         >
           <div className="mx-auto max-w-3xl space-y-4">
-            <div className="rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-normal text-primary">
                 Trigger
               </p>
               <div className="mt-2 flex items-center justify-between">
@@ -542,10 +539,10 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     setDragOverStepId(null);
                   }}
                   className={cn(
-                    'w-full rounded-2xl border p-4 text-left transition-colors',
+                    'w-full rounded-lg border p-4 text-left transition-colors',
                     isSelected
                       ? 'border-primary/50 bg-primary/5 ring-2 ring-primary/15'
-                      : 'border-border/60 bg-card/40 hover:border-primary/30 hover:bg-accent/30',
+                      : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30',
                     draggedStepId === step.id && 'opacity-60',
                     dragOverStepId === step.id &&
                       draggedStepId !== step.id &&
@@ -628,7 +625,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
               );
             })}
 
-            <div className="rounded-2xl border border-dashed border-border/70 bg-card/20 p-5 text-center">
+            <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center">
               <p className="text-sm font-medium">Add another step from the library</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Drag steps up or down to reorder execution.
@@ -643,10 +640,10 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
         </div>
       </section>
 
-      <aside className="min-h-0 bg-card/30 p-4 lg:p-6">
+      <aside className="min-h-0 bg-card p-4 lg:p-6">
         <div className="flex h-full min-h-0 flex-col">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               Step Config
             </p>
             <h2 className="mt-1 text-lg font-semibold">
@@ -656,13 +653,13 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
 
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
             {!selectedStep ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-background/30 p-5 text-sm text-muted-foreground">
+              <div className="rounded-lg border border-dashed border-border bg-background p-5 text-sm text-muted-foreground">
                 Choose a step to edit name, settings, and branch behavior.
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                     Step Name
                   </label>
                   <Input
@@ -678,10 +675,10 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                     Step Type
                   </label>
-                  <div className="rounded-xl border border-border/70 bg-background/50 px-4 py-3 text-sm">
+                  <div className="rounded-xl border border-border bg-background px-4 py-3 text-sm">
                     {STEP_TEMPLATE_BY_TYPE[selectedStep.type].label}
                   </div>
                 </div>
@@ -689,7 +686,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 {selectedStep.type === 'http_request' && (
                   <>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         URL
                       </label>
                       <Input
@@ -704,7 +701,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Method
                       </label>
                       <Select
@@ -716,7 +713,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                        <SelectTrigger className="h-12 rounded-xl bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -734,7 +731,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 {selectedStep.type === 'condition' && (
                   <>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Field
                       </label>
                       <Input
@@ -749,7 +746,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Operator
                       </label>
                       <Select
@@ -761,7 +758,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                        <SelectTrigger className="h-12 rounded-xl bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -776,7 +773,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Value
                       </label>
                       <Input
@@ -793,7 +790,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           True Branch
                         </label>
                         <Select
@@ -805,7 +802,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectTrigger className="h-12 rounded-xl bg-background">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -820,7 +817,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           False Branch
                         </label>
                         <Select
@@ -832,7 +829,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectTrigger className="h-12 rounded-xl bg-background">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -856,7 +853,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           Source Path
                         </label>
                         <Input
@@ -879,7 +876,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           Target Path
                         </label>
                         <Input
@@ -903,7 +900,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Transform
                       </label>
                       <Select
@@ -928,7 +925,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           })
                         }
                       >
-                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                        <SelectTrigger className="h-12 rounded-xl bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -948,7 +945,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
 
                 {selectedStep.type === 'delay' && (
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                       Duration (milliseconds)
                     </label>
                     <Input
@@ -972,7 +969,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                   <div className="space-y-3">
                     {selectedStep.type === 'gmail' && (
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           Gmail Operation
                         </label>
                         <Select
@@ -984,7 +981,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                          <SelectTrigger className="h-12 rounded-xl bg-background">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -998,7 +995,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
 
                     {selectedStep.type === 'gmail' && (
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           Access Token
                         </label>
                         <Input
@@ -1018,7 +1015,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'send_email') !== 'list_messages' && (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             To
                           </label>
                           <Input
@@ -1032,7 +1029,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Subject
                           </label>
                           <Input
@@ -1046,11 +1043,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Body
                           </label>
                           <Textarea
-                            className="min-h-[110px] rounded-xl bg-background/60"
+                            className="min-h-[110px] rounded-xl bg-background"
                             value={String(selectedStep.config.body || '')}
                             onChange={(event) =>
                               updateStep(selectedStep.id, (current) => ({
@@ -1067,7 +1064,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       String(selectedStep.config.operation || 'send_email') === 'list_messages' && (
                         <>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                               Search Query
                             </label>
                             <Input
@@ -1082,7 +1079,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                               Max Results
                             </label>
                             <Input
@@ -1109,7 +1106,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 {selectedStep.type === 'slack_message' && (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Webhook URL
                       </label>
                       <Input
@@ -1123,11 +1120,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Message
                       </label>
                       <Textarea
-                        className="min-h-[110px] rounded-xl bg-background/60"
+                        className="min-h-[110px] rounded-xl bg-background"
                         value={String(selectedStep.config.message || '')}
                         onChange={(event) =>
                           updateStep(selectedStep.id, (current) => ({
@@ -1143,7 +1140,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 {selectedStep.type === 'google_drive' && (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Access Token
                       </label>
                       <Input
@@ -1159,7 +1156,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Operation
                       </label>
                       <Select
@@ -1171,7 +1168,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                        <SelectTrigger className="h-12 rounded-xl bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1182,7 +1179,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Folder ID (optional)
                       </label>
                       <Input
@@ -1199,7 +1196,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'list_files') === 'list_files' && (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Query (optional)
                           </label>
                           <Input
@@ -1214,7 +1211,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Page Size
                           </label>
                           <Input
@@ -1239,7 +1236,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'list_files') !== 'list_files' && (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Name
                           </label>
                           <Input
@@ -1256,7 +1253,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           'upload_text_file' && (
                           <>
                             <div className="space-y-2">
-                              <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                              <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                                 MIME Type
                               </label>
                               <Input
@@ -1270,11 +1267,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                              <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                                 Content
                               </label>
                               <Textarea
-                                className="min-h-[110px] rounded-xl bg-background/60"
+                                className="min-h-[110px] rounded-xl bg-background"
                                 value={String(selectedStep.config.content || '')}
                                 onChange={(event) =>
                                   updateStep(selectedStep.id, (current) => ({
@@ -1294,7 +1291,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 {selectedStep.type === 'google_calendar' && (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Access Token
                       </label>
                       <Input
@@ -1309,7 +1306,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Operation
                       </label>
                       <Select
@@ -1321,7 +1318,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                        <SelectTrigger className="h-12 rounded-xl bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1331,7 +1328,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Calendar ID
                       </label>
                       <Input
@@ -1348,7 +1345,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'create_event') === 'create_event' ? (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Summary
                           </label>
                           <Input
@@ -1362,7 +1359,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Start (ISO)
                           </label>
                           <Input
@@ -1377,7 +1374,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             End (ISO)
                           </label>
                           <Input
@@ -1392,7 +1389,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Time Zone
                           </label>
                           <Input
@@ -1410,7 +1407,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     ) : (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Time Min (ISO)
                           </label>
                           <Input
@@ -1424,7 +1421,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Time Max (ISO)
                           </label>
                           <Input
@@ -1438,7 +1435,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Max Results
                           </label>
                           <Input
@@ -1465,7 +1462,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                 {selectedStep.type === 'notion' && (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Access Token
                       </label>
                       <Input
@@ -1480,7 +1477,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                         Operation
                       </label>
                       <Select
@@ -1492,7 +1489,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                        <SelectTrigger className="h-12 rounded-xl bg-background">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1506,7 +1503,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'create_page') === 'create_page' && (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Parent Type
                           </label>
                           <Select
@@ -1518,7 +1515,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                               }))
                             }
                           >
-                            <SelectTrigger className="h-12 rounded-xl bg-background/60">
+                            <SelectTrigger className="h-12 rounded-xl bg-background">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1528,7 +1525,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Parent ID
                           </label>
                           <Input
@@ -1542,7 +1539,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Title
                           </label>
                           <Input
@@ -1556,11 +1553,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Content
                           </label>
                           <Textarea
-                            className="min-h-[110px] rounded-xl bg-background/60"
+                            className="min-h-[110px] rounded-xl bg-background"
                             value={String(selectedStep.config.content || '')}
                             onChange={(event) =>
                               updateStep(selectedStep.id, (current) => ({
@@ -1576,7 +1573,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'create_page') === 'append_block' && (
                       <>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Block ID
                           </label>
                           <Input
@@ -1590,11 +1587,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                             Content
                           </label>
                           <Textarea
-                            className="min-h-[110px] rounded-xl bg-background/60"
+                            className="min-h-[110px] rounded-xl bg-background"
                             value={String(selectedStep.config.content || '')}
                             onChange={(event) =>
                               updateStep(selectedStep.id, (current) => ({
@@ -1610,7 +1607,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                     {String(selectedStep.config.operation || 'create_page') ===
                       'query_database' && (
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                           Database ID
                         </label>
                         <Input
@@ -1627,7 +1624,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                   </div>
                 )}
 
-                <div className="rounded-xl border border-border/60 bg-background/40 p-3 text-xs text-muted-foreground">
+                <div className="rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
                   Tip: You can reference workflow variables with {'`{{variableName}}`'} in supported
                   text fields.
                 </div>
@@ -1635,12 +1632,12 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
             )}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-border/60 bg-background/50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <div className="mt-4 rounded-lg border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               Flow Checks
             </p>
             {issues.length === 0 ? (
-              <p className="mt-2 text-sm text-success">
+              <p className="mt-2 text-sm text-foreground">
                 No issues found. Workflow is ready to save.
               </p>
             ) : (

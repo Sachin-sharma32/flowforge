@@ -36,7 +36,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
   return (
     <ChartContainer
       config={{
-        completed: { label: 'Completed', color: 'hsl(var(--success))' },
+        completed: { label: 'Completed', color: '#10b981' },
         failed: { label: 'Failed', color: 'hsl(var(--destructive))' },
       }}
       className="h-[260px]"
@@ -47,11 +47,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
           layout="vertical"
           margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
         >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="hsl(var(--outline-variant) / 0.25)"
-            horizontal={false}
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis
             type="number"
             stroke="hsl(var(--muted-foreground))"
@@ -84,7 +80,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
             dataKey="completed"
             name="Completed"
             stackId="a"
-            fill="hsl(var(--success))"
+            fill="#10b981"
             radius={[0, 0, 0, 0]}
           >
             {chartData.map((_, i) => (

@@ -13,11 +13,10 @@ import { fetchExecution, cancelExecution } from '@/stores/execution-slice';
 import type { IExecution } from '@flowforge/shared';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { getSocket } from '@/lib/socket-client';
-import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-
+import { formatDuration, intervalToDuration } from 'date-fns';
+import { toast } from 'sonner';
 export default function ExecutionDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -26,7 +25,6 @@ export default function ExecutionDetailPage() {
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { currentExecution, isLoading } = useAppSelector((state) => state.execution);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
-  const { toast } = useToast();
 
   useExecutionSocket(currentWorkspace?.id);
 
@@ -107,7 +105,7 @@ export default function ExecutionDetailPage() {
           <CardContent>
             <p className="text-lg font-semibold">
               {currentExecution.durationMs
-                ? formatDuration(currentExecution.durationMs)
+                ? formatDuration(intervalToDuration({ start: 0, end: currentExecution.durationMs }))
                 : isRunning
                   ? 'Running...'
                   : '—'}
@@ -120,7 +118,7 @@ export default function ExecutionDetailPage() {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">
-              {currentExecution.startedAt ? formatDate(currentExecution.startedAt) : '—'}
+              {/* {currentExecution.startedAt ? formatDate(currentExecution.startedAt) : '—'} */}
             </p>
           </CardContent>
         </Card>
@@ -170,15 +168,11 @@ export default function ExecutionDetailPage() {
             await dispatch(
               cancelExecution({ workspaceId: currentWorkspace.id, executionId }),
             ).unwrap();
-            toast({
-              variant: 'success',
-              title: 'Execution cancelled',
+            toast.error('Execution cancelled', {
               description: 'The workflow run was cancelled.',
             });
           } catch (error) {
-            toast({
-              variant: 'destructive',
-              title: 'Failed to cancel execution',
+            toast.error('Failed to cancel execution', {
               description: error instanceof Error ? error.message : 'Please try again.',
             });
           } finally {

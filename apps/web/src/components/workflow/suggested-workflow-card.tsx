@@ -8,13 +8,7 @@ import { Button } from '@/components/ui/button';
 // --- Verified check icon --- //
 
 const VerifiedIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="hsl(var(--success))"
-    xmlns="http://www.w3.org/2000/svg"
-  >
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="#10b981" xmlns="http://www.w3.org/2000/svg">
     <circle cx="12" cy="12" r="10" />
     <path
       d="M8 12.5L10.5 15L16 9"
@@ -56,13 +50,13 @@ function ExtraAppsBadge({ app }: { app: AppInfo }) {
     >
       <Badge
         variant="outline"
-        className="gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border-border/60 bg-muted/30 text-foreground/80 hover:bg-muted cursor-default"
+        className="gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border-border bg-muted/30 text-foreground/80 hover:bg-muted cursor-default"
       >
         {app.name}
       </Badge>
       {showExtra && app.extraApps && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col gap-1.5 rounded-xl border border-border/60 bg-popover p-3 shadow-soft-lg z-20 whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 min-w-[160px]">
-          <p className="label-uppercase text-muted-foreground px-1 pb-1 border-b border-border/50">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col gap-1.5 rounded-xl border border-border bg-popover p-3 shadow-sm z-20 whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 min-w-[160px]">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-muted-foreground px-1 pb-1 border-b border-border">
             Also connects to
           </p>
           {app.extraApps.map((ea) => (
@@ -85,7 +79,7 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
   const [isDropdown, setIsDropdown] = useState(false);
 
   return (
-    <div className="group relative flex h-full min-h-[220px] flex-col rounded-3xl border border-border/60 bg-card/80 text-card-foreground shadow-soft backdrop-blur-xl supports-[backdrop-filter]:bg-card/60 p-7 transition-all duration-300 ease-spring cursor-pointer hover:shadow-soft-lg hover:border-border">
+    <div className="group relative flex h-full min-h-[220px] flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7 transition-all duration-300 ease-out cursor-pointer hover:shadow-sm hover:border-border">
       {/* Title + menu */}
       <div className="mb-auto flex items-start justify-between gap-3">
         <h3 className="text-lg font-semibold leading-snug tracking-tight text-foreground line-clamp-3">
@@ -107,7 +101,7 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
             <MoreVertical className="h-4.5 w-4.5" />
           </Button>
           {isDropdown && (
-            <div className="absolute right-0 top-9 w-36 rounded-xl border border-border/60 bg-popover p-1 shadow-soft-lg z-10 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 top-9 w-36 rounded-xl border border-border bg-popover p-1 shadow-sm z-10 animate-in fade-in zoom-in-95 duration-100">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -137,7 +131,7 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
               <Badge
                 key={i}
                 variant="outline"
-                className="gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border-border/60 bg-background/50 text-foreground/80 hover:bg-muted"
+                className="gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border-border bg-background text-foreground/80 hover:bg-muted"
               >
                 {app.icon}
                 <span>{app.name}</span>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DM_Sans } from 'next/font/google';
 import { motion, useReducedMotion } from 'framer-motion';
 import { LogIn } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
@@ -11,11 +10,6 @@ import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { login, clearError, clearNotice } from '@/stores/auth-store';
-
-const dmSansHeading = DM_Sans({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-});
 
 const ROUTE_PROGRESS_START_EVENT = 'flowforge:route-progress:start';
 const ROUTE_PROGRESS_STOP_EVENT = 'flowforge:route-progress:stop';
@@ -70,7 +64,6 @@ export default function LoginPage() {
       footerText="Don't have an account?"
       footerLinkLabel="Create one"
       footerLinkHref="/register"
-      headingFontClassName={dmSansHeading.className}
       icon={LogIn}
     >
       <motion.form

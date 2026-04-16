@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import type { IWorkspaceBillingSummary } from '@flowforge/shared';
 import { Settings, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useCommandMenuSetting } from '@/hooks/use-command-menu-setting';
 import { formatShortcutLabel } from '@/lib/preferences';
 
@@ -36,7 +36,6 @@ export default function SettingsPage() {
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const [name, setName] = useState(currentWorkspace?.name || '');
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
   const {
     enabled: commandMenuEnabled,
     shortcut: commandMenuShortcut,
@@ -94,9 +93,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!billingMessage) return;
-    toast({
-      variant: billingMessage.type === 'error' ? 'destructive' : 'success',
-      title: billingMessage.type === 'error' ? 'Billing issue' : 'Billing update',
+    toast.info(billingMessage.type === 'error' ? 'Billing issue' : 'Billing update', {
       description: billingMessage.text,
     });
   }, [billingMessage, toast]);
@@ -107,15 +104,11 @@ export default function SettingsPage() {
     try {
       await api.patch(`/workspaces/${currentWorkspace.id}`, { name: name.trim() });
       await dispatch(fetchWorkspaces()).unwrap();
-      toast({
-        variant: 'success',
-        title: 'Settings saved',
+      toast.success('Settings saved', {
         description: 'Workspace settings were updated successfully.',
       });
     } catch (err: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to save settings',
+      toast.error('Failed to save settings', {
         description: getApiErrorMessage(err, 'Failed to save settings'),
       });
     } finally {
@@ -136,9 +129,7 @@ export default function SettingsPage() {
       }
       window.location.href = url;
     } catch (_err: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Checkout failed',
+      toast.error('Checkout failed', {
         description: friendlyBillingError('checkout'),
       });
       setBillingAction(null);
@@ -158,9 +149,7 @@ export default function SettingsPage() {
       }
       window.location.href = url;
     } catch (_err: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Portal unavailable',
+      toast.error('Portal unavailable', {
         description: friendlyBillingError('portal'),
       });
       setBillingAction(null);
@@ -197,7 +186,7 @@ export default function SettingsPage() {
               Use this secret to verify incoming webhook requests.
             </p>
           </div>
-          <div className="flex items-center justify-between rounded-md bg-surface-container-high px-3 py-2">
+          <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
             <div>
               <p className="text-sm font-medium">Command Menu Shortcut</p>
               <p className="text-xs text-muted-foreground">
@@ -206,7 +195,7 @@ export default function SettingsPage() {
             </div>
             <Switch checked={commandMenuEnabled} onCheckedChange={setCommandMenuEnabled} />
           </div>
-          <div className="grid gap-3 rounded-md border border-border/70 bg-background/50 p-3 sm:grid-cols-2">
+          <div className="grid gap-3 rounded-md border border-border bg-background p-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Modifier</p>
               <Select
@@ -280,17 +269,17 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {billingLoading && !billingSummary ? (
-            <div className="rounded-lg border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
               Loading billing summary...
             </div>
           ) : billingSummary ? (
-            <div className="space-y-5 rounded-2xl border border-border/70 bg-muted/30 p-6">
+            <div className="space-y-5 rounded-lg border border-border bg-muted/30 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Current Plan</p>
                   <p className="text-lg font-semibold capitalize">{billingSummary.plan}</p>
                 </div>
-                <span className="rounded-full border border-border/70 bg-background px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
+                <span className="rounded-full border border-border bg-background px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
                   {billingSummary.subscriptionStatus.replace('_', ' ')}
                 </span>
               </div>
@@ -305,7 +294,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-info"
+                    className="h-full bg-muted"
                     style={{ width: `${billingSummary.usage.percentUsed}%` }}
                   />
                 </div>

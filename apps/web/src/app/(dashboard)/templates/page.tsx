@@ -187,7 +187,7 @@ const MARKETING: WorkflowCard[] = [
     title: 'Automatically post blog updates to company social media',
     apps: [
       { name: 'Notion', icon: <NotionIcon />, verified: true },
-      { name: 'Twitter', icon: <div className="h-3.5 w-3.5 bg-sky-500 rounded-sm" /> },
+      { name: 'Twitter', icon: <div className="h-3.5 w-3.5 bg-primary rounded-sm" /> },
     ],
   },
   {
@@ -292,9 +292,9 @@ export default function TemplatesPage() {
   return (
     <div className="mx-auto w-full space-y-16 pb-24 animate-in fade-in duration-500">
       {/* ── Hero header ── */}
-      <div className="stagger-fade-in pt-4" style={{ animationDelay: '0ms' }}>
+      <div className="animate-in fade-in-0 pt-4" style={{ animationDelay: '0ms' }}>
         <div className="flex items-center gap-4 mb-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-glow">
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted shadow-sm">
             <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div>

@@ -40,8 +40,8 @@ import { fetchFolders } from '@/stores/folder-slice';
 import { fetchWorkflows } from '@/stores/workflow-slice';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { useDebounce } from '@/hooks/use-debounce';
-import { formatDate, formatDuration } from '@/lib/utils';
 import { PlayCircle, Search, SlidersHorizontal } from 'lucide-react';
+import { formatDuration, formatDate, intervalToDuration } from 'date-fns';
 
 export default function ExecutionsPage() {
   const router = useRouter();
@@ -427,11 +427,13 @@ export default function ExecutionsPage() {
 
                     <div className="text-right">
                       <p className="text-sm font-semibold tabular-nums">
-                        {execution.durationMs ? formatDuration(execution.durationMs) : '—'}
+                        {execution.durationMs
+                          ? formatDuration(
+                              intervalToDuration({ start: 0, end: execution.durationMs }),
+                            )
+                          : '—'}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(execution.createdAt)}
-                      </p>
+                      <p className="text-xs text-muted-foreground"></p>
                     </div>
                   </div>
                 );
@@ -440,44 +442,6 @@ export default function ExecutionsPage() {
           </CardContent>
         </Card>
       )}
-
-      {pagination.totalPages > 1 ? (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page <= 1}
-              />
-            </PaginationItem>
-            {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
-              .filter((pageNumber) => {
-                if (pagination.totalPages <= 7) return true;
-                return (
-                  pageNumber === 1 ||
-                  pageNumber === pagination.totalPages ||
-                  Math.abs(pageNumber - page) <= 1
-                );
-              })
-              .map((pageNumber) => (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={page === pageNumber}
-                    onClick={() => setPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
-                disabled={page >= pagination.totalPages}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      ) : null}
     </div>
   );
 }

@@ -31,7 +31,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
   return (
     <ChartContainer
       config={{
-        completed: { label: 'Completed', color: 'hsl(var(--success))' },
+        completed: { label: 'Completed', color: '#10b981' },
         failed: { label: 'Failed', color: 'hsl(var(--destructive))' },
       }}
       className="h-[260px]"
@@ -40,19 +40,15 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="completedGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} />
+              <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="failedGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.35} />
               <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="hsl(var(--outline-variant) / 0.25)"
-            vertical={false}
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={formatDay}
@@ -76,7 +72,7 @@ export function ExecutionTimelineChart({ data }: ExecutionTimelineChartProps) {
             type="monotone"
             dataKey="completed"
             name="Completed"
-            stroke="hsl(var(--success))"
+            stroke="#10b981"
             strokeWidth={2}
             fill="url(#completedGradient)"
             stackId="1"

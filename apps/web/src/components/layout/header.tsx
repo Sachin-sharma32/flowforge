@@ -24,7 +24,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between bg-surface/75 px-10 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/65">
+    <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between bg-background px-10">
       <div className="flex min-w-0 items-center gap-3">
         <DashboardCommandMenu />
         <div className="min-w-0">
@@ -35,13 +35,13 @@ export function Header() {
         <ThemeToggleButton />
 
         {user && (
-          <div className="flex items-center gap-3 rounded-full bg-surface-container-high py-1.5 pl-1.5 pr-3 transition-colors duration-300 hover:bg-surface-container-highest">
+          <div className="flex items-center gap-3 rounded-full bg-muted py-1.5 pl-1.5 pr-3 transition-colors duration-300 hover:bg-accent">
             <AvatarWithStatus name={user.name} status="online" className="h-8 w-8" />
             <span className="text-sm font-medium">{user.name}</span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full hover:bg-surface hover:text-foreground"
+              className="h-8 w-8 rounded-full hover:bg-background hover:text-foreground"
               onClick={() => setConfirmLogoutOpen(true)}
               aria-label="Sign out"
             >

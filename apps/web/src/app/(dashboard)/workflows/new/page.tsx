@@ -25,7 +25,7 @@ import {
   ArrowLeft,
   Lightbulb,
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const triggerTypes = [
   {
@@ -58,7 +58,6 @@ export default function NewWorkflowPage() {
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const folders = useAppSelector((state) => state.folder.folders);
   const [isCreating, setIsCreating] = useState(false);
-  const { toast } = useToast();
 
   const handleBuilderSpotlightMove = useCallback((event: React.MouseEvent<HTMLElement>) => {
     const surface = event.currentTarget;
@@ -100,9 +99,7 @@ export default function NewWorkflowPage() {
 
       router.push(`/workflows/${result.id || (result as any)._id}/edit`);
     } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to create workflow',
+      toast.error('Failed to create workflow', {
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     } finally {
@@ -113,7 +110,7 @@ export default function NewWorkflowPage() {
   return (
     <div className="relative grid h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
       <section
-        className="builder-dot-grid builder-dot-grid-spotlight relative border-b border-border/60 px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10"
+        className="bg-muted/30 relative border-b border-border px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10"
         onMouseMove={handleBuilderSpotlightMove}
         onMouseLeave={handleBuilderSpotlightLeave}
       >
@@ -131,7 +128,7 @@ export default function NewWorkflowPage() {
             </Button>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">
+            <p className="text-xs font-semibold uppercase tracking-normal text-primary">
               Workflow Creation
             </p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight">
@@ -148,7 +145,7 @@ export default function NewWorkflowPage() {
             className="mt-8 space-y-8"
             data-testid="workflow-create-form"
           >
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-6">
+            <div className="rounded-lg border border-border bg-card p-6">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                 <LayoutTemplate className="h-4 w-4 text-primary" />
                 Basic Details
@@ -188,7 +185,7 @@ export default function NewWorkflowPage() {
                     value={folderId || 'uncategorized'}
                     onValueChange={(value) => setFolderId(value === 'uncategorized' ? '' : value)}
                   >
-                    <SelectTrigger id="folder" className="h-12 rounded-xl bg-background/60">
+                    <SelectTrigger id="folder" className="h-12 rounded-xl bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -204,7 +201,7 @@ export default function NewWorkflowPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-6">
+            <div className="rounded-lg border border-border bg-card p-6">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Select Trigger
@@ -219,7 +216,7 @@ export default function NewWorkflowPage() {
                     className={`rounded-xl border p-4 text-left transition-colors ${
                       triggerType === trigger.type
                         ? 'border-primary/60 bg-primary/10'
-                        : 'border-border/70 hover:border-primary/30 hover:bg-accent/40'
+                        : 'border-border hover:border-primary/30 hover:bg-accent/40'
                     }`}
                   >
                     <trigger.icon
@@ -256,7 +253,7 @@ export default function NewWorkflowPage() {
         </div>
       </section>
 
-      <aside className="relative hidden bg-gradient-to-br from-primary/10 via-background to-background px-8 py-10 lg:block">
+      <aside className="relative hidden bg-muted    px-8 py-10 lg:block">
         <div className="space-y-4">
           <Alert className="flex items-start gap-3">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />

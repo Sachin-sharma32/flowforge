@@ -61,12 +61,7 @@ function ChartTooltipContent({
   const resolvedLabel = labelFormatter ? labelFormatter(label, payload) : label;
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border border-border/50 bg-surface-container-high p-2.5 shadow-soft-lg',
-        className,
-      )}
-    >
+    <div className={cn('rounded-lg border bg-background p-2.5 shadow-sm', className)}>
       {resolvedLabel ? <p className="mb-1 text-xs font-semibold">{String(resolvedLabel)}</p> : null}
       <div className="space-y-1">
         {payload.map((item, index) => {

@@ -32,11 +32,11 @@ import { fetchFolders } from '@/stores/folder-slice';
 import { ExecutionTimelineChart } from '@/components/charts/execution-timeline-chart';
 import { WorkflowPerformanceChart } from '@/components/charts/workflow-performance-chart';
 import { ExecutionStatusChart } from '@/components/charts/execution-status-chart';
-import { formatDuration } from '@/lib/utils';
 import {
   DateTimeRangePicker,
   type DateTimeRangeValue,
 } from '@/components/ui/date-time-range-picker';
+import { formatDuration, intervalToDuration } from 'date-fns';
 
 function diffDays(from: string, to: string): number {
   const fromDate = new Date(from);
@@ -193,7 +193,9 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Avg Runtime</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{formatDuration(stats?.avgDurationMs ?? 0)}</p>
+            <p className="text-3xl font-bold">
+              {formatDuration(intervalToDuration({ start: 0, end: stats?.avgDurationMs ?? 0 }))}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">Mean completion time</p>
           </CardContent>
         </Card>

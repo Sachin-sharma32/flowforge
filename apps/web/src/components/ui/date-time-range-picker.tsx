@@ -86,7 +86,7 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn('w-full justify-start rounded-sm font-normal', className)}
+          className={cn('w-full justify-start text-left font-normal', className)}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {label}
@@ -118,12 +118,12 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
                 to: range?.to ? toDayEnd(range.to) : undefined,
               })
             }
-            className="rounded-xl border border-border/50 p-2"
+            className="rounded-md border"
           />
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" /> From
               </label>
               <Input
@@ -132,11 +132,10 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
                 onChange={(event) =>
                   onChange({ from: parseLocalInputValue(event.target.value), to: value.to })
                 }
-                className="h-10"
               />
             </div>
             <div className="space-y-1">
-              <label className="flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" /> To
               </label>
               <Input
@@ -145,7 +144,6 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
                 onChange={(event) =>
                   onChange({ from: value.from, to: parseLocalInputValue(event.target.value) })
                 }
-                className="h-10"
               />
             </div>
           </div>

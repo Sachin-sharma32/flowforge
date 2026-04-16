@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 
 interface AuthShellProps {
   children: React.ReactNode;
-  headingFontClassName: string;
 }
 
 const sceneByRoute = {
@@ -44,18 +43,18 @@ const runtimeSteps = [
   { label: 'Slack Notification', status: 'queued' },
 ] as const;
 
-export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
+export function AuthShell({ children }: AuthShellProps) {
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
   const isRegister = pathname.includes('/register');
   const scene = isRegister ? sceneByRoute.register : sceneByRoute.login;
 
   return (
-    <div className="auth-shell relative min-h-screen overflow-hidden">
-      <div className="auth-grid-overlay pointer-events-none absolute inset-0" />
-      <div className="auth-noise-overlay pointer-events-none absolute inset-0 opacity-30" />
-      <div className="auth-light-beam pointer-events-none absolute -left-24 top-0 h-full w-64" />
-      <div className="auth-light-beam pointer-events-none absolute -right-24 top-0 h-full w-64 rotate-180" />
+    <div className="bg-background relative min-h-screen overflow-hidden">
+      <div className="hidden pointer-events-none absolute inset-0" />
+      <div className="hidden pointer-events-none absolute inset-0 opacity-30" />
+      <div className="hidden pointer-events-none absolute -left-24 top-0 h-full w-64" />
+      <div className="hidden pointer-events-none absolute -right-24 top-0 h-full w-64 rotate-180" />
 
       <div className="relative z-10">
         <PublicNavbar />
@@ -66,7 +65,7 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
               initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: shouldReduceMotion ? 0.05 : 0.65, ease: [0.16, 1, 0.3, 1] }}
-              className="auth-scene-panel relative h-full overflow-hidden p-8"
+              className="rounded-lg border border-border bg-card shadow-sm relative h-full overflow-hidden p-8"
             >
               <motion.div
                 aria-hidden
@@ -83,7 +82,7 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
                   duration: 12,
                   ease: 'easeInOut',
                 }}
-                className="auth-orb auth-orb-primary"
+                className="hidden"
               />
               <motion.div
                 aria-hidden
@@ -100,17 +99,14 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
                   duration: 14,
                   ease: 'easeInOut',
                 }}
-                className="auth-orb auth-orb-info"
+                className="hidden"
               />
 
               <div className="relative z-10">
-                <p className="label-uppercase text-primary">{scene.eyebrow}</p>
-                <h1
-                  className={cn(
-                    'mt-4 max-w-xl text-4xl font-semibold leading-tight tracking-tight',
-                    headingFontClassName,
-                  )}
-                >
+                <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+                  {scene.eyebrow}
+                </p>
+                <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight tracking-tight">
                   {scene.title}
                 </h1>
                 <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
@@ -135,10 +131,10 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
                           delay: 0.18 + index * 0.09,
                           ease: [0.16, 1, 0.3, 1],
                         }}
-                        className="rounded-xl border border-border/60 bg-card/65 p-3 backdrop-blur"
+                        className="rounded-xl border border-border bg-card p-3"
                       >
                         <div className="flex items-center justify-between">
-                          <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                          <p className="text-[11px] uppercase tracking-normal text-muted-foreground">
                             {metric.label}
                           </p>
                           <Icon className="h-3.5 w-3.5 text-primary" />
@@ -149,8 +145,8 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
                   })}
                 </div>
 
-                <div className="mt-8 rounded-2xl border border-border/60 bg-background/60 p-4 backdrop-blur">
-                  <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                <div className="mt-8 rounded-lg border border-border bg-background p-4">
+                  <p className="text-xs uppercase tracking-normal text-muted-foreground">
                     Live Run Snapshot
                   </p>
                   <div className="mt-3 space-y-2">
@@ -170,7 +166,7 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
                           delay: index * 0.25,
                           ease: 'easeInOut',
                         }}
-                        className="flex items-center justify-between rounded-lg border border-border/50 bg-card/70 px-3 py-2"
+                        className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
                       >
                         <p className="text-sm text-foreground">{step.label}</p>
                         <div className="inline-flex items-center gap-2 text-xs capitalize text-muted-foreground">
@@ -204,7 +200,7 @@ export function AuthShell({ children, headingFontClassName }: AuthShellProps) {
 }
 
 function statusDotClass(status: string) {
-  if (status === 'running') return 'bg-info';
-  if (status === 'synced') return 'bg-success';
-  return 'bg-warning';
+  if (status === 'running') return 'bg-primary';
+  if (status === 'synced') return 'bg-primary';
+  return 'bg-muted-foreground';
 }

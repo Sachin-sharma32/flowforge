@@ -38,9 +38,8 @@ import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkflows, deleteWorkflow, duplicateWorkflow } from '@/stores/workflow-slice';
 import { fetchFolders } from '@/stores/folder-slice';
 import { useDebounce } from '@/hooks/use-debounce';
-import { formatDate } from '@/lib/utils';
 import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Plus,
   Search,
@@ -65,7 +64,6 @@ export default function WorkflowsPage() {
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { workflows, isLoading, pagination } = useAppSelector((state) => state.workflow);
   const folders = useAppSelector((state) => state.folder.folders);
-  const { toast } = useToast();
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -196,7 +194,7 @@ export default function WorkflowsPage() {
 
       <Card>
         <CardContent className="flex items-center justify-between gap-3 p-4">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
             <SlidersHorizontal className="h-3.5 w-3.5" />
             {activeFilterCount > 0 ? `${activeFilterCount} active filters` : 'No filters applied'}
           </div>
@@ -332,8 +330,8 @@ export default function WorkflowsPage() {
       ) : workflows.length === 0 ? (
         <Card noHover>
           <CardContent className="flex flex-col items-center justify-center py-24">
-            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
-              <div className="absolute inset-0 rounded-3xl bg-primary/5 blur-2xl" />
+            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-lg bg-muted ring-1 ring-border/60">
+              <div className="absolute inset-0 rounded-lg bg-primary/5 " />
               <GitBranch className="relative h-11 w-11 text-primary" strokeWidth={2} />
             </div>
             <h3 className="text-xl font-semibold">No workflows in this view</h3>
@@ -353,7 +351,7 @@ export default function WorkflowsPage() {
               className="group cursor-pointer overflow-hidden"
               onClick={() => router.push(`/workflows/${workflow.id || workflow._id}`)}
             >
-              <div className="h-1 w-full bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="h-1 w-full bg-muted    opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <CardContent className="space-y-4 p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -383,7 +381,7 @@ export default function WorkflowsPage() {
                     </Button>
 
                     {openMenu === (workflow.id || workflow._id) && (
-                      <div className="absolute right-0 top-9 z-10 w-44 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-border/60 bg-popover/95 p-1 shadow-soft-lg backdrop-blur-xl">
+                      <div className="absolute right-0 top-9 z-10 w-44 origin-top-right animate-in zoom-in-95 duration-100 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-sm">
                         <button
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent"
                           onClick={async (e) => {
@@ -396,15 +394,11 @@ export default function WorkflowsPage() {
                                     workflowId: workflow.id || workflow._id,
                                   }),
                                 ).unwrap();
-                                toast({
-                                  variant: 'success',
-                                  title: 'Workflow duplicated',
+                                toast.success('Workflow duplicated', {
                                   description: `${workflow.name} was duplicated.`,
                                 });
                               } catch (error) {
-                                toast({
-                                  variant: 'destructive',
-                                  title: 'Failed to duplicate workflow',
+                                toast.error('Failed to duplicate workflow', {
                                   description:
                                     error instanceof Error ? error.message : 'Please try again.',
                                 });
@@ -446,51 +440,13 @@ export default function WorkflowsPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Updated {formatDate(workflow.updatedAt)}
+                  {/* Updated {formatDate(workflow.updatedAt)} */}
                 </p>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
-
-      {pagination.totalPages > 1 ? (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page <= 1}
-              />
-            </PaginationItem>
-            {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
-              .filter((pageNumber) => {
-                if (pagination.totalPages <= 7) return true;
-                return (
-                  pageNumber === 1 ||
-                  pageNumber === pagination.totalPages ||
-                  Math.abs(pageNumber - page) <= 1
-                );
-              })
-              .map((pageNumber) => (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={page === pageNumber}
-                    onClick={() => setPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
-                disabled={page >= pagination.totalPages}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      ) : null}
 
       <ConfirmActionDialog
         open={Boolean(workflowToDelete)}
@@ -514,15 +470,11 @@ export default function WorkflowsPage() {
                 workflowId: workflowToDelete.id,
               }),
             ).unwrap();
-            toast({
-              variant: 'success',
-              title: 'Workflow deleted',
+            toast.success('Workflow deleted', {
               description: `${workflowToDelete.name} was removed.`,
             });
           } catch (error) {
-            toast({
-              variant: 'destructive',
-              title: 'Failed to delete workflow',
+            toast.error('Failed to delete workflow', {
               description: error instanceof Error ? error.message : 'Please try again.',
             });
           } finally {

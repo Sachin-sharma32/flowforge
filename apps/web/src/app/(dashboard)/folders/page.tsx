@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Folder, FolderPlus, MoreHorizontal, Pin, PinOff, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  Folder,
+  FolderPlus,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  ShieldCheck,
+  Trash2,
+  Trash2Icon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,7 +44,19 @@ import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createFolder, deleteFolder, fetchFolders, updateFolder } from '@/stores/folder-slice';
 import { fetchWorkflows, updateWorkflow } from '@/stores/workflow-slice';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const PINNED_FOLDERS_KEY = 'flowforge.pinned_folders';
 
@@ -78,7 +99,6 @@ export default function FoldersPage() {
   const { user } = useAppSelector((state) => state.auth);
   const { folders, isLoading, error } = useAppSelector((state) => state.folder);
   const workflows = useAppSelector((state) => state.workflow.workflows);
-  const { toast } = useToast();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -101,9 +121,7 @@ export default function FoldersPage() {
 
   useEffect(() => {
     if (!error) return;
-    toast({
-      variant: 'destructive',
-      title: 'Folder action failed',
+    toast.error('Folder action failed', {
       description: error,
     });
   }, [error, toast]);
@@ -186,9 +204,7 @@ export default function FoldersPage() {
         ).unwrap();
       }
 
-      toast({
-        variant: 'success',
-        title: 'Folder created',
+      toast.success('Folder created', {
         description: `${created.name} is ready.`,
       });
 
@@ -198,9 +214,7 @@ export default function FoldersPage() {
       setNewFolderWorkflowId('none');
       setIsCreateOpen(false);
     } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: 'Could not create folder',
+      toast.error('Could not create folder', {
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     } finally {
@@ -227,15 +241,9 @@ export default function FoldersPage() {
           },
         }),
       ).unwrap();
-      toast({
-        variant: 'success',
-        title: 'Access updated',
-        description: `Folder access is now ${role}.`,
-      });
+      toast.success(`Access updated: Folder access is now ${role}.`);
     } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: 'Could not update access',
+      toast.error('Could not update access', {
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     }
@@ -278,7 +286,7 @@ export default function FoldersPage() {
               <Card key={folder.id} className="overflow-visible">
                 <CardContent className="relative space-y-4 p-4">
                   <div
-                    className="absolute left-4 top-0 h-3 w-16 -translate-y-1/2 rounded-t-lg border border-border/50 border-b-0"
+                    className="absolute left-4 top-0 h-3 w-16 -translate-y-1/2 rounded-t-lg border border-border border-b-0"
                     style={{ backgroundColor: `${folder.color}22` }}
                   />
 
@@ -348,7 +356,7 @@ export default function FoldersPage() {
                     </DropdownMenu>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg bg-surface-container-high px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2 text-xs">
                     <span className="text-muted-foreground">Minimum role</span>
                     <span className="font-medium capitalize">{minRole}</span>
                   </div>
@@ -425,7 +433,7 @@ export default function FoldersPage() {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between rounded-md bg-surface-container-high px-3 py-2">
+            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
               <div>
                 <p className="text-sm font-medium">Pin this folder</p>
                 <p className="text-xs text-muted-foreground">
@@ -474,15 +482,11 @@ export default function FoldersPage() {
               writePinnedFolders(next);
               return next;
             });
-            toast({
-              variant: 'success',
-              title: 'Folder deleted',
+            toast.success('Folder deleted', {
               description: `${folderToDelete.name} was deleted.`,
             });
           } catch (err) {
-            toast({
-              variant: 'destructive',
-              title: 'Failed to delete folder',
+            toast.error('Failed to delete folder', {
               description: err instanceof Error ? err.message : 'Please try again.',
             });
           } finally {

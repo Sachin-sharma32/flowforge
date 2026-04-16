@@ -21,9 +21,9 @@ import {
   executeWorkflow,
 } from '@/stores/workflow-slice';
 import { fetchExecutions } from '@/stores/execution-slice';
-import { formatDate, formatDuration } from '@/lib/utils';
 import { ArrowLeft, Edit, Play, Pause, Copy } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { formatDuration, intervalToDuration } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function WorkflowDetailPage() {
   const params = useParams();
@@ -35,7 +35,6 @@ export default function WorkflowDetailPage() {
   const workflowLoading = useAppSelector(selectWorkflowLoading);
   const executionLoading = useAppSelector(selectExecutionLoading);
   const workflowExecutionAnalytics = useAppSelector(selectWorkflowExecutionAnalytics);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (currentWorkspaceId && workflowId) {
@@ -58,18 +57,14 @@ export default function WorkflowDetailPage() {
     if (!currentWorkspaceId) return;
     const result = await dispatch(executeWorkflow({ workspaceId: currentWorkspaceId, workflowId }));
     if (executeWorkflow.fulfilled.match(result)) {
-      toast({
-        variant: 'success',
-        title: 'Execution queued',
+      toast.success('Execution queued', {
         description: 'Workflow execution started successfully.',
       });
       router.push(`/executions/${result.payload}`);
       return;
     }
 
-    toast({
-      variant: 'destructive',
-      title: 'Failed to run workflow',
+    toast.error('Failed to run workflow', {
       description:
         (typeof result.payload === 'string' && result.payload) ||
         'Failed to run workflow. Please try again.',
@@ -182,7 +177,12 @@ export default function WorkflowDetailPage() {
           <CardContent>
             <div className="text-2xl font-bold">
               {workflowExecutionAnalytics.summary.avgDurationMs > 0
-                ? formatDuration(workflowExecutionAnalytics.summary.avgDurationMs)
+                ? formatDuration(
+                    intervalToDuration({
+                      start: 0,
+                      end: workflowExecutionAnalytics.summary.avgDurationMs,
+                    }),
+                  )
                 : '—'}
             </div>
           </CardContent>
@@ -209,11 +209,11 @@ export default function WorkflowDetailPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Created</span>
-              <span>{formatDate(currentWorkflow.createdAt)}</span>
+              {/* <span>{formatDate(currentWorkflow.createdAt)}</span> */}
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Updated</span>
-              <span>{formatDate(currentWorkflow.updatedAt)}</span>
+              {/* <span>{formatDate(currentWorkflow.updatedAt)}</span> */}
             </div>
           </CardContent>
         </Card>
@@ -232,7 +232,7 @@ export default function WorkflowDetailPage() {
                 {currentWorkflow.steps.map((step, i) => (
                   <div
                     key={step.id}
-                    className="flex items-center gap-4 rounded-2xl border border-border/60 p-3.5"
+                    className="flex items-center gap-4 rounded-lg border border-border p-3.5"
                   >
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">
                       {i + 1}

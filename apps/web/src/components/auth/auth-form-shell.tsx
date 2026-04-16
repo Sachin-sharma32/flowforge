@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Sparkles, type LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AuthFormShellProps {
   badge: string;
@@ -16,7 +15,6 @@ interface AuthFormShellProps {
   footerText: string;
   footerLinkLabel: string;
   footerLinkHref: string;
-  headingFontClassName: string;
   icon?: LucideIcon;
   children: React.ReactNode;
 }
@@ -30,7 +28,6 @@ export function AuthFormShell({
   footerText,
   footerLinkLabel,
   footerLinkHref,
-  headingFontClassName,
   icon: Icon = Sparkles,
   children,
 }: AuthFormShellProps) {
@@ -38,9 +35,7 @@ export function AuthFormShell({
 
   useEffect(() => {
     if (notice) {
-      toast({
-        variant: 'success',
-        title: 'Notice',
+      toast.info('Notice', {
         description: notice,
       });
     }
@@ -48,9 +43,7 @@ export function AuthFormShell({
 
   useEffect(() => {
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Something went wrong',
+      toast.error('Something went wrong', {
         description: error,
       });
     }
@@ -84,9 +77,9 @@ export function AuthFormShell({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="auth-form-card relative overflow-hidden rounded-3xl p-8 sm:p-10"
+      className="relative overflow-hidden rounded-lg border border-border bg-card p-8 shadow-sm sm:p-10"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-primary/16 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-muted" />
 
       <motion.div variants={itemVariants} className="relative z-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
@@ -94,9 +87,7 @@ export function AuthFormShell({
           {badge}
         </div>
 
-        <h1 className={cn('mt-5 text-4xl font-semibold tracking-tight', headingFontClassName)}>
-          {title}
-        </h1>
+        <h1 className="mt-5 text-4xl font-semibold tracking-tight">{title}</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
       </motion.div>
 

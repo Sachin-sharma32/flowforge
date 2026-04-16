@@ -19,7 +19,7 @@ import { api } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import Link from 'next/link';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const roleColors: Record<string, 'default' | 'success' | 'warning' | 'secondary'> = {
   owner: 'default',
@@ -34,7 +34,6 @@ export default function MembersPage() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [inviting, setInviting] = useState(false);
-  const { toast } = useToast();
 
   const members = currentWorkspace?.members || [];
 
@@ -45,15 +44,11 @@ export default function MembersPage() {
       await api.post(`/workspaces/${currentWorkspace.id}/members`, { email: email.trim(), role });
       setEmail('');
       await dispatch(fetchWorkspaces()).unwrap();
-      toast({
-        variant: 'success',
-        title: 'Member invited',
+      toast.success('Member invited', {
         description: `${email.trim()} was invited to the workspace.`,
       });
     } catch (err: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to invite member',
+      toast.error('Failed to invite member', {
         description: getApiErrorMessage(err, 'Failed to invite member'),
       });
     } finally {
@@ -115,7 +110,7 @@ export default function MembersPage() {
             {members.map((member: any) => (
               <div
                 key={member.userId?._id || member.userId}
-                className="flex items-center justify-between rounded-2xl border border-border/60 p-4"
+                className="flex items-center justify-between rounded-lg border border-border p-4"
               >
                 <div className="flex items-center gap-4">
                   <AvatarWithStatus name={member.userId?.name || 'User'} status="online" />
