@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { DotIcon } from 'lucide-react';
 
 const LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -43,16 +44,22 @@ export function DashboardBreadcrumbs() {
           const isLast = index === segments.length - 1;
 
           return (
-            <BreadcrumbItem key={href}>
-              {index > 0 ? <BreadcrumbSeparator /> : null}
-              {isLast ? (
-                <BreadcrumbPage>{labelFor(segment)}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link href={href}>{labelFor(segment)}</Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+            <>
+              <BreadcrumbItem key={href}>
+                {index > 0 ? (
+                  <BreadcrumbSeparator>
+                    <DotIcon />
+                  </BreadcrumbSeparator>
+                ) : null}
+                {isLast ? (
+                  <BreadcrumbPage>{labelFor(segment)}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={href}>{labelFor(segment)}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </>
           );
         })}
       </BreadcrumbList>

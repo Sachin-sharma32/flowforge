@@ -1,26 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Folder,
-  FolderPlus,
-  MoreHorizontal,
-  Pin,
-  PinOff,
-  ShieldCheck,
-  Trash2,
-  Trash2Icon,
-} from 'lucide-react';
+import { Folder, FolderPlus, MoreVertical, Pin, PinOff, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -45,18 +29,20 @@ import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createFolder, deleteFolder, fetchFolders, updateFolder } from '@/stores/folder-slice';
 import { fetchWorkflows, updateWorkflow } from '@/stores/workflow-slice';
 import { toast } from 'sonner';
+import type { IWorkflowListItem } from '@flowforge/shared';
+
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from '@/components/ui/combobox';
 
 const PINNED_FOLDERS_KEY = 'flowforge.pinned_folders';
 
@@ -94,6 +80,7 @@ function writePinnedFolders(folderIds: string[]) {
 }
 
 export default function FoldersPage() {
+  const anchor = useComboboxAnchor();
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { user } = useAppSelector((state) => state.auth);
@@ -105,7 +92,7 @@ export default function FoldersPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderColor, setNewFolderColor] = useState<string>(COLOR_OPTIONS[0].value);
   const [pinNewFolder, setPinNewFolder] = useState(false);
-  const [newFolderWorkflowId, setNewFolderWorkflowId] = useState('none');
+  const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<string[]>([]);
   const [pinnedFolders, setPinnedFolders] = useState<string[]>([]);
   const [folderToDelete, setFolderToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -124,7 +111,7 @@ export default function FoldersPage() {
     toast.error('Folder action failed', {
       description: error,
     });
-  }, [error, toast]);
+  }, [error]);
 
   const currentRole = useMemo(() => {
     if (!user || !currentWorkspace) return 'viewer';
@@ -148,6 +135,16 @@ export default function FoldersPage() {
     [workflows],
   );
 
+  const workflowNameById = useMemo(
+    () => new Map(uncategorizedWorkflows.map((workflow) => [workflow.id, workflow.name])),
+    [uncategorizedWorkflows],
+  );
+
+  useEffect(() => {
+    const validWorkflowIds = new Set(uncategorizedWorkflows.map((workflow) => workflow.id));
+    setSelectedWorkflowIds((current) => current.filter((id) => validWorkflowIds.has(id)));
+  }, [uncategorizedWorkflows]);
+
   const sortedFolders = useMemo(() => {
     return [...folders].sort((a, b) => {
       const aPinned = pinnedFolders.includes(a.id);
@@ -169,6 +166,8 @@ export default function FoldersPage() {
 
   const handleCreateFolder = async () => {
     if (!currentWorkspace?.id || !newFolderName.trim()) return;
+
+    const workflowsToAssign = [...selectedWorkflowIds];
 
     setIsCreating(true);
     try {
@@ -194,24 +193,35 @@ export default function FoldersPage() {
         setPinnedFolders(nextPinned);
       }
 
-      if (newFolderWorkflowId !== 'none') {
+      if (workflowsToAssign.length > 0) {
+        await Promise.all(
+          workflowsToAssign.map((workflowId) =>
+            dispatch(
+              updateWorkflow({
+                workspaceId: currentWorkspace.id,
+                workflowId,
+                input: { folderId: created.id },
+              }),
+            ).unwrap(),
+          ),
+        );
+
         await dispatch(
-          updateWorkflow({
-            workspaceId: currentWorkspace.id,
-            workflowId: newFolderWorkflowId,
-            input: { folderId: created.id },
-          }),
-        ).unwrap();
+          fetchWorkflows({ workspaceId: currentWorkspace.id, params: { limit: '200' } }),
+        );
       }
 
       toast.success('Folder created', {
-        description: `${created.name} is ready.`,
+        description:
+          workflowsToAssign.length > 0
+            ? `${created.name} is ready. Moved ${workflowsToAssign.length} workflow${workflowsToAssign.length > 1 ? 's' : ''}.`
+            : `${created.name} is ready.`,
       });
 
       setNewFolderName('');
       setNewFolderColor(COLOR_OPTIONS[0].value);
       setPinNewFolder(false);
-      setNewFolderWorkflowId('none');
+      setSelectedWorkflowIds([]);
       setIsCreateOpen(false);
     } catch (err) {
       toast.error('Could not create folder', {
@@ -307,9 +317,9 @@ export default function FoldersPage() {
                     </div>
 
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
+                      <DropdownMenuTrigger>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -345,7 +355,7 @@ export default function FoldersPage() {
 
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          variant="destructive"
                           disabled={!canManageFolders}
                           onClick={() => setFolderToDelete({ id: folder.id, name: folder.name })}
                         >
@@ -390,11 +400,10 @@ export default function FoldersPage() {
               <label className="text-sm font-medium">Folder Color</label>
               <div className="flex flex-wrap gap-2">
                 {COLOR_OPTIONS.map((colorOption) => (
-                  <button
+                  <Button
                     key={colorOption.value}
-                    type="button"
                     onClick={() => setNewFolderColor(colorOption.value)}
-                    className={`rounded-full p-0.5 transition ${
+                    className={`rounded-full w-9 h-9 ${
                       newFolderColor === colorOption.value
                         ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                         : 'ring-1 ring-border/60'
@@ -402,35 +411,54 @@ export default function FoldersPage() {
                     aria-label={`Select ${colorOption.label} color`}
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarFallback
-                        style={{
-                          backgroundColor: `${colorOption.value}33`,
-                          color: colorOption.value,
-                        }}
-                      >
-                        {colorOption.icon}
-                      </AvatarFallback>
+                      <AvatarFallback>{colorOption.icon}</AvatarFallback>
                     </Avatar>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Move Uncategorized Workflow</label>
-              <Select value={newFolderWorkflowId} onValueChange={setNewFolderWorkflowId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Do not move any workflow</SelectItem>
-                  {uncategorizedWorkflows.map((workflow) => (
-                    <SelectItem key={workflow.id} value={workflow.id}>
-                      {workflow.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Move Uncategorized Workflows</label>
+              <Combobox
+                multiple
+                autoHighlight
+                items={uncategorizedWorkflows}
+                value={selectedWorkflowIds}
+                onValueChange={(values) => setSelectedWorkflowIds(values as string[])}
+              >
+                <ComboboxChips ref={anchor} className="w-full">
+                  <ComboboxValue>
+                    {(values: string[]) => (
+                      <>
+                        {values.map((value) => (
+                          <ComboboxChip key={value}>
+                            {workflowNameById.get(value) ?? 'Unknown workflow'}
+                          </ComboboxChip>
+                        ))}
+                        <ComboboxChipsInput
+                          placeholder={
+                            uncategorizedWorkflows.length > 0
+                              ? 'Search workflows...'
+                              : 'No uncategorized workflows'
+                          }
+                        />
+                      </>
+                    )}
+                  </ComboboxValue>
+                </ComboboxChips>
+
+                <ComboboxContent anchor={anchor}>
+                  <ComboboxEmpty>No items found.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item) => (
+                      <ComboboxItem key={item.id} value={item.id}>
+                        {item.name}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </div>
 
             <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">

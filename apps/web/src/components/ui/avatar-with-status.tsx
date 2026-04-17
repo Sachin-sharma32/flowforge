@@ -30,8 +30,8 @@ export function AvatarWithStatus({
       <span
         className={cn(
           'absolute bottom-0 right-0 h-3 w-3 rounded-full border border-background',
-          status === 'online' && 'bg-primary',
-          status === 'busy' && 'bg-destructive',
+          status === 'online' && 'bg-green-600',
+          status === 'busy' && 'bg-red-600',
           status === 'offline' && 'bg-muted-foreground',
         )}
       />

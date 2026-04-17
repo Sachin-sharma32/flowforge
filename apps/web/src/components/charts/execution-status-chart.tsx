@@ -46,7 +46,7 @@ export function ExecutionStatusChart({ stats, totalExecutions }: ExecutionStatus
   };
 
   return (
-    <ChartContainer config={chartConfig} className="h-[200px]">
+    <ChartContainer config={chartConfig} className="h-full w-full ">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie

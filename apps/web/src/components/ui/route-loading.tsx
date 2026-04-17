@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { Spinner } from './spinner';
 
 interface RouteLoadingProps {
   className?: string;
@@ -19,10 +20,7 @@ export function RouteLoading({
         className,
       )}
     >
-      <div className="relative z-10 flex flex-col items-center gap-3">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </div>
+      <Spinner />
     </div>
   );
 }

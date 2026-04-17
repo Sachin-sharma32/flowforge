@@ -15,17 +15,14 @@ export function SocialAuthButtons({ disabled = false }: SocialAuthButtonsProps) 
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
         <Button
           type="button"
           variant="outline"
           onClick={() => startOAuthFlow('google')}
           disabled={disabled}
-          className="w-full min-w-0 justify-start px-4 text-left"
         >
-          <span className="mr-2 inline-flex h-5 w-5 shrink-0 items-center justify-center">
-            <GoogleIcon />
-          </span>
+          <GoogleIcon />
           <span className="min-w-0 truncate">Continue with Google</span>
         </Button>
         <Button
@@ -33,11 +30,8 @@ export function SocialAuthButtons({ disabled = false }: SocialAuthButtonsProps) 
           variant="outline"
           onClick={() => startOAuthFlow('github')}
           disabled={disabled}
-          className="w-full min-w-0 justify-start px-4 text-left"
         >
-          <span className="mr-2 inline-flex h-5 w-5 shrink-0 items-center justify-center text-foreground">
-            <GitHubIcon />
-          </span>
+          <GitHubIcon />
           <span className="min-w-0 truncate">Continue with GitHub</span>
         </Button>
       </div>

@@ -10,6 +10,7 @@ import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { cn } from '@/lib/utils';
 import { pushRecentRoute } from '@/lib/recent-routes';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -54,10 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!mounted) {
     return (
       <div className="bg-background flex h-screen items-center justify-center">
-        <div className="relative">
-          <div className="absolute inset-0 animate-pulse rounded-full" />
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground/20 border-t-primary" />
-        </div>
+        <Spinner />
       </div>
     );
   }

@@ -8,6 +8,7 @@ import { fetchWorkflow, updateWorkflow } from '@/stores/workflow-slice';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function WorkflowEditPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function WorkflowEditPage() {
   if (isLoading || !currentWorkflow) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Spinner />
       </div>
     );
   }

@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MoreVertical, X } from 'lucide-react';
+import { MoreVertical, TrashIcon, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // --- Verified check icon --- //
 
@@ -79,42 +87,32 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
   const [isDropdown, setIsDropdown] = useState(false);
 
   return (
-    <div className="group relative flex h-full min-h-[220px] flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7 transition-all duration-300 ease-out cursor-pointer hover:shadow-sm hover:border-border">
+    <div className="group relative flex h-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7 transition-all duration-300 ease-out cursor-pointer hover:shadow-sm hover:border-border">
       {/* Title + menu */}
       <div className="mb-auto flex items-start justify-between gap-3">
         <h3 className="text-lg font-semibold leading-snug tracking-tight text-foreground line-clamp-3">
           {title}
         </h3>
-        <div
-          className="relative shrink-0"
-          tabIndex={-1}
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDropdown(false);
-          }}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsDropdown(!isDropdown)}
-          >
-            <MoreVertical className="h-4.5 w-4.5" />
-          </Button>
-          {isDropdown && (
-            <div className="absolute right-0 top-9 w-36 rounded-xl border border-border bg-popover p-1 shadow-sm z-10 animate-in fade-in zoom-in-95 duration-100">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsDropdown(false);
-                  onDismiss?.(id);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground transition-colors duration-200"
-              >
-                <X className="h-4 w-4" /> Dismiss
-              </button>
-            </div>
-          )}
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setIsDropdown(!isDropdown)}
+            >
+              <MoreVertical className="h-4.5 w-4.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
+              <DropdownMenuItem variant="destructive">
+                <TrashIcon />
+                Dismiss
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* App badges */}

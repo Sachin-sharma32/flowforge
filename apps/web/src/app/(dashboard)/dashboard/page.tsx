@@ -36,7 +36,7 @@ import {
   DateTimeRangePicker,
   type DateTimeRangeValue,
 } from '@/components/ui/date-time-range-picker';
-import { formatDuration, intervalToDuration } from 'date-fns';
+import { formatDuration } from 'date-fns';
 
 function diffDays(from: string, to: string): number {
   const fromDate = new Date(from);
@@ -193,9 +193,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Avg Runtime</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">
-              {formatDuration(intervalToDuration({ start: 0, end: stats?.avgDurationMs ?? 0 }))}
-            </p>
+            <p className="text-3xl font-bold">10</p>
             <p className="mt-1 text-xs text-muted-foreground">Mean completion time</p>
           </CardContent>
         </Card>
@@ -212,15 +210,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Execution Volume</CardTitle>
-            <p className="text-xs text-muted-foreground">Completed vs failed over time</p>
-          </CardHeader>
-          <CardContent>
-            <ExecutionTimelineChart data={timeline} />
-          </CardContent>
-        </Card>
+        <ExecutionTimelineChart data={timeline} />
 
         <Card>
           <CardHeader>

@@ -7,6 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -49,6 +58,11 @@ import {
   Trash2,
   FolderKanban,
   SlidersHorizontal,
+  BadgeCheckIcon,
+  BellIcon,
+  CreditCardIcon,
+  LogOutIcon,
+  TrashIcon,
 } from 'lucide-react';
 
 const statusColors: Record<string, 'success' | 'warning' | 'secondary' | 'default'> = {
@@ -206,86 +220,82 @@ export default function WorkflowsPage() {
       </Card>
 
       <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="min-w-fit">
           <DialogHeader>
             <DialogTitle>Sort & Filter Workflows</DialogTitle>
             <DialogDescription>Adjust filters to narrow the workflow list.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-1">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <div className="relative xl:col-span-2">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search by workflow name"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              <Select
-                value={status || 'all'}
-                onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={folderId || 'all'}
-                onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All folders" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All folders</SelectItem>
-                  {folders.map((folder) => (
-                    <SelectItem key={folder.id} value={folder.id}>
-                      {folder.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="updatedAt">Sort: Last updated</SelectItem>
-                  <SelectItem value="createdAt">Sort: Created date</SelectItem>
-                  <SelectItem value="name">Sort: Name</SelectItem>
-                  <SelectItem value="lastExecutedAt">Sort: Last executed</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort order" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desc">Descending</SelectItem>
-                  <SelectItem value="asc">Ascending</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <DateTimeRangePicker
-                value={timeRange}
-                onChange={setTimeRange}
-                className="xl:col-span-2"
+            <div className="relative xl:col-span-2">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by workflow name"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
               />
             </div>
+
+            <Select
+              value={status || 'all'}
+              onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="paused">Paused</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={folderId || 'all'}
+              onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All folders" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All folders</SelectItem>
+                {folders.map((folder) => (
+                  <SelectItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updatedAt">Sort: Last updated</SelectItem>
+                <SelectItem value="createdAt">Sort: Created date</SelectItem>
+                <SelectItem value="name">Sort: Name</SelectItem>
+                <SelectItem value="lastExecutedAt">Sort: Last executed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Descending</SelectItem>
+                <SelectItem value="asc">Ascending</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <DateTimeRangePicker
+              value={timeRange}
+              onChange={setTimeRange}
+              className="xl:col-span-2"
+            />
           </div>
 
           <DialogFooter>
@@ -348,7 +358,7 @@ export default function WorkflowsPage() {
           {workflows.map((workflow: any) => (
             <Card
               key={workflow.id || workflow._id}
-              className="group cursor-pointer overflow-hidden"
+              className="group cursor-pointer"
               onClick={() => router.push(`/workflows/${workflow.id || workflow._id}`)}
             >
               <div className="h-1 w-full bg-muted    opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -363,27 +373,20 @@ export default function WorkflowsPage() {
                     </p>
                   </div>
 
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenu(
-                          openMenu === (workflow.id || workflow._id)
-                            ? null
-                            : workflow.id || workflow._id,
-                        );
-                      }}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-
-                    {openMenu === (workflow.id || workflow._id) && (
-                      <div className="absolute right-0 top-9 z-10 w-44 origin-top-right animate-in zoom-in-95 duration-100 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-sm">
-                        <button
-                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (currentWorkspace) {
@@ -407,10 +410,13 @@ export default function WorkflowsPage() {
                             setOpenMenu(null);
                           }}
                         >
-                          <Copy className="h-3.5 w-3.5" /> Duplicate
-                        </button>
-                        <button
-                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                          <Copy />
+                          Duplicate
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
                             setWorkflowToDelete({
@@ -419,12 +425,14 @@ export default function WorkflowsPage() {
                             });
                             setOpenMenu(null);
                           }}
+                          variant="destructive"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                          <TrashIcon />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

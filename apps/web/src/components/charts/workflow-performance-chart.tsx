@@ -37,9 +37,9 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
     <ChartContainer
       config={{
         completed: { label: 'Completed', color: '#10b981' },
-        failed: { label: 'Failed', color: 'hsl(var(--destructive))' },
+        failed: { label: 'Failed', color: '#ef4444' },
       }}
-      className="h-[260px]"
+      className="max-h-[300px] w-full"
     >
       <ResponsiveContainer width="100%" height={Math.max(260, chartData.length * 40)}>
         <BarChart
@@ -50,7 +50,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis
             type="number"
-            stroke="hsl(var(--muted-foreground))"
+            stroke="hsl(var(--secondary-foreground))"
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -59,7 +59,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
           <YAxis
             type="category"
             dataKey="name"
-            stroke="hsl(var(--muted-foreground))"
+            stroke="hsl(var(--secondary-foreground))"
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -87,13 +87,7 @@ export function WorkflowPerformanceChart({ data }: WorkflowPerformanceChartProps
               <Cell key={`c-${i}`} />
             ))}
           </Bar>
-          <Bar
-            dataKey="failed"
-            name="Failed"
-            stackId="a"
-            fill="hsl(var(--destructive))"
-            radius={[0, 4, 4, 0]}
-          />
+          <Bar dataKey="failed" name="Failed" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>

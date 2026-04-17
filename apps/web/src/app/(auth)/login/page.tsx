@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { login, clearError, clearNotice } from '@/stores/auth-store';
+import { Spinner } from '@/components/ui/spinner';
 
 const ROUTE_PROGRESS_START_EVENT = 'flowforge:route-progress:start';
 const ROUTE_PROGRESS_STOP_EVENT = 'flowforge:route-progress:stop';
@@ -123,7 +124,13 @@ export default function LoginPage() {
           transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.14 }}
         >
           <Button type="submit" className="w-full" disabled={isLoading} data-testid="login-submit">
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? (
+              <>
+                <Spinner /> Signing in...
+              </>
+            ) : (
+              'Sign in'
+            )}
           </Button>
         </motion.div>
       </motion.form>
