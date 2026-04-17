@@ -6,6 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApp } from '../../server';
 import { Execution } from '../../models/execution.model';
 import { Workflow } from '../../models/workflow.model';
+import { Folder } from '../../models/folder.model';
 
 interface AuthContext {
   token: string;
@@ -126,7 +127,7 @@ describe('API validation hardening', () => {
   });
 
   afterEach(async () => {
-    await Promise.all([Execution.deleteMany({}), Workflow.deleteMany({})]);
+    await Promise.all([Execution.deleteMany({}), Workflow.deleteMany({}), Folder.deleteMany({})]);
   });
 
   afterAll(async () => {
@@ -200,7 +201,7 @@ describe('API validation hardening', () => {
     expect(verificationLinkResponse.headers.get('set-cookie')).toBeNull();
   });
 
-  it('returns 422 for invalid params/query on workflow and execution endpoints', async () => {
+  it('returns 422 for invalid params/query on workflow, execution, folder, and member endpoints', async () => {
     const invalidWorkflowParams = await request('/workspaces/not-an-id/workflows', {
       token: auth.token,
     });
@@ -217,6 +218,74 @@ describe('API validation hardening', () => {
     const invalidExecutionQueryPayload = await parseJson<ApiResponsePayload>(invalidExecutionQuery);
     expect(invalidExecutionQuery.status).toBe(422);
     expect(invalidExecutionQueryPayload.error).toBe('Validation failed');
+
+    const invalidFolderQuery = await request(`/workspaces/${auth.workspaceId}/folders?page=abc`, {
+      token: auth.token,
+    });
+    const invalidFolderQueryPayload = await parseJson<ApiResponsePayload>(invalidFolderQuery);
+    expect(invalidFolderQuery.status).toBe(422);
+    expect(invalidFolderQueryPayload.error).toBe('Validation failed');
+
+    const invalidMemberQuery = await request(`/workspaces/${auth.workspaceId}/members?limit=abc`, {
+      token: auth.token,
+    });
+    const invalidMemberQueryPayload = await parseJson<ApiResponsePayload>(invalidMemberQuery);
+    expect(invalidMemberQuery.status).toBe(422);
+    expect(invalidMemberQueryPayload.error).toBe('Validation failed');
+  });
+
+  it('returns folder list pagination metadata for paged folder queries', async () => {
+    const createFolder = async (name: string) => {
+      const response = await request(`/workspaces/${auth.workspaceId}/folders`, {
+        method: 'POST',
+        token: auth.token,
+        body: {
+          name,
+          description: '',
+          color: '#60a5fa',
+          accessControl: {
+            minViewRole: 'viewer',
+            minEditRole: 'editor',
+            minExecuteRole: 'editor',
+          },
+        },
+      });
+      expect(response.status).toBe(201);
+    };
+
+    await createFolder('Ops Folder');
+    await createFolder('Sales Folder');
+
+    const response = await request(`/workspaces/${auth.workspaceId}/folders?page=1&limit=1`, {
+      token: auth.token,
+    });
+    const payload = await parseJson<ApiResponsePayload & { pagination?: Record<string, unknown> }>(
+      response,
+    );
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(payload.data)).toBe(true);
+    expect(payload.pagination).toBeDefined();
+    expect(payload.pagination?.page).toBe(1);
+    expect(payload.pagination?.limit).toBe(1);
+    expect(payload.pagination?.total).toBeGreaterThanOrEqual(2);
+  });
+
+  it('returns member list pagination metadata', async () => {
+    const response = await request(`/workspaces/${auth.workspaceId}/members?page=1&limit=1`, {
+      token: auth.token,
+    });
+    const payload = await parseJson<ApiResponsePayload & { pagination?: Record<string, unknown> }>(
+      response,
+    );
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(payload.data)).toBe(true);
+    expect((payload.data as unknown[]).length).toBe(1);
+    expect(payload.pagination).toBeDefined();
+    expect(payload.pagination?.page).toBe(1);
+    expect(payload.pagination?.limit).toBe(1);
+    expect(payload.pagination?.total).toBeGreaterThanOrEqual(1);
   });
 
   it('returns 422 for invalid execute payload', async () => {

@@ -9,6 +9,7 @@ import {
   inviteMemberSchema,
   updateWorkspaceSchema,
   updateMemberRoleSchema,
+  workspaceMembersListQuerySchema,
   workspaceMemberParamsSchema,
   workspaceParamsSchema,
 } from '@flowforge/shared';
@@ -20,6 +21,13 @@ workspaceRoutes.use(authenticate);
 workspaceRoutes.get('/', WorkspaceController.list);
 workspaceRoutes.post('/', validate(createWorkspaceSchema), WorkspaceController.create);
 workspaceRoutes.get('/:id', validate(workspaceParamsSchema, 'params'), WorkspaceController.getById);
+workspaceRoutes.get(
+  '/:id/members',
+  validate(workspaceParamsSchema, 'params'),
+  validate(workspaceMembersListQuerySchema, 'query'),
+  requirePermission(Permissions.MANAGE_MEMBERS),
+  WorkspaceController.listMembers,
+);
 workspaceRoutes.patch(
   '/:id',
   validate(workspaceParamsSchema, 'params'),

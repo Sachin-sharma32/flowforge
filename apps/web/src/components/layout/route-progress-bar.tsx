@@ -3,20 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 const START_EVENT = 'flowforge:route-progress:start';
 const STOP_EVENT = 'flowforge:route-progress:stop';
 const MIN_VISIBLE_MS = 280;
 const SAFETY_TIMEOUT_MS = 12000;
-const LOADING_TARGET = 0.84;
-const LOADING_MS = 950;
+const LOADING_TARGET = 84;
 const COMPLETE_MS = 220;
 
 export function RouteProgressBar() {
   const pathname = usePathname();
   const [active, setActive] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [transitionMs, setTransitionMs] = useState(0);
   const startedAtRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -36,21 +35,17 @@ export function RouteProgressBar() {
     clearTimeoutRef();
     startedAtRef.current = performance.now();
     setActive(true);
-    setTransitionMs(0);
-    setProgress(0.06);
+    setProgress(6);
 
     rafRef.current = window.requestAnimationFrame(() => {
-      setTransitionMs(LOADING_MS);
       setProgress(LOADING_TARGET);
     });
 
     timeoutRef.current = window.setTimeout(() => {
       startedAtRef.current = null;
-      setTransitionMs(COMPLETE_MS);
-      setProgress(1);
+      setProgress(100);
       timeoutRef.current = window.setTimeout(() => {
         setActive(false);
-        setTransitionMs(0);
         setProgress(0);
         timeoutRef.current = null;
       }, COMPLETE_MS);
@@ -71,11 +66,9 @@ export function RouteProgressBar() {
 
     timeoutRef.current = window.setTimeout(() => {
       startedAtRef.current = null;
-      setTransitionMs(COMPLETE_MS);
-      setProgress(1);
+      setProgress(100);
       timeoutRef.current = window.setTimeout(() => {
         setActive(false);
-        setTransitionMs(0);
         setProgress(0);
         timeoutRef.current = null;
       }, COMPLETE_MS);
@@ -148,14 +141,9 @@ export function RouteProgressBar() {
         active ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <div
-        className="h-full w-full origin-left bg-muted   "
-        style={{
-          transform: `scaleX(${progress})`,
-          transitionProperty: 'transform',
-          transitionDuration: `${transitionMs}ms`,
-          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
+      <Progress
+        value={progress}
+        className="h-full rounded-none bg-transparent [&_[data-slot=progress-indicator]]:bg-muted"
       />
     </div>
   );

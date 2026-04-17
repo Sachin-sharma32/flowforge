@@ -23,6 +23,19 @@ export class WorkspaceController {
     }
   }
 
+  static async listMembers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await workspaceService.listMembers(
+        req.params.id,
+        Number(req.query.page) || 1,
+        Number(req.query.limit) || 20,
+      );
+      res.json({ success: true, data: result.data, pagination: result.pagination });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
       const org = await Organization.findOne({ ownerId: req.user!.userId });

@@ -7,6 +7,7 @@ import {
   Permissions,
   createFolderSchema,
   folderParamsSchema,
+  folderListQuerySchema,
   updateFolderSchema,
   workspaceIdParamsSchema,
 } from '@flowforge/shared';
@@ -18,6 +19,7 @@ folderRoutes.use(authenticate);
 folderRoutes.get(
   '/',
   validate(workspaceIdParamsSchema, 'params'),
+  validate(folderListQuerySchema, 'query'),
   requirePermission(Permissions.VIEW_WORKFLOWS),
   FolderController.list,
 );

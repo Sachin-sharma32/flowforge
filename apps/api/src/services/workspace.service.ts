@@ -5,6 +5,28 @@ import { User } from '../models/user.model';
 import { NotFoundError, ConflictError, ForbiddenError } from '../domain/errors';
 import { CreateWorkspaceInput, InviteMemberInput, RoleType } from '@flowforge/shared';
 
+interface WorkspaceMemberListItem {
+  userId: string;
+  role: RoleType;
+  joinedAt: Date;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  } | null;
+}
+
+interface WorkspaceMemberListResult {
+  data: WorkspaceMemberListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export class WorkspaceService {
   async listByUser(userId: string): Promise<IWorkspaceDocument[]> {
     return Workspace.find({ 'members.userId': userId }).populate('organizationId', 'name slug');
@@ -17,6 +39,50 @@ export class WorkspaceService {
     );
     if (!workspace) throw new NotFoundError('Workspace not found');
     return workspace;
+  }
+
+  async listMembers(workspaceId: string, page = 1, limit = 20): Promise<WorkspaceMemberListResult> {
+    const workspace = await Workspace.findById(workspaceId)
+      .populate('members.userId', 'name email avatar')
+      .lean();
+    if (!workspace) throw new NotFoundError('Workspace not found');
+
+    const total = workspace.members.length;
+    const pagedMembers = workspace.members.slice((page - 1) * limit, (page - 1) * limit + limit);
+
+    const data = pagedMembers.map((member) => {
+      const rawUser = member.userId as
+        | {
+            _id?: unknown;
+            id?: unknown;
+            name?: unknown;
+            email?: unknown;
+            avatar?: unknown;
+          }
+        | string;
+      const resolvedId =
+        typeof rawUser === 'string' ? rawUser : String(rawUser._id ?? rawUser.id ?? '');
+
+      return {
+        userId: resolvedId,
+        role: member.role as RoleType,
+        joinedAt: member.joinedAt,
+        user:
+          typeof rawUser === 'string'
+            ? null
+            : {
+                id: resolvedId,
+                name: typeof rawUser.name === 'string' ? rawUser.name : '',
+                email: typeof rawUser.email === 'string' ? rawUser.email : '',
+                avatar: typeof rawUser.avatar === 'string' ? rawUser.avatar : undefined,
+              },
+      };
+    });
+
+    return {
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async create(input: CreateWorkspaceInput, userId: string, organizationId: string) {

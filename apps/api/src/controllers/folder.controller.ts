@@ -6,11 +6,13 @@ const folderService = new FolderService();
 export class FolderController {
   static async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const folders = await folderService.list({
+      const result = await folderService.list({
         workspaceId: req.params.workspaceId,
         workspaceRole: req.workspaceRole,
+        page: Number(req.query.page) || 1,
+        limit: Number(req.query.limit) || 20,
       });
-      res.json({ success: true, data: folders });
+      res.json({ success: true, data: result.data, pagination: result.pagination });
     } catch (error) {
       next(error);
     }

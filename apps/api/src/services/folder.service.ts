@@ -8,9 +8,21 @@ import { assertFolderAccessById, getAccessibleFolderIds } from './folder-access.
 export interface FolderListQuery {
   workspaceId: string;
   workspaceRole?: RoleType;
+  page?: number;
+  limit?: number;
 }
 
 type FolderListItem = IFolder & { workflowCount: number };
+
+interface FolderListResult {
+  data: FolderListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 function slugify(input: string): string {
   return input
@@ -53,8 +65,8 @@ export class FolderService {
     return slug;
   }
 
-  async list(query: FolderListQuery): Promise<FolderListItem[]> {
-    const { workspaceId, workspaceRole } = query;
+  async list(query: FolderListQuery): Promise<FolderListResult> {
+    const { workspaceId, workspaceRole, page = 1, limit = 20 } = query;
 
     const filter: Record<string, unknown> = { workspaceId };
 
@@ -63,7 +75,12 @@ export class FolderService {
       filter._id = { $in: visibleFolderIds };
     }
 
-    const folders = await Folder.find(filter).sort({ name: 1 }).lean();
+    const total = await Folder.countDocuments(filter);
+    const folders = await Folder.find(filter)
+      .sort({ name: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
 
     const folderIds = folders.map((folder) => folder._id);
     const counts = folderIds.length
@@ -86,7 +103,7 @@ export class FolderService {
 
     const countMap = new Map(counts.map((entry) => [String(entry._id), Number(entry.count) || 0]));
 
-    return folders.map((folder) => ({
+    const data = folders.map((folder) => ({
       id: String(folder._id),
       workspaceId: String(folder.workspaceId),
       name: folder.name,
@@ -102,6 +119,11 @@ export class FolderService {
       createdAt: folder.createdAt,
       updatedAt: folder.updatedAt,
     }));
+
+    return {
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getById(

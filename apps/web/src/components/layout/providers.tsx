@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/stores/store';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -57,8 +58,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <Provider store={store}>
-          {children}
-          <Toaster position="top-right" />
+          <TooltipProvider>
+            {children}
+            <Toaster position="top-right" />
+          </TooltipProvider>
         </Provider>
       </ThemeProvider>
     </ErrorBoundary>
