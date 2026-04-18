@@ -243,7 +243,7 @@ export class WorkflowService {
     const sortField = sortFieldMap[sortBy] || 'updatedAt';
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
-    const [workflows, total] = await Promise.all([
+    const [rawWorkflows, total] = await Promise.all([
       Workflow.find(filter)
         .sort({ [sortField]: sortDirection })
         .skip((page - 1) * limit)
@@ -251,6 +251,11 @@ export class WorkflowService {
         .lean(),
       Workflow.countDocuments(filter),
     ]);
+
+    const workflows = rawWorkflows.map(({ _id, __v, ...rest }) => ({
+      ...rest,
+      id: _id.toString(),
+    }));
 
     return {
       data: workflows,
@@ -425,14 +430,14 @@ export class WorkflowService {
   }
 
   async listTemplates(workspaceId: string) {
-    const templates = await Workflow.find({
+    const rawTemplates = await Workflow.find({
       workspaceId,
       isTemplate: true,
       status: { $ne: 'archived' },
     })
       .sort({ updatedAt: -1 })
       .lean();
-    return templates;
+    return rawTemplates.map(({ _id, __v, ...rest }) => ({ ...rest, id: _id.toString() }));
   }
 
   async createFromTemplate(templateId: string, workspaceId: string, userId: string) {
