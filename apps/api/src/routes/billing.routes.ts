@@ -21,9 +21,9 @@ workspaceBillingRoutes.post(
   BillingController.checkout,
 );
 workspaceBillingRoutes.post(
-  '/portal',
+  '/cancel',
   requirePermission(Permissions.MANAGE_BILLING),
-  BillingController.portal,
+  BillingController.cancel,
 );
 
-billingRoutes.post('/webhooks/stripe', BillingController.stripeWebhook);
+billingRoutes.post('/webhooks/razorpay', BillingController.razorpayWebhook);

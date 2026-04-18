@@ -12,6 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
@@ -28,12 +39,6 @@ import { Progress } from '@/components/ui/progress';
 
 const SHORTCUT_KEY_OPTIONS = ['Space', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
 
-function friendlyBillingError(action: 'checkout' | 'portal') {
-  return action === 'checkout'
-    ? 'We could not open checkout right now. Please try again in a moment or contact support if this keeps happening.'
-    : 'We could not open the billing portal right now. Please try again in a moment.';
-}
-
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
@@ -48,11 +53,7 @@ export default function SettingsPage() {
 
   const [billingSummary, setBillingSummary] = useState<IWorkspaceBillingSummary | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
-  const [billingAction, setBillingAction] = useState<'checkout' | 'portal' | null>(null);
-  const [billingMessage, setBillingMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
+  const [billingAction, setBillingAction] = useState<'checkout' | 'cancel' | null>(null);
 
   useEffect(() => {
     setName(currentWorkspace?.name || '');
@@ -65,7 +66,6 @@ export default function SettingsPage() {
       if (!currentWorkspace?.id) return;
 
       setBillingLoading(true);
-      setBillingMessage(null);
 
       try {
         const { data } = await api.get(`/workspaces/${currentWorkspace.id}/billing/summary`);
@@ -75,9 +75,8 @@ export default function SettingsPage() {
       } catch (err: unknown) {
         if (!cancelled) {
           setBillingSummary(null);
-          setBillingMessage({
-            type: 'error',
-            text: getApiErrorMessage(err, 'Failed to load billing summary'),
+          toast.error('Billing unavailable', {
+            description: getApiErrorMessage(err, 'Failed to load billing summary'),
           });
         }
       } finally {
@@ -93,13 +92,6 @@ export default function SettingsPage() {
       cancelled = true;
     };
   }, [currentWorkspace?.id]);
-
-  useEffect(() => {
-    if (!billingMessage) return;
-    toast.info(billingMessage.type === 'error' ? 'Billing issue' : 'Billing update', {
-      description: billingMessage.text,
-    });
-  }, [billingMessage, toast]);
 
   const handleSave = async () => {
     if (!currentWorkspace?.id || !name.trim()) return;
@@ -122,7 +114,6 @@ export default function SettingsPage() {
   const handleCheckout = async () => {
     if (!currentWorkspace?.id) return;
     setBillingAction('checkout');
-    setBillingMessage(null);
 
     try {
       const { data } = await api.post(`/workspaces/${currentWorkspace.id}/billing/checkout`);
@@ -133,28 +124,28 @@ export default function SettingsPage() {
       window.location.href = url;
     } catch (_err: unknown) {
       toast.error('Checkout failed', {
-        description: friendlyBillingError('checkout'),
+        description: 'We could not open checkout right now. Please try again in a moment.',
       });
       setBillingAction(null);
     }
   };
 
-  const handlePortal = async () => {
+  const handleCancel = async () => {
     if (!currentWorkspace?.id) return;
-    setBillingAction('portal');
-    setBillingMessage(null);
+    setBillingAction('cancel');
 
     try {
-      const { data } = await api.post(`/workspaces/${currentWorkspace.id}/billing/portal`);
-      const url = data?.data?.url as string | undefined;
-      if (!url) {
-        throw new Error('Missing portal URL');
-      }
-      window.location.href = url;
-    } catch (_err: unknown) {
-      toast.error('Portal unavailable', {
-        description: friendlyBillingError('portal'),
+      await api.post(`/workspaces/${currentWorkspace.id}/billing/cancel`);
+      toast.success('Subscription cancelled', {
+        description: 'Your subscription has been cancelled. Your plan will revert to Free.',
       });
+      const { data } = await api.get(`/workspaces/${currentWorkspace.id}/billing/summary`);
+      setBillingSummary(data.data as IWorkspaceBillingSummary);
+    } catch (_err: unknown) {
+      toast.error('Cancellation failed', {
+        description: 'We could not cancel your subscription right now. Please try again.',
+      });
+    } finally {
       setBillingAction(null);
     }
   };
@@ -323,18 +314,29 @@ export default function SettingsPage() {
                   <Button onClick={handleCheckout} disabled={billingAction === 'checkout'}>
                     {billingAction === 'checkout' ? 'Opening Checkout...' : 'Upgrade to Pro'}
                   </Button>
-                ) : billingSummary.canManagePortal ? (
-                  <Button
-                    variant="outline"
-                    onClick={handlePortal}
-                    disabled={billingAction === 'portal'}
-                  >
-                    {billingAction === 'portal' ? 'Opening Portal...' : 'Manage Billing'}
-                  </Button>
+                ) : billingSummary.canCancel ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={billingAction === 'cancel'}>
+                        {billingAction === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel your subscription?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Your plan will immediately revert to Free. You will lose access to Pro
+                          features and your execution limit will be reduced.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancel}>Yes, Cancel</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 ) : (
-                  <TypographyMuted>
-                    Billing portal is unavailable for this plan setup.
-                  </TypographyMuted>
+                  <TypographyMuted>No active subscription to manage.</TypographyMuted>
                 )}
               </div>
             </div>

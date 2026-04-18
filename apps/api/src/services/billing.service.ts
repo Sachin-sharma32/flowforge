@@ -1,61 +1,31 @@
+import crypto from 'crypto';
 import mongoose from 'mongoose';
+import Razorpay from 'razorpay';
 import { config } from '../config';
 import { getLimitsForPlan, type BillingPlan } from '../domain/billing';
 import { ForbiddenError, NotFoundError } from '../domain/errors';
 import { BillingEvent } from '../models/billing-event.model';
 import { Organization, type IOrganizationDocument } from '../models/organization.model';
-import { User } from '../models/user.model';
 import { Workspace } from '../models/workspace.model';
-import { getStripeClient } from './stripe-client';
+import { getRazorpayClient } from './stripe-client';
 import { UsageService } from './usage.service';
 import { logger } from '../infrastructure/logger';
 
-interface StripeWebhookEvent {
+interface RazorpaySubscription {
   id: string;
-  type: string;
-  data: { object: unknown };
-}
-
-interface StripeCheckoutSession {
-  mode?: string;
-  subscription?: string | { id: string };
-}
-
-interface StripeSubscription {
-  id: string;
+  plan_id?: string;
   status: string;
-  customer?: string | { id: string };
-  items?: { data?: Array<{ price?: { id?: string } }> };
-  metadata?: Record<string, string>;
-  current_period_start?: number;
-  current_period_end?: number;
-  cancel_at_period_end?: boolean;
+  current_start?: number;
+  current_end?: number;
+  notes?: Record<string, string>;
+  short_url?: string;
 }
 
-interface StripeInvoice {
-  customer?: string | { id: string };
-  subscription?: string | { id: string };
-}
-
-interface StripeClient {
-  checkout: {
-    sessions: {
-      create(params: Record<string, unknown>): Promise<{ url?: string }>;
-    };
-  };
-  billingPortal: {
-    sessions: {
-      create(params: Record<string, unknown>): Promise<{ url: string }>;
-    };
-  };
-  customers: {
-    create(params: Record<string, unknown>): Promise<{ id: string }>;
-  };
-  subscriptions: {
-    retrieve(subscriptionId: string): Promise<StripeSubscription>;
-  };
-  webhooks: {
-    constructEvent(payload: Buffer, signature: string, secret: string): StripeWebhookEvent;
+interface RazorpayWebhookPayload {
+  event: string;
+  payload: {
+    subscription?: { entity: RazorpaySubscription };
+    payment?: { entity: Record<string, unknown> };
   };
 }
 
@@ -83,12 +53,12 @@ export interface BillingSummary {
     percentUsed: number;
   };
   canUpgrade: boolean;
-  canManagePortal: boolean;
+  canCancel: boolean;
 }
 
 export class BillingService {
   constructor(
-    private readonly stripe: StripeClient = getStripeClient() as StripeClient,
+    private readonly razorpay: Razorpay = getRazorpayClient(),
     private readonly usageService = new UsageService(),
   ) {}
 
@@ -99,17 +69,22 @@ export class BillingService {
       organization.limits.maxExecutionsPerMonth,
     );
 
+    const subscriptionStatus = organization.billing?.subscriptionStatus || 'none';
+    const canCancel =
+      Boolean(organization.billing?.razorpaySubscriptionId) &&
+      (subscriptionStatus === 'active' || subscriptionStatus === 'past_due');
+
     return {
       organizationId: organization._id.toString(),
       workspaceId,
       plan: organization.plan,
-      subscriptionStatus: organization.billing?.subscriptionStatus || 'none',
+      subscriptionStatus,
       cancelAtPeriodEnd: organization.billing?.cancelAtPeriodEnd || false,
       currentPeriodStart: organization.billing?.currentPeriodStart,
       currentPeriodEnd: organization.billing?.currentPeriodEnd,
       usage,
       canUpgrade: organization.plan === 'free',
-      canManagePortal: Boolean(organization.billing?.stripeCustomerId),
+      canCancel,
     };
   }
 
@@ -120,125 +95,154 @@ export class BillingService {
       throw new ForbiddenError('Organization is already on a paid plan');
     }
 
-    const customerId = await this.ensureStripeCustomer(organization);
-
-    const session = await this.stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer: customerId,
-      line_items: [{ price: config.STRIPE_PRICE_PRO_MONTHLY, quantity: 1 }],
-      success_url: `${config.WEB_APP_URL}/settings?billing=success`,
-      cancel_url: `${config.WEB_APP_URL}/settings?billing=cancel`,
-      client_reference_id: organization._id.toString(),
-      metadata: {
+    const subscription = await (
+      this.razorpay.subscriptions.create as (
+        params: Record<string, unknown>,
+      ) => Promise<RazorpaySubscription>
+    )({
+      plan_id: config.RAZORPAY_PLAN_PRO_MONTHLY,
+      customer_notify: 1,
+      total_count: 120,
+      quantity: 1,
+      notes: {
         organizationId: organization._id.toString(),
         targetPlan: 'pro',
       },
-      subscription_data: {
-        metadata: {
-          organizationId: organization._id.toString(),
-          targetPlan: 'pro',
-        },
-      },
-      allow_promotion_codes: true,
     });
 
-    if (!session.url) {
-      throw new Error('Stripe checkout session did not return a redirect URL');
+    if (!subscription.short_url) {
+      throw new Error('Razorpay subscription did not return a checkout URL');
     }
 
-    return { url: session.url };
+    return { url: subscription.short_url };
   }
 
-  async createPortalSession(workspaceId: string) {
+  async cancelSubscription(workspaceId: string) {
     const { organization } = await this.getOrganizationByWorkspace(workspaceId);
-    const customerId = await this.ensureStripeCustomer(organization);
+    const subscriptionId = organization.billing?.razorpaySubscriptionId;
 
-    const session = await this.stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${config.WEB_APP_URL}/settings`,
-    });
+    if (!subscriptionId) {
+      throw new ForbiddenError('No active subscription to cancel');
+    }
 
-    return { url: session.url };
+    await (
+      this.razorpay.subscriptions.cancel as (
+        id: string,
+        cancelAtCycleEnd?: boolean,
+      ) => Promise<RazorpaySubscription>
+    )(subscriptionId, false);
+
+    organization.plan = 'free';
+    organization.limits = getLimitsForPlan('free');
+    organization.billing = {
+      ...organization.billing,
+      subscriptionStatus: 'canceled',
+      cancelAtPeriodEnd: false,
+      lastWebhookAt: new Date(),
+    };
+
+    await organization.save();
+    return { cancelled: true };
   }
 
-  async handleStripeWebhook(rawBody: Buffer, signature?: string) {
+  async handleRazorpayWebhook(rawBody: Buffer, signature?: string) {
     if (!signature) {
-      throw new ForbiddenError('Stripe signature header missing');
+      throw new ForbiddenError('Razorpay signature header missing');
     }
 
-    let event: StripeWebhookEvent;
-    try {
-      event = this.stripe.webhooks.constructEvent(rawBody, signature, config.STRIPE_WEBHOOK_SECRET);
-    } catch {
-      throw new ForbiddenError('Invalid Stripe webhook signature');
+    const hmac = crypto.createHmac('sha256', config.RAZORPAY_WEBHOOK_SECRET);
+    hmac.update(rawBody.toString());
+    const digest = hmac.digest('hex');
+
+    if (digest !== signature) {
+      throw new ForbiddenError('Invalid Razorpay webhook signature');
     }
 
-    return this.processStripeEvent(event);
+    const event = JSON.parse(rawBody.toString()) as RazorpayWebhookPayload;
+    return this.processRazorpayEvent(event);
   }
 
-  async processStripeEvent(event: StripeWebhookEvent): Promise<{ duplicate: boolean }> {
-    const duplicate = await this.isDuplicateEvent(event);
+  async processRazorpayEvent(event: RazorpayWebhookPayload): Promise<{ duplicate: boolean }> {
+    const eventId = this.deriveEventId(event);
+    const duplicate = await this.isDuplicateEvent(eventId, event.event);
     if (duplicate) {
       return { duplicate: true };
     }
 
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await this.handleCheckoutSessionCompleted(event.data.object);
+    const subscription = event.payload?.subscription?.entity;
+
+    switch (event.event) {
+      case 'subscription.activated':
+      case 'subscription.charged':
+        if (subscription) {
+          await this.applySubscriptionSnapshot(subscription);
+        }
         break;
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await this.applySubscriptionSnapshot(event.data.object);
+      case 'subscription.halted':
+        if (subscription) {
+          await this.handleSubscriptionHalted(subscription);
+        }
         break;
-      case 'invoice.payment_failed':
-        await this.handleInvoicePaymentFailed(event.data.object);
+      case 'subscription.cancelled':
+      case 'subscription.completed':
+      case 'subscription.expired':
+        if (subscription) {
+          await this.handleSubscriptionEnded(subscription);
+        }
         break;
       default:
-        logger.info({ eventType: event.type }, 'Ignoring unsupported Stripe webhook event');
+        logger.info({ eventType: event.event }, 'Ignoring unsupported Razorpay webhook event');
     }
 
     await BillingEvent.updateOne(
-      { provider: 'stripe', eventId: event.id },
+      { provider: 'razorpay', eventId },
       { $set: { processedAt: new Date() } },
     );
 
     return { duplicate: false };
   }
 
-  private async handleCheckoutSessionCompleted(rawSession: unknown) {
-    const session = this.asCheckoutSession(rawSession);
-    if (session.mode !== 'subscription' || !session.subscription) {
+  private async applySubscriptionSnapshot(subscription: RazorpaySubscription) {
+    const organization = await this.findOrganizationFromSubscription(subscription);
+    if (!organization) {
+      logger.warn(
+        { subscriptionId: subscription.id },
+        'Organization not found for Razorpay subscription',
+      );
       return;
     }
 
-    const subscriptionId =
-      typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+    const plan = this.resolvePlanFromSubscription(subscription);
 
-    const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
-    await this.applySubscriptionSnapshot(subscription);
+    organization.plan = plan;
+    organization.limits = getLimitsForPlan(plan);
+    organization.billing = {
+      ...organization.billing,
+      razorpaySubscriptionId: subscription.id,
+      razorpayPlanId: subscription.plan_id,
+      subscriptionStatus: this.toInternalSubscriptionStatus(subscription.status),
+      currentPeriodStart: this.toDate(subscription.current_start),
+      currentPeriodEnd: this.toDate(subscription.current_end),
+      cancelAtPeriodEnd: false,
+      lastWebhookAt: new Date(),
+    };
+
+    await organization.save();
   }
 
-  private async handleInvoicePaymentFailed(rawInvoice: unknown) {
-    const invoice = this.asInvoice(rawInvoice);
-    const subscriptionId =
-      typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
-
-    const customerId =
-      typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
-
-    const organization = await this.findOrganizationByStripeReference(subscriptionId, customerId);
+  private async handleSubscriptionHalted(subscription: RazorpaySubscription) {
+    const organization = await this.findOrganizationFromSubscription(subscription);
     if (!organization) {
       logger.warn(
-        { subscriptionId, customerId },
-        'Billing organization not found for invoice event',
+        { subscriptionId: subscription.id },
+        'Organization not found for halted subscription',
       );
       return;
     }
 
     organization.billing = {
       ...organization.billing,
-      stripeCustomerId: customerId || organization.billing?.stripeCustomerId,
-      stripeSubscriptionId: subscriptionId || organization.billing?.stripeSubscriptionId,
+      razorpaySubscriptionId: subscription.id,
       subscriptionStatus: 'past_due',
       lastWebhookAt: new Date(),
     };
@@ -246,76 +250,35 @@ export class BillingService {
     await organization.save();
   }
 
-  private async applySubscriptionSnapshot(rawSubscription: unknown) {
-    const subscription = this.asSubscription(rawSubscription);
-    const customerId =
-      typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
-
-    const organization = await this.findOrganizationFromSubscription(subscription, customerId);
+  private async handleSubscriptionEnded(subscription: RazorpaySubscription) {
+    const organization = await this.findOrganizationFromSubscription(subscription);
     if (!organization) {
       logger.warn(
-        { subscriptionId: subscription.id, customerId },
-        'Billing organization not found for Stripe subscription',
+        { subscriptionId: subscription.id },
+        'Organization not found for ended subscription',
       );
       return;
     }
 
-    const plan = this.resolvePlanFromSubscription(subscription);
-    const priceId = subscription.items?.data?.[0]?.price?.id;
-
-    organization.plan = plan;
-    organization.limits = getLimitsForPlan(plan);
+    organization.plan = 'free';
+    organization.limits = getLimitsForPlan('free');
     organization.billing = {
       ...organization.billing,
-      stripeCustomerId: customerId || organization.billing?.stripeCustomerId,
-      stripeSubscriptionId: subscription.id,
-      stripePriceId: priceId,
-      subscriptionStatus: this.toInternalSubscriptionStatus(subscription.status),
-      currentPeriodStart: this.toDate(subscription.current_period_start),
-      currentPeriodEnd: this.toDate(subscription.current_period_end),
-      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      razorpaySubscriptionId: subscription.id,
+      subscriptionStatus: 'canceled',
+      cancelAtPeriodEnd: false,
       lastWebhookAt: new Date(),
     };
 
     await organization.save();
   }
 
-  private resolvePlanFromSubscription(subscription: StripeSubscription): BillingPlan {
-    const status = subscription.status;
-    const isActiveLike = ['active', 'trialing', 'past_due', 'unpaid'].includes(status);
-    const priceId = subscription.items?.data?.[0]?.price?.id;
-
-    if (isActiveLike && priceId === config.STRIPE_PRICE_PRO_MONTHLY) {
+  private resolvePlanFromSubscription(subscription: RazorpaySubscription): BillingPlan {
+    const isActiveLike = ['active', 'authenticated'].includes(subscription.status);
+    if (isActiveLike && subscription.plan_id === config.RAZORPAY_PLAN_PRO_MONTHLY) {
       return 'pro';
     }
-
     return 'free';
-  }
-
-  private async ensureStripeCustomer(organization: IOrganizationDocument): Promise<string> {
-    const existingCustomerId = organization.billing?.stripeCustomerId;
-    if (existingCustomerId) {
-      return existingCustomerId;
-    }
-
-    const owner = await User.findById(organization.ownerId).select('email name').lean();
-
-    const customer = await this.stripe.customers.create({
-      email: owner?.email,
-      name: owner?.name || organization.name,
-      metadata: {
-        organizationId: organization._id.toString(),
-      },
-    });
-
-    organization.billing = {
-      ...organization.billing,
-      stripeCustomerId: customer.id,
-      subscriptionStatus: organization.billing?.subscriptionStatus || 'none',
-    };
-
-    await organization.save();
-    return customer.id;
   }
 
   private async getOrganizationByWorkspace(workspaceId: string): Promise<{
@@ -340,10 +303,9 @@ export class BillingService {
   }
 
   private async findOrganizationFromSubscription(
-    subscription: StripeSubscription,
-    customerId?: string,
+    subscription: RazorpaySubscription,
   ): Promise<IOrganizationDocument | null> {
-    const metadataOrgId = subscription.metadata?.organizationId;
+    const metadataOrgId = subscription.notes?.organizationId;
 
     if (metadataOrgId && mongoose.Types.ObjectId.isValid(metadataOrgId)) {
       const orgByMetadata = await Organization.findById(metadataOrgId);
@@ -352,69 +314,43 @@ export class BillingService {
       }
     }
 
-    return this.findOrganizationByStripeReference(subscription.id, customerId);
+    return Organization.findOne({ 'billing.razorpaySubscriptionId': subscription.id });
   }
 
-  private async findOrganizationByStripeReference(
-    subscriptionId?: string,
-    customerId?: string,
-  ): Promise<IOrganizationDocument | null> {
-    const filters: Array<Record<string, unknown>> = [];
-
-    if (subscriptionId) {
-      filters.push({ 'billing.stripeSubscriptionId': subscriptionId });
-    }
-    if (customerId) {
-      filters.push({ 'billing.stripeCustomerId': customerId });
-    }
-
-    if (!filters.length) {
-      return null;
-    }
-
-    return Organization.findOne({ $or: filters });
+  private deriveEventId(event: RazorpayWebhookPayload): string {
+    const subscriptionId = event.payload?.subscription?.entity?.id ?? '';
+    return `${event.event}:${subscriptionId}:${Date.now()}`;
   }
 
   private toDate(unixSeconds?: number): Date | undefined {
-    if (!unixSeconds) {
-      return undefined;
-    }
+    if (!unixSeconds) return undefined;
     return new Date(unixSeconds * 1000);
   }
 
-  private toInternalSubscriptionStatus(
-    status: string,
-  ):
-    | 'none'
-    | 'active'
-    | 'trialing'
-    | 'past_due'
-    | 'unpaid'
-    | 'incomplete'
-    | 'incomplete_expired'
-    | 'canceled' {
+  private toInternalSubscriptionStatus(status: string): BillingSummary['subscriptionStatus'] {
     switch (status) {
       case 'active':
-      case 'trialing':
-      case 'past_due':
-      case 'unpaid':
-      case 'incomplete':
-      case 'incomplete_expired':
-      case 'canceled':
-        return status;
-      case 'paused':
+        return 'active';
+      case 'authenticated':
+        return 'trialing';
+      case 'pending':
+      case 'halted':
         return 'past_due';
+      case 'cancelled':
+      case 'completed':
+      case 'expired':
+        return 'canceled';
       default:
         return 'none';
     }
   }
 
-  private async isDuplicateEvent(event: StripeWebhookEvent): Promise<boolean> {
+  private async isDuplicateEvent(eventId: string, eventType: string): Promise<boolean> {
     try {
       await BillingEvent.create({
-        provider: 'stripe',
-        eventId: event.id,
-        eventType: event.type,
+        provider: 'razorpay',
+        eventId,
+        eventType,
       });
       return false;
     } catch (error: unknown) {
@@ -425,24 +361,8 @@ export class BillingService {
     }
   }
 
-  private asCheckoutSession(value: unknown): StripeCheckoutSession {
-    return (value || {}) as StripeCheckoutSession;
-  }
-
-  private asInvoice(value: unknown): StripeInvoice {
-    return (value || {}) as StripeInvoice;
-  }
-
-  private asSubscription(value: unknown): StripeSubscription {
-    return (value || {}) as StripeSubscription;
-  }
-
   private hasMongoDuplicateCode(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-
-    const maybeCode = (error as { code?: unknown }).code;
-    return maybeCode === 11000;
+    if (!error || typeof error !== 'object') return false;
+    return (error as { code?: unknown }).code === 11000;
   }
 }

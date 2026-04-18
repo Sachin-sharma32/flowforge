@@ -11,9 +11,8 @@ export interface IOrganizationDocument extends Document {
     maxExecutionsPerMonth: number;
   };
   billing?: {
-    stripeCustomerId?: string;
-    stripeSubscriptionId?: string;
-    stripePriceId?: string;
+    razorpaySubscriptionId?: string;
+    razorpayPlanId?: string;
     subscriptionStatus?:
       | 'none'
       | 'active'
@@ -44,9 +43,8 @@ const organizationSchema = new Schema<IOrganizationDocument>(
       maxExecutionsPerMonth: { type: Number, default: 1000 },
     },
     billing: {
-      stripeCustomerId: { type: String },
-      stripeSubscriptionId: { type: String },
-      stripePriceId: { type: String },
+      razorpaySubscriptionId: { type: String },
+      razorpayPlanId: { type: String },
       subscriptionStatus: {
         type: String,
         enum: [

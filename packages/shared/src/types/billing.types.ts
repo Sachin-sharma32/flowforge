@@ -28,5 +28,5 @@ export interface IWorkspaceBillingSummary {
   currentPeriodEnd?: Date;
   usage: IMonthlyExecutionUsage;
   canUpgrade: boolean;
-  canManagePortal: boolean;
+  canCancel: boolean;
 }

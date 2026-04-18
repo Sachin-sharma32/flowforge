@@ -1,7 +1,7 @@
 import { Document, Schema, model } from 'mongoose';
 
 export interface IBillingEventDocument extends Document {
-  provider: 'stripe';
+  provider: 'razorpay';
   eventId: string;
   eventType: string;
   processedAt?: Date;
@@ -11,7 +11,7 @@ export interface IBillingEventDocument extends Document {
 
 const billingEventSchema = new Schema<IBillingEventDocument>(
   {
-    provider: { type: String, enum: ['stripe'], required: true },
+    provider: { type: String, enum: ['razorpay'], required: true },
     eventId: { type: String, required: true },
     eventType: { type: String, required: true },
     processedAt: { type: Date },

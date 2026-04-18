@@ -5,7 +5,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z
     .string()
-    .default('mongodb+srv://sachin:parasf@1234@cluster0.ga05pix.mongodb.net/?appName=Cluster0'),
+    .default('mongodb+srv://sachin:parasf%401234@cluster0.ga05pix.mongodb.net/?appName=Cluster0'),
   REDIS_URL: z
     .string()
     .default(
@@ -38,9 +38,10 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
-  STRIPE_SECRET_KEY: z.string().min(1),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1),
-  STRIPE_PRICE_PRO_MONTHLY: z.string().min(1),
+  RAZORPAY_KEY_ID: z.string().min(1),
+  RAZORPAY_KEY_SECRET: z.string().min(1),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
+  RAZORPAY_PLAN_PRO_MONTHLY: z.string().min(1),
   FREE_EXECUTION_LIMIT: z.coerce.number().int().positive().default(1000),
   PRO_EXECUTION_LIMIT: z.coerce.number().int().positive().default(10000),
   ENTERPRISE_EXECUTION_LIMIT: z.coerce.number().int().positive().default(100000),

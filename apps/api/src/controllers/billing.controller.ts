@@ -22,21 +22,21 @@ export class BillingController {
     }
   }
 
-  static async portal(req: Request, res: Response, next: NextFunction) {
+  static async cancel(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await billingService.createPortalSession(req.params.workspaceId);
+      const data = await billingService.cancelSubscription(req.params.workspaceId);
       res.json({ success: true, data });
     } catch (error) {
       next(error);
     }
   }
 
-  static async stripeWebhook(req: Request, res: Response, next: NextFunction) {
+  static async razorpayWebhook(req: Request, res: Response, next: NextFunction) {
     try {
-      const signature = req.headers['stripe-signature'];
+      const signature = req.headers['x-razorpay-signature'];
       const signatureHeader = Array.isArray(signature) ? signature[0] : signature;
 
-      await billingService.handleStripeWebhook(req.body as Buffer, signatureHeader);
+      await billingService.handleRazorpayWebhook(req.body as Buffer, signatureHeader);
       res.json({ success: true, data: { received: true } });
     } catch (error) {
       next(error);

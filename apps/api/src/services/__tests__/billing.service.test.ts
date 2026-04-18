@@ -6,26 +6,12 @@ import { BillingEvent } from '../../models/billing-event.model';
 import { getLimitsForPlan } from '../../domain/billing';
 import { config } from '../../config';
 
-function createStripeMock() {
+function createRazorpayMock() {
   return {
-    checkout: {
-      sessions: {
-        create: jest.fn(),
-      },
-    },
-    billingPortal: {
-      sessions: {
-        create: jest.fn(),
-      },
-    },
-    customers: {
-      create: jest.fn(),
-    },
     subscriptions: {
-      retrieve: jest.fn(),
-    },
-    webhooks: {
-      constructEvent: jest.fn(),
+      create: jest.fn(),
+      cancel: jest.fn(),
+      fetch: jest.fn(),
     },
   };
 }
@@ -33,7 +19,7 @@ function createStripeMock() {
 describe('BillingService webhook sync', () => {
   let mongoServer: MongoMemoryServer;
   let billingService: BillingService;
-  const stripeMock = createStripeMock();
+  const razorpayMock = createRazorpayMock();
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -41,7 +27,7 @@ describe('BillingService webhook sync', () => {
   });
 
   beforeEach(() => {
-    billingService = new BillingService(stripeMock);
+    billingService = new BillingService(razorpayMock as never);
   });
 
   afterEach(async () => {
@@ -54,7 +40,7 @@ describe('BillingService webhook sync', () => {
     await mongoServer.stop();
   });
 
-  it('upgrades organization to pro on subscription update', async () => {
+  it('upgrades organization to pro on subscription.activated', async () => {
     const ownerId = new mongoose.Types.ObjectId();
     const org = await Organization.create({
       name: 'Acme',
@@ -62,37 +48,35 @@ describe('BillingService webhook sync', () => {
       ownerId,
       plan: 'free',
       limits: getLimitsForPlan('free'),
-      billing: { stripeCustomerId: 'cus_123', subscriptionStatus: 'none' },
     });
 
     const event = {
-      id: 'evt_subscription_updated',
-      type: 'customer.subscription.updated',
-      data: {
-        object: {
-          id: 'sub_123',
-          status: 'active',
-          customer: 'cus_123',
-          items: { data: [{ price: { id: config.STRIPE_PRICE_PRO_MONTHLY } }] },
-          metadata: { organizationId: org._id.toString() },
-          current_period_start: 1710000000,
-          current_period_end: 1712592000,
-          cancel_at_period_end: false,
+      event: 'subscription.activated',
+      payload: {
+        subscription: {
+          entity: {
+            id: 'sub_123',
+            plan_id: config.RAZORPAY_PLAN_PRO_MONTHLY,
+            status: 'active',
+            current_start: 1710000000,
+            current_end: 1712592000,
+            notes: { organizationId: org._id.toString() },
+          },
         },
       },
     };
 
-    const result = await billingService.processStripeEvent(event);
+    const result = await billingService.processRazorpayEvent(event);
     expect(result.duplicate).toBe(false);
 
     const updated = await Organization.findById(org._id);
     expect(updated?.plan).toBe('pro');
     expect(updated?.limits.maxExecutionsPerMonth).toBe(config.PRO_EXECUTION_LIMIT);
-    expect(updated?.billing?.stripeSubscriptionId).toBe('sub_123');
+    expect(updated?.billing?.razorpaySubscriptionId).toBe('sub_123');
     expect(updated?.billing?.subscriptionStatus).toBe('active');
   });
 
-  it('downgrades organization to free on subscription deleted', async () => {
+  it('downgrades organization to free on subscription.cancelled', async () => {
     const ownerId = new mongoose.Types.ObjectId();
     const org = await Organization.create({
       name: 'Acme Pro',
@@ -101,30 +85,26 @@ describe('BillingService webhook sync', () => {
       plan: 'pro',
       limits: getLimitsForPlan('pro'),
       billing: {
-        stripeCustomerId: 'cus_pro',
-        stripeSubscriptionId: 'sub_pro',
+        razorpaySubscriptionId: 'sub_pro',
         subscriptionStatus: 'active',
       },
     });
 
     const event = {
-      id: 'evt_subscription_deleted',
-      type: 'customer.subscription.deleted',
-      data: {
-        object: {
-          id: 'sub_pro',
-          status: 'canceled',
-          customer: 'cus_pro',
-          items: { data: [{ price: { id: config.STRIPE_PRICE_PRO_MONTHLY } }] },
-          metadata: { organizationId: org._id.toString() },
-          current_period_start: 1710000000,
-          current_period_end: 1712592000,
-          cancel_at_period_end: true,
+      event: 'subscription.cancelled',
+      payload: {
+        subscription: {
+          entity: {
+            id: 'sub_pro',
+            plan_id: config.RAZORPAY_PLAN_PRO_MONTHLY,
+            status: 'cancelled',
+            notes: { organizationId: org._id.toString() },
+          },
         },
       },
     };
 
-    await billingService.processStripeEvent(event);
+    await billingService.processRazorpayEvent(event);
 
     const updated = await Organization.findById(org._id);
     expect(updated?.plan).toBe('free');
@@ -134,18 +114,20 @@ describe('BillingService webhook sync', () => {
 
   it('ignores duplicate webhook events idempotently', async () => {
     const event = {
-      id: 'evt_duplicate',
-      type: 'invoice.payment_failed',
-      data: {
-        object: {
-          customer: 'cus_missing',
-          subscription: 'sub_missing',
+      event: 'subscription.halted',
+      payload: {
+        subscription: {
+          entity: {
+            id: 'sub_halted',
+            status: 'halted',
+            notes: {},
+          },
         },
       },
     };
 
-    const first = await billingService.processStripeEvent(event);
-    const second = await billingService.processStripeEvent(event);
+    const first = await billingService.processRazorpayEvent(event);
+    const second = await billingService.processRazorpayEvent(event);
 
     expect(first.duplicate).toBe(false);
     expect(second.duplicate).toBe(true);

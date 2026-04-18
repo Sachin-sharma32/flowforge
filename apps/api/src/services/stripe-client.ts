@@ -1,11 +1,14 @@
-import StripeConstructor = require('stripe');
+import Razorpay from 'razorpay';
 import { config } from '../config';
 
-let stripeClient: unknown = null;
+let razorpayClient: Razorpay | null = null;
 
-export function getStripeClient(): unknown {
-  if (!stripeClient) {
-    stripeClient = new StripeConstructor(config.STRIPE_SECRET_KEY);
+export function getRazorpayClient(): Razorpay {
+  if (!razorpayClient) {
+    razorpayClient = new Razorpay({
+      key_id: config.RAZORPAY_KEY_ID,
+      key_secret: config.RAZORPAY_KEY_SECRET,
+    });
   }
-  return stripeClient;
+  return razorpayClient;
 }
