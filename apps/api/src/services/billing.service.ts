@@ -95,11 +95,7 @@ export class BillingService {
       throw new ForbiddenError('Organization is already on a paid plan');
     }
 
-    const subscription = await (
-      this.razorpay.subscriptions.create as (
-        params: Record<string, unknown>,
-      ) => Promise<RazorpaySubscription>
-    )({
+    const sdkSub = await this.razorpay.subscriptions.create({
       plan_id: config.RAZORPAY_PLAN_PRO_MONTHLY,
       customer_notify: 1,
       total_count: 120,
@@ -109,6 +105,8 @@ export class BillingService {
         targetPlan: 'pro',
       },
     });
+
+    const subscription = sdkSub as unknown as RazorpaySubscription;
 
     if (!subscription.short_url) {
       throw new Error('Razorpay subscription did not return a checkout URL');
@@ -126,10 +124,7 @@ export class BillingService {
     }
 
     await (
-      this.razorpay.subscriptions.cancel as (
-        id: string,
-        cancelAtCycleEnd?: boolean,
-      ) => Promise<RazorpaySubscription>
+      this.razorpay.subscriptions.cancel as unknown as (id: string, atEnd: boolean) => Promise<void>
     )(subscriptionId, false);
 
     organization.plan = 'free';
