@@ -28,6 +28,18 @@ interface WorkflowStepInput {
   connections: Array<{ targetStepId: string; label: string }>;
 }
 
+type WorkflowListResult = {
+  data: Array<Record<string, unknown> & { id: string }>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+type WorkflowTemplateSummary = Record<string, unknown> & { id: string };
+
 export class WorkflowService {
   private validateSteps(steps: WorkflowStepInput[]): void {
     registerStepHandlers();
@@ -173,7 +185,7 @@ export class WorkflowService {
     );
   }
 
-  async list(query: WorkflowQuery) {
+  async list(query: WorkflowQuery): Promise<WorkflowListResult> {
     const {
       workspaceId,
       status,
@@ -429,7 +441,7 @@ export class WorkflowService {
     return date;
   }
 
-  async listTemplates(workspaceId: string) {
+  async listTemplates(workspaceId: string): Promise<WorkflowTemplateSummary[]> {
     const rawTemplates = await Workflow.find({
       workspaceId,
       isTemplate: true,
