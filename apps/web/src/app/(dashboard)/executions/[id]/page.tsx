@@ -13,6 +13,7 @@ import { fetchExecution, cancelExecution } from '@/stores/execution-slice';
 import type { IExecution } from '@flowforge/shared';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { getSocket } from '@/lib/socket-client';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { ArrowLeft, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { formatDuration, intervalToDuration } from 'date-fns';
@@ -65,7 +66,7 @@ export default function ExecutionDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-4xl font-bold tracking-tight">Execution Detail</h1>
+            <TypographyH1>Execution Detail</TypographyH1>
             <Badge
               variant={
                 currentExecution.status === 'completed'
@@ -95,7 +96,9 @@ export default function ExecutionDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Trigger</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold">{currentExecution.trigger.type}</p>
+            <TypographyMuted className="text-lg font-semibold text-foreground">
+              {currentExecution.trigger.type}
+            </TypographyMuted>
           </CardContent>
         </Card>
         <Card>
@@ -103,13 +106,13 @@ export default function ExecutionDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Duration</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold">
+            <TypographyMuted className="text-lg font-semibold text-foreground">
               {currentExecution.durationMs
                 ? formatDuration(intervalToDuration({ start: 0, end: currentExecution.durationMs }))
                 : isRunning
                   ? 'Running...'
                   : '—'}
-            </p>
+            </TypographyMuted>
           </CardContent>
         </Card>
         <Card>
@@ -117,9 +120,9 @@ export default function ExecutionDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Started</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold">
+            <TypographyMuted className="text-lg font-semibold text-foreground">
               {/* {currentExecution.startedAt ? formatDate(currentExecution.startedAt) : '—'} */}
-            </p>
+            </TypographyMuted>
           </CardContent>
         </Card>
       </div>

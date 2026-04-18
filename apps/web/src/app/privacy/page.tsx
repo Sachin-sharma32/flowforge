@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { PublicNavbar } from '@/components/layout/public-navbar';
 import { buildPageMetadata } from '@/lib/seo';
+import {
+  TypographyH1,
+  TypographyH2,
+  TypographyMuted,
+  TypographySmall,
+} from '@/components/ui/typography';
 
 export const metadata = buildPageMetadata({
   title: 'Privacy & Cookies | FlowForge',
@@ -37,24 +43,22 @@ export default function PrivacyPage() {
 
         <div className="mx-auto max-w-5xl px-6 pb-16 pt-12 sm:pt-16">
           <div className="rounded-lg border border-border bg-card shadow-sm p-8 sm:p-10">
-            <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+            <TypographySmall className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
               Privacy & Cookies
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
-              Essential-only cookie baseline
-            </h1>
-            <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            </TypographySmall>
+            <TypographyH1 className="mt-3 sm:text-5xl">Essential-only cookie baseline</TypographyH1>
+            <TypographyMuted className="mt-4 max-w-3xl text-sm leading-relaxed sm:text-base">
               FlowForge currently uses only authentication and security cookies required for
               sign-in, session continuity, and CSRF protection. We do not currently deploy
               analytics, advertising, or cross-site tracking cookies.
-            </p>
+            </TypographyMuted>
 
             <div className="mt-8 rounded-lg border border-border bg-card p-5">
-              <h2 className="text-xl font-semibold tracking-tight">Cookie inventory</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <TypographyH2 className="text-xl">Cookie inventory</TypographyH2>
+              <TypographyMuted className="mt-2">
                 Cookie names are shown with current defaults and may be overridden by server
                 configuration.
-              </p>
+              </TypographyMuted>
 
               <div className="mt-4 overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
@@ -83,18 +87,16 @@ export default function PrivacyPage() {
             </div>
 
             <div className="mt-6 rounded-lg border border-border bg-muted/35 p-5">
-              <h2 className="text-xl font-semibold tracking-tight">
-                Non-essential tracking status
-              </h2>
+              <TypographyH2 className="text-xl">Non-essential tracking status</TypographyH2>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <li>No analytics SDK cookies are currently used.</li>
                 <li>No advertising or remarketing pixels are currently used.</li>
                 <li>No A/B testing or behavioral tracking cookies are currently used.</li>
               </ul>
-              <p className="mt-4 text-sm text-muted-foreground">
+              <TypographyMuted className="mt-4">
                 If non-essential tracking is introduced in the future, FlowForge will add
                 category-based consent controls before release.
-              </p>
+              </TypographyMuted>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-4 text-sm">

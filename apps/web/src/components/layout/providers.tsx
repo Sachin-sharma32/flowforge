@@ -6,6 +6,7 @@ import { store } from '@/stores/store';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -31,10 +32,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
       return (
         <div className="flex min-h-screen items-center justify-center p-4">
           <div className="max-w-md space-y-4 text-center">
-            <h1 className="text-2xl font-bold">Something went wrong</h1>
-            <p className="text-muted-foreground">
+            <TypographyH1 className="text-2xl">Something went wrong</TypographyH1>
+            <TypographyMuted>
               {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
+            </TypographyMuted>
             <button
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
               onClick={() => {

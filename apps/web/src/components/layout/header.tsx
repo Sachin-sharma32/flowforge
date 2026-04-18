@@ -11,6 +11,8 @@ import { DashboardCommandMenu } from '@/components/layout/dashboard-command-menu
 import { DashboardBreadcrumbs } from '@/components/layout/dashboard-breadcrumbs';
 import { AvatarWithStatus } from '@/components/ui/avatar-with-status';
 import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
 
 export function Header() {
   const dispatch = useAppDispatch();
@@ -26,6 +28,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between bg-background px-10">
       <div className="flex min-w-0 items-center gap-3">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 !h-4" />
         <DashboardCommandMenu />
         <div className="min-w-0">
           <DashboardBreadcrumbs />

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Activity, ShieldCheck, Sparkles, UserRoundPlus, Workflow, Zap } from 'lucide-react';
 import { PublicNavbar } from '@/components/layout/public-navbar';
+import { TypographyH1, TypographySmall, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 
 interface AuthShellProps {
@@ -103,15 +104,15 @@ export function AuthShell({ children }: AuthShellProps) {
               />
 
               <div className="relative z-10">
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+                <TypographySmall className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
                   {scene.eyebrow}
-                </p>
-                <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight tracking-tight">
+                </TypographySmall>
+                <TypographyH1 className="mt-4 max-w-xl font-semibold leading-tight">
                   {scene.title}
-                </h1>
-                <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                </TypographyH1>
+                <TypographyMuted className="mt-4 max-w-lg leading-relaxed">
                   {scene.description}
-                </p>
+                </TypographyMuted>
 
                 <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                   <span className="h-2 w-2 rounded-full bg-primary" />
@@ -134,21 +135,23 @@ export function AuthShell({ children }: AuthShellProps) {
                         className="rounded-xl border border-border bg-card p-3"
                       >
                         <div className="flex items-center justify-between">
-                          <p className="text-[11px] uppercase tracking-normal text-muted-foreground">
+                          <TypographySmall className="text-[11px] uppercase tracking-normal text-muted-foreground">
                             {metric.label}
-                          </p>
+                          </TypographySmall>
                           <Icon className="h-3.5 w-3.5 text-primary" />
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-foreground">{metric.value}</p>
+                        <TypographySmall className="mt-2 text-sm font-semibold text-foreground">
+                          {metric.value}
+                        </TypographySmall>
                       </motion.div>
                     );
                   })}
                 </div>
 
                 <div className="mt-8 rounded-lg border border-border bg-background p-4">
-                  <p className="text-xs uppercase tracking-normal text-muted-foreground">
+                  <TypographySmall className="text-xs uppercase tracking-normal text-muted-foreground">
                     Live Run Snapshot
-                  </p>
+                  </TypographySmall>
                   <div className="mt-3 space-y-2">
                     {runtimeSteps.map((step, index) => (
                       <motion.div
@@ -168,7 +171,9 @@ export function AuthShell({ children }: AuthShellProps) {
                         }}
                         className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
                       >
-                        <p className="text-sm text-foreground">{step.label}</p>
+                        <TypographySmall className="text-sm text-foreground">
+                          {step.label}
+                        </TypographySmall>
                         <div className="inline-flex items-center gap-2 text-xs capitalize text-muted-foreground">
                           <span
                             className={cn('h-2 w-2 rounded-full', statusDotClass(step.status))}

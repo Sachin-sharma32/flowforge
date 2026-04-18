@@ -26,6 +26,8 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TypographyH1, TypographyMuted, TypographySmall } from '@/components/ui/typography';
+import { Field, FieldLabel } from '@/components/ui/field';
 
 const triggerTypes = [
   {
@@ -128,16 +130,14 @@ export default function NewWorkflowPage() {
             </Button>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-normal text-primary">
+            <TypographySmall className="text-xs font-semibold uppercase tracking-normal text-primary">
               Workflow Creation
-            </p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight">
-              Create a production-ready automation
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+            </TypographySmall>
+            <TypographyH1 className="mt-3">Create a production-ready automation</TypographyH1>
+            <TypographyMuted className="mt-3 max-w-2xl">
               Define the trigger now, then we open a full-screen static step builder where you can
               configure every step without draggable chaos.
-            </p>
+            </TypographyMuted>
           </div>
 
           <form
@@ -152,10 +152,8 @@ export default function NewWorkflowPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
-                    Workflow Name
-                  </label>
+                <Field>
+                  <FieldLabel htmlFor="name">Workflow Name</FieldLabel>
                   <Input
                     id="name"
                     placeholder="e.g., Route New Leads To Sales"
@@ -164,11 +162,9 @@ export default function NewWorkflowPage() {
                     data-testid="workflow-name-input"
                     required
                   />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="description" className="text-sm font-medium">
-                    Description
-                  </label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="description">Description</FieldLabel>
                   <Input
                     id="description"
                     placeholder="Describe what success looks like for this flow"
@@ -176,11 +172,9 @@ export default function NewWorkflowPage() {
                     onChange={(e) => setDescription(e.target.value)}
                     data-testid="workflow-description-input"
                   />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="folder" className="text-sm font-medium">
-                    Folder
-                  </label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="folder">Folder</FieldLabel>
                   <Select
                     value={folderId || 'uncategorized'}
                     onValueChange={(value) => setFolderId(value === 'uncategorized' ? '' : value)}
@@ -197,7 +191,7 @@ export default function NewWorkflowPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </Field>
               </div>
             </div>
 
@@ -224,8 +218,12 @@ export default function NewWorkflowPage() {
                         triggerType === trigger.type ? 'text-primary' : 'text-muted-foreground'
                       }`}
                     />
-                    <p className="text-sm font-semibold">{trigger.label}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{trigger.description}</p>
+                    <TypographySmall className="text-sm font-semibold">
+                      {trigger.label}
+                    </TypographySmall>
+                    <TypographyMuted className="mt-1 text-xs">
+                      {trigger.description}
+                    </TypographyMuted>
                   </button>
                 ))}
               </div>

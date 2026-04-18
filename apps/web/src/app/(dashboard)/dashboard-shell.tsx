@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { cn } from '@/lib/utils';
 import { pushRecentRoute } from '@/lib/recent-routes';
 import { Spinner } from '@/components/ui/spinner';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -71,18 +72,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="bg-background relative flex h-screen overflow-hidden">
-      {/* Subtle dot grid texture */}
-      <div className="hidden pointer-events-none absolute inset-0 opacity-40" />
+    <SidebarProvider>
       <Sidebar />
-      <div className="relative flex flex-1 flex-col overflow-hidden">
+      <SidebarInset>
         <Header />
         <main className={cn('flex-1 overflow-y-auto px-10 py-10')}>
           <PageTransition className={cn('mx-auto max-w-[1800px] 2xl:max-w-full 2xl:px-12')}>
             {children}
           </PageTransition>
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

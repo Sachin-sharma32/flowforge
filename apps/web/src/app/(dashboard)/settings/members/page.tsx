@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AvatarWithStatus } from '@/components/ui/avatar-with-status';
+import { TypographyH1, TypographyMuted, TypographySmall } from '@/components/ui/typography';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
@@ -65,8 +66,8 @@ export default function MembersPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Members</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Manage workspace members and roles</p>
+          <TypographyH1>Members</TypographyH1>
+          <TypographyMuted className="mt-1.5">Manage workspace members and roles</TypographyMuted>
         </div>
       </div>
 
@@ -115,8 +116,12 @@ export default function MembersPage() {
                 <div className="flex items-center gap-4">
                   <AvatarWithStatus name={member.userId?.name || 'User'} status="online" />
                   <div>
-                    <p className="text-sm font-medium">{member.userId?.name || 'User'}</p>
-                    <p className="text-xs text-muted-foreground">{member.userId?.email || ''}</p>
+                    <TypographySmall className="text-sm font-medium">
+                      {member.userId?.name || 'User'}
+                    </TypographySmall>
+                    <TypographyMuted className="text-xs">
+                      {member.userId?.email || ''}
+                    </TypographyMuted>
                   </div>
                 </div>
                 <Badge variant={roleColors[member.role] || 'default'}>{member.role}</Badge>

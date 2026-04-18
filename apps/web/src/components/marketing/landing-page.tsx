@@ -21,6 +21,13 @@ import { Button } from '@/components/ui/button';
 import { PublicNavbar } from '@/components/layout/public-navbar';
 import { setAccessToken } from '@/lib/auth-token-store';
 import { api } from '@/lib/api-client';
+import {
+  TypographyH1,
+  TypographyH2,
+  TypographyH3,
+  TypographyMuted,
+  TypographySmall,
+} from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 
 interface FeatureCard {
@@ -218,15 +225,13 @@ function SectionHeading({
 }) {
   return (
     <div className={className}>
-      <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+      <TypographySmall className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
         {eyebrow}
-      </p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-        {title}
-      </h2>
-      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+      </TypographySmall>
+      <TypographyH2 className="mt-3 text-3xl text-foreground sm:text-4xl">{title}</TypographyH2>
+      <TypographyMuted className="mt-4 max-w-2xl leading-relaxed sm:text-base">
         {description}
-      </p>
+      </TypographyMuted>
     </div>
   );
 }
@@ -335,17 +340,17 @@ export function LandingPageExperience() {
         <section ref={heroRef} className="relative">
           <div className="mx-auto grid w-full max-w-7xl gap-14 px-6 pb-16 pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-24">
             <SectionReveal>
-              <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+              <TypographySmall className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
                 Automation Orchestration Platform
-              </p>
-              <h1 className="mt-5 max-w-2xl text-5xl font-semibold leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">
+              </TypographySmall>
+              <TypographyH1 className="mt-5 max-w-2xl text-5xl font-semibold leading-[1.04] sm:text-6xl lg:text-7xl">
                 Build reliable workflows with
                 <span className="text-foreground"> cinematic clarity</span>
-              </h1>
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              </TypographyH1>
+              <TypographyMuted className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg">
                 FlowForge helps engineering and operations teams launch event-driven automations
                 that are easy to build, secure to scale, and transparent to monitor in real time.
-              </p>
+              </TypographyMuted>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button asChild size="lg" className="group">
@@ -371,10 +376,12 @@ export function LandingPageExperience() {
                     }}
                     className="rounded-lg border border-border bg-card shadow-sm p-4"
                   >
-                    <p className="text-xs uppercase tracking-normal text-muted-foreground">
+                    <TypographySmall className="uppercase tracking-normal">
                       {highlight.label}
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-foreground">{highlight.value}</p>
+                    </TypographySmall>
+                    <TypographySmall className="mt-2 text-sm font-semibold text-foreground">
+                      {highlight.value}
+                    </TypographySmall>
                   </motion.div>
                 ))}
               </div>
@@ -385,10 +392,12 @@ export function LandingPageExperience() {
                 <div className="absolute inset-x-0 top-0 h-36 bg-muted" />
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-normal text-primary">
+                    <TypographySmall className="uppercase tracking-normal text-primary">
                       Workflow Preview
-                    </p>
-                    <p className="mt-2 text-lg font-semibold">Ecommerce Fulfillment Flow</p>
+                    </TypographySmall>
+                    <TypographySmall className="mt-2 text-lg font-semibold">
+                      Ecommerce Fulfillment Flow
+                    </TypographySmall>
                   </div>
                   <div className="flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-foreground">
                     <span className="h-2 w-2 rounded-full bg-primary" />
@@ -423,18 +432,20 @@ export function LandingPageExperience() {
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <StatusDot status={step.status} />
-                          <p className="text-sm font-medium text-foreground">{step.title}</p>
+                          <TypographySmall className="text-sm font-medium text-foreground">
+                            {step.title}
+                          </TypographySmall>
                         </div>
-                        <p className="text-xs text-muted-foreground">{step.duration}</p>
+                        <TypographySmall>{step.duration}</TypographySmall>
                       </div>
                     </motion.div>
                   ))}
                 </div>
 
                 <div className="mt-5 rounded-xl border border-border bg-muted/45 p-4">
-                  <p className="text-xs uppercase tracking-normal text-muted-foreground">
+                  <TypographySmall className="uppercase tracking-normal">
                     Runtime snapshot
-                  </p>
+                  </TypographySmall>
                   <div className="mt-3 grid grid-cols-3 gap-3 text-center text-xs">
                     <StatPill label="Success" value="98.7%" />
                     <StatPill label="Avg Time" value="147ms" />
@@ -474,13 +485,13 @@ export function LandingPageExperience() {
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-primary">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <p className="mt-4 text-xs uppercase tracking-normal text-muted-foreground">
+                    <TypographySmall className="mt-4 uppercase tracking-normal">
                       {feature.label}
-                    </p>
-                    <h3 className="mt-2 text-lg font-semibold tracking-tight">{feature.title}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    </TypographySmall>
+                    <TypographyH3 className="mt-2">{feature.title}</TypographyH3>
+                    <TypographyMuted className="mt-3 leading-relaxed">
                       {feature.description}
-                    </p>
+                    </TypographyMuted>
                   </motion.article>
                 </SectionReveal>
               );
@@ -514,10 +525,10 @@ export function LandingPageExperience() {
                     >
                       <Icon className="h-5 w-5" />
                     </div>
-                    <h3 className="mt-4 text-xl font-semibold tracking-tight">{step.title}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    <TypographyH3 className="mt-4 text-xl">{step.title}</TypographyH3>
+                    <TypographyMuted className="mt-3 leading-relaxed">
                       {step.description}
-                    </p>
+                    </TypographyMuted>
                   </div>
                 </SectionReveal>
               );
@@ -540,14 +551,14 @@ export function LandingPageExperience() {
                 <div className="absolute inset-x-0 top-0 h-36 bg-muted" />
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-normal text-muted-foreground">
+                    <TypographySmall className="uppercase tracking-normal">
                       Live execution feed
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold">Production Pipeline 04</h3>
+                    </TypographySmall>
+                    <TypographyH3 className="mt-2 text-xl">Production Pipeline 04</TypographyH3>
                   </div>
-                  <p className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-foreground">
+                  <TypographySmall className="rounded-full border border-border bg-muted px-3 py-1 font-medium text-foreground">
                     3 running
-                  </p>
+                  </TypographySmall>
                 </div>
 
                 <div className="relative z-10 mt-6 space-y-3">
@@ -565,17 +576,19 @@ export function LandingPageExperience() {
                       }}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-foreground">{event.name}</p>
+                        <TypographySmall className="text-sm font-semibold text-foreground">
+                          {event.name}
+                        </TypographySmall>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <StatusDot status={event.status} />
                           <span className="capitalize">{event.status}</span>
                         </div>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{event.detail}</p>
-                      <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                      <TypographyMuted className="mt-1">{event.detail}</TypographyMuted>
+                      <TypographySmall className="mt-3 flex items-center gap-1">
                         <Clock3 className="h-3.5 w-3.5" />
                         {event.elapsed}
-                      </p>
+                      </TypographySmall>
                     </motion.div>
                   ))}
                 </div>
@@ -584,12 +597,14 @@ export function LandingPageExperience() {
 
             <SectionReveal delay={0.1}>
               <div className="rounded-lg border border-border bg-card shadow-sm p-6">
-                <p className="text-xs uppercase tracking-normal text-primary">Activity pulse</p>
-                <h3 className="mt-2 text-xl font-semibold">Workflow throughput overview</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                <TypographySmall className="uppercase tracking-normal text-primary">
+                  Activity pulse
+                </TypographySmall>
+                <TypographyH3 className="mt-2 text-xl">Workflow throughput overview</TypographyH3>
+                <TypographyMuted className="mt-2 leading-relaxed">
                   A concise control surface for execution velocity, success health, and queue
                   pressure.
-                </p>
+                </TypographyMuted>
 
                 <div className="mt-7 space-y-3">
                   {statBars.map((value, index) => (
@@ -616,7 +631,9 @@ export function LandingPageExperience() {
                 </div>
 
                 <div className="mt-7 rounded-xl border border-border bg-muted/45 p-4">
-                  <p className="text-sm font-medium">Execution health</p>
+                  <TypographySmall className="text-sm font-medium">
+                    Execution health
+                  </TypographySmall>
                   <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-foreground" />
@@ -641,16 +658,16 @@ export function LandingPageExperience() {
 
               <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
+                  <TypographySmall className="text-[0.6875rem] font-semibold uppercase tracking-normal text-primary">
                     Ready to launch
-                  </p>
-                  <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+                  </TypographySmall>
+                  <TypographyH2 className="mt-3 max-w-2xl text-3xl sm:text-4xl">
                     Turn workflow complexity into a clear and reliable automation system
-                  </h2>
-                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                  </TypographyH2>
+                  <TypographyMuted className="mt-4 max-w-xl leading-relaxed sm:text-base">
                     Start with a workspace in minutes, build with visual confidence, and monitor
                     every production run from a single source of truth.
-                  </p>
+                  </TypographyMuted>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -703,8 +720,10 @@ function StatusDot({ status }: { status: 'completed' | 'running' | 'queued' | st
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-background px-2 py-2">
-      <p className="text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+      <TypographyMuted>{label}</TypographyMuted>
+      <TypographySmall className="mt-1 text-sm font-semibold text-foreground">
+        {value}
+      </TypographySmall>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 
 export default function WorkflowEditPage() {
   const params = useParams();
@@ -57,8 +58,8 @@ export default function WorkflowEditPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-lg font-semibold">{currentWorkflow.name}</h1>
-          <p className="text-xs text-muted-foreground">Visual Workflow Editor</p>
+          <TypographyH1 className="text-lg">{currentWorkflow.name}</TypographyH1>
+          <TypographyMuted className="text-xs">Visual Workflow Editor</TypographyMuted>
         </div>
         <div className="ml-auto">
           <Button variant="outline" size="sm" onClick={() => router.push('/workflows')}>

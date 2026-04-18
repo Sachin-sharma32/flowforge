@@ -22,6 +22,9 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useCommandMenuSetting } from '@/hooks/use-command-menu-setting';
 import { formatShortcutLabel } from '@/lib/preferences';
+import { TypographyH1, TypographyMuted, TypographySmall } from '@/components/ui/typography';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Progress } from '@/components/ui/progress';
 
 const SHORTCUT_KEY_OPTIONS = ['Space', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
 
@@ -159,8 +162,8 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">Manage your workspace settings</p>
+        <TypographyH1>Settings</TypographyH1>
+        <TypographyMuted className="mt-1.5">Manage your workspace settings</TypographyMuted>
       </div>
 
       <Card>
@@ -171,33 +174,33 @@ export default function SettingsPage() {
           <CardDescription>Basic workspace configuration</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Workspace Name</label>
+          <Field>
+            <FieldLabel>Workspace Name</FieldLabel>
             <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-md" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Webhook Secret</label>
+          </Field>
+          <Field>
+            <FieldLabel>Webhook Secret</FieldLabel>
             <Input
               defaultValue={currentWorkspace?.settings?.webhookSecret || ''}
               readOnly
               className="font-mono text-xs"
             />
-            <p className="text-xs text-muted-foreground">
-              Use this secret to verify incoming webhook requests.
-            </p>
-          </div>
+            <TypographySmall>Use this secret to verify incoming webhook requests.</TypographySmall>
+          </Field>
           <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
             <div>
-              <p className="text-sm font-medium">Command Menu Shortcut</p>
-              <p className="text-xs text-muted-foreground">
+              <TypographyMuted className="text-sm font-medium text-foreground">
+                Command Menu Shortcut
+              </TypographyMuted>
+              <TypographySmall>
                 Enable quick navigation and customize the keyboard shortcut.
-              </p>
+              </TypographySmall>
             </div>
             <Switch checked={commandMenuEnabled} onCheckedChange={setCommandMenuEnabled} />
           </div>
           <div className="grid gap-3 rounded-md border border-border bg-background p-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Modifier</p>
+              <TypographySmall className="font-medium">Modifier</TypographySmall>
               <Select
                 value={commandMenuShortcut.modifier}
                 onValueChange={(value: 'meta' | 'ctrl' | 'alt') =>
@@ -216,7 +219,7 @@ export default function SettingsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Key</p>
+              <TypographySmall className="font-medium">Key</TypographySmall>
               <Select
                 value={commandMenuShortcut.key}
                 onValueChange={(value) =>
@@ -236,9 +239,9 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <p className="sm:col-span-2 text-xs text-muted-foreground">
+            <TypographySmall className="sm:col-span-2">
               Current shortcut: {formatShortcutLabel(commandMenuShortcut)}
-            </p>
+            </TypographySmall>
           </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
@@ -276,8 +279,10 @@ export default function SettingsPage() {
             <div className="space-y-5 rounded-lg border border-border bg-muted/30 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Current Plan</p>
-                  <p className="text-lg font-semibold capitalize">{billingSummary.plan}</p>
+                  <TypographyMuted>Current Plan</TypographyMuted>
+                  <TypographyMuted className="text-lg font-semibold capitalize text-foreground">
+                    {billingSummary.plan}
+                  </TypographyMuted>
                 </div>
                 <span className="rounded-full border border-border bg-background px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
                   {billingSummary.subscriptionStatus.replace('_', ' ')}
@@ -292,16 +297,11 @@ export default function SettingsPage() {
                   </span>
                   <span className="text-muted-foreground">{billingSummary.usage.percentUsed}%</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-muted"
-                    style={{ width: `${billingSummary.usage.percentUsed}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <Progress value={billingSummary.usage.percentUsed} className="h-2" />
+                <TypographySmall className="mt-2">
                   {billingSummary.usage.remaining.toLocaleString()} remaining in{' '}
                   {billingSummary.usage.periodKey}
-                </p>
+                </TypographySmall>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -318,9 +318,9 @@ export default function SettingsPage() {
                     {billingAction === 'portal' ? 'Opening Portal...' : 'Manage Billing'}
                   </Button>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <TypographyMuted>
                     Billing portal is unavailable for this plan setup.
-                  </p>
+                  </TypographyMuted>
                 )}
               </div>
             </div>

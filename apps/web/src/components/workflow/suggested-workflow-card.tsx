@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TypographyH3, TypographyMuted, TypographySmall } from '@/components/ui/typography';
 
 // --- Verified check icon --- //
 
@@ -64,9 +65,9 @@ function ExtraAppsBadge({ app }: { app: AppInfo }) {
       </Badge>
       {showExtra && app.extraApps && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col gap-1.5 rounded-xl border border-border bg-popover p-3 shadow-sm z-20 whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 min-w-[160px]">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-normal text-muted-foreground px-1 pb-1 border-b border-border">
+          <TypographySmall className="text-[0.6875rem] font-semibold uppercase tracking-normal text-muted-foreground px-1 pb-1 border-b border-border">
             Also connects to
-          </p>
+          </TypographySmall>
           {app.extraApps.map((ea) => (
             <div
               key={ea.name}
@@ -90,9 +91,7 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
     <div className="group relative flex h-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7 transition-all duration-300 ease-out cursor-pointer hover:shadow-sm hover:border-border">
       {/* Title + menu */}
       <div className="mb-auto flex items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold leading-snug tracking-tight text-foreground line-clamp-3">
-          {title}
-        </h3>
+        <TypographyH3 className="leading-snug text-foreground line-clamp-3">{title}</TypographyH3>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Button
@@ -117,9 +116,9 @@ export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedW
 
       {/* App badges */}
       <div className="mt-6">
-        <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <TypographyMuted className="mb-3 text-xs font-medium uppercase tracking-wider">
           Works great with
-        </p>
+        </TypographyMuted>
         <div className="flex flex-wrap gap-2.5">
           {apps.map((app, i) => {
             if (app.extraApps) {

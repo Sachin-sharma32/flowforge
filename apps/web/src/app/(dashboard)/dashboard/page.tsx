@@ -11,6 +11,14 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  TypographyH1,
+  TypographyH3,
+  TypographyMuted,
+  TypographySmall,
+} from '@/components/ui/typography';
+import { Separator } from '@/components/ui/separator';
+import { Item, ItemContent, ItemTitle, ItemDescription } from '@/components/ui/item';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import {
   selectCurrentWorkspaceId,
@@ -152,10 +160,10 @@ export default function DashboardPage() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <TypographyH1>Dashboard</TypographyH1>
+          <TypographyMuted className="mt-1.5">
             Real-time workflow performance, reliability, and usage intelligence.
-          </p>
+          </TypographyMuted>
         </div>
 
         <div className="rounded-xl bg-surface-container-low p-3">
@@ -173,8 +181,10 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Total Executions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold tabular-nums">{stats?.total ?? 0}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Across all workflows</p>
+            <TypographyH3 className="text-3xl font-bold tabular-nums">
+              {stats?.total ?? 0}
+            </TypographyH3>
+            <TypographySmall className="mt-1">Across all workflows</TypographySmall>
           </CardContent>
         </Card>
 
@@ -183,8 +193,10 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Success Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold tabular-nums">{stats?.successRate ?? 0}%</p>
-            <p className="mt-1 text-xs text-muted-foreground">Stable workflow reliability</p>
+            <TypographyH3 className="text-3xl font-bold tabular-nums">
+              {stats?.successRate ?? 0}%
+            </TypographyH3>
+            <TypographySmall className="mt-1">Stable workflow reliability</TypographySmall>
           </CardContent>
         </Card>
 
@@ -193,8 +205,8 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Avg Runtime</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">10</p>
-            <p className="mt-1 text-xs text-muted-foreground">Mean completion time</p>
+            <TypographyH3 className="text-3xl font-bold">10</TypographyH3>
+            <TypographySmall className="mt-1">Mean completion time</TypographySmall>
           </CardContent>
         </Card>
 
@@ -203,8 +215,10 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Estimated Time Saved</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold tabular-nums">{timeSavedHours}h</p>
-            <p className="mt-1 text-xs text-muted-foreground">Manual effort avoided this month</p>
+            <TypographyH3 className="text-3xl font-bold tabular-nums">
+              {timeSavedHours}h
+            </TypographyH3>
+            <TypographySmall className="mt-1">Manual effort avoided this month</TypographySmall>
           </CardContent>
         </Card>
       </div>
@@ -215,7 +229,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Execution Status Mix</CardTitle>
-            <p className="text-xs text-muted-foreground">Current distribution snapshot</p>
+            <TypographySmall>Current distribution snapshot</TypographySmall>
           </CardHeader>
           <CardContent>{stats ? <ExecutionStatusChart stats={stats} /> : null}</CardContent>
         </Card>
@@ -225,7 +239,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Workflow Performance</CardTitle>
-            <p className="text-xs text-muted-foreground">Top workflows by execution volume</p>
+            <TypographySmall>Top workflows by execution volume</TypographySmall>
           </CardHeader>
           <CardContent>
             <WorkflowPerformanceChart data={workflowStats} />
@@ -252,7 +266,7 @@ export default function DashboardPage() {
                       </div>
                       <Badge variant="destructive">Failed</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">Run ID: {execution.id}</p>
+                    <TypographySmall className="mt-1">Run ID: {execution.id}</TypographySmall>
                   </div>
                 ))
               )}
@@ -271,7 +285,7 @@ export default function DashboardPage() {
                       <span className={`h-2.5 w-2.5 rounded-full ${connector.color}`} />
                       {connector.name}
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{connector.status}</p>
+                    <TypographySmall className="mt-1">{connector.status}</TypographySmall>
                   </div>
                 ))}
               </div>
@@ -287,7 +301,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {folderUsage.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No folders or workflows yet.</p>
+              <TypographyMuted>No folders or workflows yet.</TypographyMuted>
             ) : (
               folderUsage.map((folder) => (
                 <div
@@ -301,7 +315,7 @@ export default function DashboardPage() {
                     />
                     {folder.name}
                   </div>
-                  <p className="text-xs text-muted-foreground">{folder.count} workflows</p>
+                  <TypographySmall>{folder.count} workflows</TypographySmall>
                 </div>
               ))
             )}

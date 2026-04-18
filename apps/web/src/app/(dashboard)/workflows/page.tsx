@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TypographyH1, TypographyMuted, TypographyH3 } from '@/components/ui/typography';
+import {
+  Empty,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from '@/components/ui/empty';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -164,10 +172,10 @@ export default function WorkflowsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Workflows</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <TypographyH1>Workflows</TypographyH1>
+          <TypographyMuted className="mt-1.5">
             Manage workflow lifecycle with filterable views, folders, and operational context.
-          </p>
+          </TypographyMuted>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => router.push('/folders')}>
@@ -181,27 +189,43 @@ export default function WorkflowsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-2xl font-semibold tabular-nums">{workflowStats.total}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Total</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {workflowStats.total}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Active</p>
-            <p className="text-2xl font-semibold tabular-nums">{workflowStats.active}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Active</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {workflowStats.active}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Paused</p>
-            <p className="text-2xl font-semibold tabular-nums">{workflowStats.paused}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Paused</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {workflowStats.paused}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Draft</p>
-            <p className="text-2xl font-semibold tabular-nums">{workflowStats.draft}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Draft</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {workflowStats.draft}
+            </TypographyH3>
           </CardContent>
         </Card>
       </div>
@@ -324,7 +348,7 @@ export default function WorkflowsPage() {
       {isLoading ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <Card key={i} noHover className="overflow-hidden">
+            <Card key={i} className="overflow-hidden">
               <CardContent className="space-y-5 p-7">
                 <Skeleton className="h-5 w-2/3" />
                 <Skeleton className="h-3 w-full" />
@@ -338,19 +362,20 @@ export default function WorkflowsPage() {
           ))}
         </div>
       ) : workflows.length === 0 ? (
-        <Card noHover>
-          <CardContent className="flex flex-col items-center justify-center py-24">
-            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-lg bg-muted ring-1 ring-border/60">
-              <div className="absolute inset-0 rounded-lg bg-primary/5 " />
-              <GitBranch className="relative h-11 w-11 text-primary" strokeWidth={2} />
-            </div>
-            <h3 className="text-xl font-semibold">No workflows in this view</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Broaden your filters or create a new workflow.
-            </p>
-            <Button className="mt-6" onClick={() => router.push('/workflows/new')}>
-              <Plus className="mr-2 h-4 w-4" /> Create Workflow
-            </Button>
+        <Card>
+          <CardContent className="py-24">
+            <Empty>
+              <EmptyMedia>
+                <GitBranch className="h-11 w-11" strokeWidth={2} />
+              </EmptyMedia>
+              <EmptyTitle>No workflows in this view</EmptyTitle>
+              <EmptyDescription>Broaden your filters or create a new workflow.</EmptyDescription>
+              <EmptyContent>
+                <Button onClick={() => router.push('/workflows/new')}>
+                  <Plus className="mr-2 h-4 w-4" /> Create Workflow
+                </Button>
+              </EmptyContent>
+            </Empty>
           </CardContent>
         </Card>
       ) : (
@@ -365,12 +390,12 @@ export default function WorkflowsPage() {
               <CardContent className="space-y-4 p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-lg font-semibold tracking-tight transition-colors group-hover:text-primary">
+                    <TypographyH3 className="truncate transition-colors group-hover:text-primary">
                       {workflow.name}
-                    </h3>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    </TypographyH3>
+                    <TypographyMuted className="mt-1 line-clamp-2">
                       {workflow.description || 'No description'}
-                    </p>
+                    </TypographyMuted>
                   </div>
 
                   <DropdownMenu>
@@ -447,9 +472,9 @@ export default function WorkflowsPage() {
                   </Badge>
                 </div>
 
-                <p className="text-xs text-muted-foreground">
+                <TypographyMuted className="text-xs">
                   {/* Updated {formatDate(workflow.updatedAt)} */}
-                </p>
+                </TypographyMuted>
               </CardContent>
             </Card>
           ))}

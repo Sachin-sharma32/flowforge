@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, Clock, Loader2, SkipForward } from 'lucide-react';
 import type { IExecutionStep } from '@flowforge/shared';
 import { formatDuration, intervalToDuration } from 'date-fns';
+import { TypographySmall, TypographyMuted } from '@/components/ui/typography';
 
 const statusIcons: Record<string, React.ElementType> = {
   completed: CheckCircle2,
@@ -44,7 +45,9 @@ export function ExecutionTimeline({ steps, workflowSteps }: ExecutionTimelinePro
             </div>
             <div className="flex-1 pb-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{getStepName(step.stepId)}</p>
+                <TypographySmall className="text-sm font-medium">
+                  {getStepName(step.stepId)}
+                </TypographySmall>
                 <div className="flex items-center gap-2">
                   {step.durationMs !== undefined && (
                     <span className="text-xs text-muted-foreground">
@@ -67,9 +70,9 @@ export function ExecutionTimeline({ steps, workflowSteps }: ExecutionTimelinePro
                 </div>
               </div>
               {step.error && (
-                <p className="mt-1 rounded bg-destructive/10 p-2 text-xs text-destructive">
+                <TypographyMuted className="mt-1 rounded bg-destructive/10 p-2 text-xs text-destructive">
                   {step.error}
-                </p>
+                </TypographyMuted>
               )}
               {step.output && Object.keys(step.output).length > 0 && (
                 <details className="mt-1">

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Sparkles, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 
 interface AuthFormShellProps {
   badge: string;
@@ -87,8 +88,8 @@ export function AuthFormShell({
           {badge}
         </div>
 
-        <h1 className="mt-5 text-4xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <TypographyH1 className="mt-5 font-semibold">{title}</TypographyH1>
+        <TypographyMuted className="mt-3 leading-relaxed">{description}</TypographyMuted>
       </motion.div>
 
       <motion.div variants={itemVariants} className="relative z-10 mt-8">

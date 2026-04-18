@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
+import { TypographyH2, TypographyMuted, TypographySmall } from '@/components/ui/typography';
 import { toast } from 'sonner';
 import {
   STEP_TEMPLATES,
@@ -428,13 +429,13 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
     <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)_380px]">
       <aside className="border-b border-border bg-card p-4 lg:border-b-0 lg:border-r lg:p-6">
         <div className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+          <TypographySmall className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
             Step Library
-          </p>
-          <h2 className="mt-2 text-xl font-semibold">Build Your Flow</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          </TypographySmall>
+          <TypographyH2 className="mt-2 text-xl">Build Your Flow</TypographyH2>
+          <TypographyMuted className="mt-1">
             Steps run top-. Reorder cleanly with drag-and-drop.
-          </p>
+          </TypographyMuted>
         </div>
 
         <div className="no-scrollbar space-y-5 overflow-y-auto lg:max-h-[calc(100vh-16rem)]">
@@ -461,7 +462,9 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <template.icon className="h-4 w-4 text-primary" />
                       <span className="text-sm font-medium">{template.label}</span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{template.description}</p>
+                    <TypographyMuted className="mt-1 text-xs">
+                      {template.description}
+                    </TypographyMuted>
                   </button>
                 ))}
               </CollapsibleContent>
@@ -473,13 +476,13 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       <section className="relative flex min-h-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between border-b border-border px-5 py-4 lg:px-8">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+            <TypographySmall className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               Workflow Flow
-            </p>
-            <h2 className="mt-1 text-lg font-semibold">Trigger + Steps</h2>
+            </TypographySmall>
+            <TypographyH2 className="mt-1 text-lg">Trigger + Steps</TypographyH2>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <TypographyMuted className="text-xs">
             {isSaving
               ? 'Saving...'
               : autoSaveStatus === 'saved'
@@ -489,7 +492,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                   : hasUnsavedChanges
                     ? 'Unsaved changes'
                     : 'All changes saved'}
-          </p>
+          </TypographyMuted>
         </div>
 
         <div
@@ -499,9 +502,9 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
         >
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="rounded-lg border border-primary/30 bg-primary/5 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-normal text-primary">
+              <TypographySmall className="text-xs font-semibold uppercase tracking-normal text-primary">
                 Trigger
-              </p>
+              </TypographySmall>
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -557,9 +560,11 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
                       <div>
                         <div className="flex items-center gap-2">
                           <template.icon className="h-4 w-4 text-primary" />
-                          <p className="text-sm font-semibold">{getStepDisplayName(step)}</p>
+                          <TypographySmall className="text-sm font-semibold">
+                            {getStepDisplayName(step)}
+                          </TypographySmall>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{template.label}</p>
+                        <TypographyMuted className="mt-1 text-xs">{template.label}</TypographyMuted>
                       </div>
                     </div>
 
@@ -626,10 +631,12 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
             })}
 
             <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center">
-              <p className="text-sm font-medium">Add another step from the library</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <TypographySmall className="text-sm font-medium">
+                Add another step from the library
+              </TypographySmall>
+              <TypographyMuted className="mt-1 text-xs">
                 Drag steps up or down to reorder execution.
-              </p>
+              </TypographyMuted>
               <div className="mt-3 flex justify-center">
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">
                   <Plus className="h-3.5 w-3.5" /> Order snaps after drop
@@ -643,12 +650,12 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       <aside className="min-h-0 bg-card p-4 lg:p-6">
         <div className="flex h-full min-h-0 flex-col">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+            <TypographySmall className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               Step Config
-            </p>
-            <h2 className="mt-1 text-lg font-semibold">
+            </TypographySmall>
+            <TypographyH2 className="mt-1 text-lg">
               {selectedStep ? getStepDisplayName(selectedStep) : 'Select a step'}
-            </h2>
+            </TypographyH2>
           </div>
 
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
@@ -848,9 +855,9 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
 
                 {selectedStep.type === 'transform' && (
                   <>
-                    <p className="text-xs text-muted-foreground">
+                    <TypographyMuted className="text-xs">
                       Quick mapping editor for one mapping entry.
-                    </p>
+                    </TypographyMuted>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
@@ -1633,13 +1640,13 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
           </div>
 
           <div className="mt-4 rounded-lg border border-border bg-background p-4">
-            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+            <TypographySmall className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               Flow Checks
-            </p>
+            </TypographySmall>
             {issues.length === 0 ? (
-              <p className="mt-2 text-sm text-foreground">
+              <TypographyMuted className="mt-2 text-sm text-foreground">
                 No issues found. Workflow is ready to save.
-              </p>
+              </TypographyMuted>
             ) : (
               <ul className="mt-2 space-y-1 text-sm text-destructive">
                 {issues.slice(0, 6).map((issue) => (

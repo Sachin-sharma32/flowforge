@@ -21,6 +21,13 @@ import {
   executeWorkflow,
 } from '@/stores/workflow-slice';
 import { fetchExecutions } from '@/stores/execution-slice';
+import {
+  TypographyH1,
+  TypographyH3,
+  TypographyMuted,
+  TypographySmall,
+} from '@/components/ui/typography';
+import { Empty, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 import { ArrowLeft, Edit, Play, Pause, Copy } from 'lucide-react';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import { toast } from 'sonner';
@@ -79,7 +86,7 @@ export default function WorkflowDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-4xl font-bold tracking-tight">{currentWorkflow.name}</h1>
+            <TypographyH1>{currentWorkflow.name}</TypographyH1>
             <Badge
               variant={
                 currentWorkflow.status === 'active'
@@ -92,9 +99,9 @@ export default function WorkflowDetailPage() {
               {currentWorkflow.status}
             </Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <TypographyMuted className="mt-1">
             {currentWorkflow.description || 'No description'}
-          </p>
+          </TypographyMuted>
         </div>
         <div className="flex gap-3">
           <Button
@@ -143,7 +150,9 @@ export default function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Runs</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workflowExecutionAnalytics.summary.total}</div>
+            <TypographyH3 className="text-2xl font-bold">
+              {workflowExecutionAnalytics.summary.total}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
@@ -153,9 +162,9 @@ export default function WorkflowDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <TypographyH3 className="text-2xl font-bold">
               {workflowExecutionAnalytics.summary.successRate}%
-            </div>
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
@@ -163,9 +172,9 @@ export default function WorkflowDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Failed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
+            <TypographyH3 className="text-2xl font-bold text-destructive">
               {workflowExecutionAnalytics.summary.failed}
-            </div>
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
@@ -175,7 +184,7 @@ export default function WorkflowDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <TypographyH3 className="text-2xl font-bold">
               {workflowExecutionAnalytics.summary.avgDurationMs > 0
                 ? formatDuration(
                     intervalToDuration({
@@ -184,7 +193,7 @@ export default function WorkflowDetailPage() {
                     }),
                   )
                 : '—'}
-            </div>
+            </TypographyH3>
           </CardContent>
         </Card>
       </div>
@@ -224,9 +233,10 @@ export default function WorkflowDetailPage() {
           </CardHeader>
           <CardContent>
             {currentWorkflow.steps.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No steps defined. Open the editor to add steps.
-              </p>
+              <Empty>
+                <EmptyTitle>No steps defined</EmptyTitle>
+                <EmptyDescription>Open the editor to add steps.</EmptyDescription>
+              </Empty>
             ) : (
               <div className="space-y-2">
                 {currentWorkflow.steps.map((step, i) => (
@@ -238,8 +248,10 @@ export default function WorkflowDetailPage() {
                       {i + 1}
                     </span>
                     <div>
-                      <p className="text-sm font-medium">{step.name}</p>
-                      <p className="text-xs text-muted-foreground">{step.type.replace('_', ' ')}</p>
+                      <TypographyMuted className="text-sm font-medium text-foreground">
+                        {step.name}
+                      </TypographyMuted>
+                      <TypographySmall>{step.type.replace('_', ' ')}</TypographySmall>
                     </div>
                   </div>
                 ))}

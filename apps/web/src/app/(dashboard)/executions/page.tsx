@@ -42,6 +42,13 @@ import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PlayCircle, Search, SlidersHorizontal } from 'lucide-react';
 import { formatDuration, formatDate, intervalToDuration } from 'date-fns';
+import {
+  TypographyH1,
+  TypographyH3,
+  TypographyMuted,
+  TypographySmall,
+} from '@/components/ui/typography';
+import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 
 export default function ExecutionsPage() {
   const router = useRouter();
@@ -173,35 +180,51 @@ export default function ExecutionsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Executions</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
+        <TypographyH1>Executions</TypographyH1>
+        <TypographyMuted className="mt-1.5">
           Inspect execution runs with advanced filtering and operational visibility.
-        </p>
+        </TypographyMuted>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Runs</p>
-            <p className="text-2xl font-semibold tabular-nums">{summary.total}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Total Runs</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {summary.total}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Completed</p>
-            <p className="text-2xl font-semibold tabular-nums">{summary.completed}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Completed</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {summary.completed}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Failed</p>
-            <p className="text-2xl font-semibold tabular-nums">{summary.failed}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Failed</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {summary.failed}
+            </TypographyH3>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Running</p>
-            <p className="text-2xl font-semibold tabular-nums">{summary.running}</p>
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Running</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 pb-4">
+            <TypographyH3 className="text-2xl font-semibold tabular-nums">
+              {summary.running}
+            </TypographyH3>
           </CardContent>
         </Card>
       </div>
@@ -365,22 +388,23 @@ export default function ExecutionsPage() {
         </div>
       ) : executions.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-24">
-            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-border/60">
-              <div className="absolute inset-0 rounded-3xl bg-primary/5 blur-2xl" />
-              <PlayCircle className="relative h-11 w-11 text-primary" strokeWidth={2} />
-            </div>
-            <h3 className="text-xl font-semibold">No executions in this view</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Adjust filters or run a workflow to populate this feed.
-            </p>
+          <CardContent className="py-24">
+            <Empty>
+              <EmptyMedia>
+                <PlayCircle className="h-11 w-11" strokeWidth={2} />
+              </EmptyMedia>
+              <EmptyTitle>No executions in this view</EmptyTitle>
+              <EmptyDescription>
+                Adjust filters or run a workflow to populate this feed.
+              </EmptyDescription>
+            </Empty>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Execution History</CardTitle>
-            <p className="text-xs text-muted-foreground">{executions.length} visible runs</p>
+            <TypographySmall>{executions.length} visible runs</TypographySmall>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -416,24 +440,24 @@ export default function ExecutionsPage() {
                       </Badge>
 
                       <div>
-                        <p className="text-sm font-semibold transition-colors group-hover:text-primary">
+                        <TypographyMuted className="text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                           {workflowName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
+                        </TypographyMuted>
+                        <TypographySmall>
                           {folderName} · {execution.trigger?.type} trigger
-                        </p>
+                        </TypographySmall>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-sm font-semibold tabular-nums">
+                      <TypographyMuted className="text-sm font-semibold tabular-nums text-foreground">
                         {execution.durationMs
                           ? formatDuration(
                               intervalToDuration({ start: 0, end: execution.durationMs }),
                             )
                           : '—'}
-                      </p>
-                      <p className="text-xs text-muted-foreground"></p>
+                      </TypographyMuted>
+                      <TypographySmall></TypographySmall>
                     </div>
                   </div>
                 );

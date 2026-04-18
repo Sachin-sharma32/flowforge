@@ -30,6 +30,15 @@ import { createFolder, deleteFolder, fetchFolders, updateFolder } from '@/stores
 import { fetchWorkflows, updateWorkflow } from '@/stores/workflow-slice';
 import { toast } from 'sonner';
 import type { IWorkflowListItem } from '@flowforge/shared';
+import { TypographyH1, TypographyMuted, TypographySmall } from '@/components/ui/typography';
+import {
+  Empty,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from '@/components/ui/empty';
+import { Field, FieldLabel } from '@/components/ui/field';
 
 import {
   Combobox,
@@ -133,11 +142,6 @@ export default function FoldersPage() {
   const uncategorizedWorkflows = useMemo(
     () => workflows.filter((workflow) => !workflow.folderId),
     [workflows],
-  );
-
-  const workflowNameById = useMemo(
-    () => new Map(uncategorizedWorkflows.map((workflow) => [workflow.id, workflow.name])),
-    [uncategorizedWorkflows],
   );
 
   useEffect(() => {
@@ -263,10 +267,10 @@ export default function FoldersPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Folders</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <TypographyH1>Folders</TypographyH1>
+          <TypographyMuted className="mt-1.5">
             Organize workflows with cleaner folder-level permissions.
-          </p>
+          </TypographyMuted>
         </div>
         <Button onClick={() => setIsCreateOpen(true)} disabled={!canManageFolders}>
           <FolderPlus className="mr-2 h-4 w-4" />
@@ -282,8 +286,20 @@ export default function FoldersPage() {
         </Card>
       ) : sortedFolders.length === 0 ? (
         <Card>
-          <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            No folders yet. Create one to organize workflows.
+          <CardContent className="py-16">
+            <Empty>
+              <EmptyMedia>
+                <Folder className="h-11 w-11" />
+              </EmptyMedia>
+              <EmptyTitle>No folders yet</EmptyTitle>
+              <EmptyDescription>Create one to organize workflows.</EmptyDescription>
+              <EmptyContent>
+                <Button onClick={() => setIsCreateOpen(true)} disabled={!canManageFolders}>
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  New Folder
+                </Button>
+              </EmptyContent>
+            </Empty>
           </CardContent>
         </Card>
       ) : (
@@ -309,10 +325,12 @@ export default function FoldersPage() {
                         <Folder className="h-5 w-5" style={{ color: folder.color }} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{folder.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <TypographyMuted className="text-sm font-semibold text-foreground">
+                          {folder.name}
+                        </TypographyMuted>
+                        <TypographySmall>
                           {workflowCounts.get(folder.id) || folder.workflowCount || 0} workflows
-                        </p>
+                        </TypographySmall>
                       </div>
                     </div>
 
@@ -387,17 +405,17 @@ export default function FoldersPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Folder Name</label>
+            <Field>
+              <FieldLabel>Folder Name</FieldLabel>
               <Input
                 value={newFolderName}
                 onChange={(event) => setNewFolderName(event.target.value)}
                 placeholder="e.g. Sales Ops"
               />
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Folder Color</label>
+            <Field>
+              <FieldLabel>Folder Color</FieldLabel>
               <div className="flex flex-wrap gap-2">
                 {COLOR_OPTIONS.map((colorOption) => (
                   <Button
@@ -416,25 +434,28 @@ export default function FoldersPage() {
                   </Button>
                 ))}
               </div>
-            </div>
+            </Field>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Move Uncategorized Workflows</label>
+            <Field>
+              <FieldLabel>Move Uncategorized Workflows</FieldLabel>
               <Combobox
                 multiple
                 autoHighlight
                 items={uncategorizedWorkflows}
-                value={selectedWorkflowIds}
-                onValueChange={(values) => setSelectedWorkflowIds(values as string[])}
+                itemToStringLabel={(item: IWorkflowListItem) => item.name}
+                itemToStringValue={(item: IWorkflowListItem) => item.id}
+                isItemEqualToValue={(a: IWorkflowListItem, b: IWorkflowListItem) => a.id === b.id}
+                value={uncategorizedWorkflows.filter((w) => selectedWorkflowIds.includes(w.id))}
+                onValueChange={(items: IWorkflowListItem[]) =>
+                  setSelectedWorkflowIds(items.map((item) => item.id))
+                }
               >
                 <ComboboxChips ref={anchor} className="w-full">
                   <ComboboxValue>
-                    {(values: string[]) => (
+                    {(values: IWorkflowListItem[]) => (
                       <>
                         {values.map((value) => (
-                          <ComboboxChip key={value}>
-                            {workflowNameById.get(value) ?? 'Unknown workflow'}
-                          </ComboboxChip>
+                          <ComboboxChip key={value.id}>{value.name}</ComboboxChip>
                         ))}
                         <ComboboxChipsInput
                           placeholder={
@@ -451,22 +472,22 @@ export default function FoldersPage() {
                 <ComboboxContent anchor={anchor}>
                   <ComboboxEmpty>No items found.</ComboboxEmpty>
                   <ComboboxList>
-                    {(item) => (
-                      <ComboboxItem key={item.id} value={item.id}>
+                    {(item: IWorkflowListItem) => (
+                      <ComboboxItem key={item.id} value={item}>
                         {item.name}
                       </ComboboxItem>
                     )}
                   </ComboboxList>
                 </ComboboxContent>
               </Combobox>
-            </div>
+            </Field>
 
             <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
               <div>
-                <p className="text-sm font-medium">Pin this folder</p>
-                <p className="text-xs text-muted-foreground">
-                  Pinned folders appear first in the list.
-                </p>
+                <TypographyMuted className="text-sm font-medium text-foreground">
+                  Pin this folder
+                </TypographyMuted>
+                <TypographySmall>Pinned folders appear first in the list.</TypographySmall>
               </div>
               <Switch checked={pinNewFolder} onCheckedChange={setPinNewFolder} />
             </div>

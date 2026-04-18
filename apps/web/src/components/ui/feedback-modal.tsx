@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TypographyH2, TypographyMuted } from '@/components/ui/typography';
 
 export interface FeedbackModalProps {
   /** Modal heading */
@@ -44,7 +45,7 @@ export function FeedbackModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4 border-b border-border">
-          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+          <TypographyH2 className="text-lg">{title}</TypographyH2>
           <Button
             variant="ghost"
             size="icon"
@@ -57,7 +58,7 @@ export function FeedbackModal({
 
         {/* Body */}
         <div className="p-6 pt-5">
-          <p className="text-sm text-muted-foreground mb-5 leading-relaxed">{description}</p>
+          <TypographyMuted className="mb-5 leading-relaxed">{description}</TypographyMuted>
           <div className="space-y-2.5">
             {options.map((opt) => (
               <label

@@ -12,6 +12,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import React, { useState } from 'react';
+import { TypographyH1, TypographyH2, TypographyMuted } from '@/components/ui/typography';
 
 // ─── App Icons ───────────────────────────────────────────────────
 
@@ -234,9 +235,7 @@ function WorkflowSection({
   if (workflows.length === 0) return null;
   return (
     <section className="w-full">
-      <div className="mb-6">
-        {titleNode ?? <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
-      </div>
+      <div className="mb-6">{titleNode ?? <TypographyH2>{title}</TypographyH2>}</div>
       <Carousel
         opts={{
           align: 'start',
@@ -298,11 +297,11 @@ export default function TemplatesPage() {
             <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Workflow Templates</h1>
-            <p className="text-base text-muted-foreground mt-1">
+            <TypographyH1>Workflow Templates</TypographyH1>
+            <TypographyMuted className="text-base mt-1">
               Start fast with pre-built automations — customize any template to match your exact
               needs.
-            </p>
+            </TypographyMuted>
           </div>
         </div>
       </div>
@@ -310,10 +309,8 @@ export default function TemplatesPage() {
       {/* ── Sections ── */}
       <section>
         <div className="mb-4">
-          <h2 className="text-2xl font-bold tracking-tight">Featured This Week</h2>
-          <p className="text-sm text-muted-foreground">
-            Quick-start templates curated for high-velocity teams.
-          </p>
+          <TypographyH2>Featured This Week</TypographyH2>
+          <TypographyMuted>Quick-start templates curated for high-velocity teams.</TypographyMuted>
         </div>
         <Carousel
           opts={{
@@ -349,13 +346,13 @@ export default function TemplatesPage() {
         title="Works well with Google Calendar"
         titleNode={
           <div className="flex flex-wrap items-center gap-4">
-            <h2 className="flex flex-wrap items-center gap-2.5 text-2xl font-bold tracking-tight">
+            <TypographyH2 className="flex flex-wrap items-center gap-2.5">
               Works well with
               <span className="inline-flex items-center gap-1.5 text-xl font-semibold">
                 <GCalIcon className="h-5 w-5" />
                 Google Calendar
               </span>
-            </h2>
+            </TypographyH2>
             <Button
               variant="ghost"
               size="sm"

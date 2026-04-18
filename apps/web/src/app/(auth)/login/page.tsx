@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { login, clearError, clearNotice } from '@/stores/auth-store';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -78,45 +79,45 @@ export default function LoginPage() {
       >
         <SocialAuthButtons disabled={isLoading} />
 
-        <motion.div
-          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.04 }}
-          className="space-y-2"
-        >
-          <label htmlFor="email" className="text-sm font-medium">
-            Email
-          </label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            data-testid="login-email-input"
-            required
-          />
-        </motion.div>
+        <Field>
+          <motion.div
+            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.04 }}
+            className="space-y-2"
+          >
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              data-testid="login-email-input"
+              required
+            />
+          </motion.div>
+        </Field>
 
-        <motion.div
-          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.09 }}
-          className="space-y-2"
-        >
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
-          </label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            data-testid="login-password-input"
-            required
-          />
-        </motion.div>
+        <Field>
+          <motion.div
+            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.09 }}
+            className="space-y-2"
+          >
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              data-testid="login-password-input"
+              required
+            />
+          </motion.div>
+        </Field>
 
         <motion.div
           initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
