@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createHash } from 'node:crypto';
 import { AuthService } from '../auth.service';
+import { config } from '../../config';
 import { User } from '../../models/user.model';
 import { Organization } from '../../models/organization.model';
 import { Workspace } from '../../models/workspace.model';
 import { RefreshSessionService, RotateRefreshSessionResult } from '../refresh-session.service';
 import { EmailService } from '../email.service';
+import { ServiceUnavailableError } from '../../domain/errors';
 
 // Mock config
 jest.mock('../../config', () => ({
@@ -17,6 +19,7 @@ jest.mock('../../config', () => ({
     JWT_REFRESH_EXPIRY: '7d',
     AUTH_EMAIL_VERIFICATION_EXPIRY: '24h',
     API_PUBLIC_URL: 'http://localhost:4000',
+    EMAIL_FROM: 'no-reply@flowforge.dev',
     GOOGLE_CLIENT_ID: 'google-client-id',
     GOOGLE_CLIENT_SECRET: 'google-client-secret',
     GITHUB_CLIENT_ID: 'github-client-id',
@@ -54,6 +57,9 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    config.NODE_ENV = 'test';
+    config.API_PUBLIC_URL = 'http://localhost:4000';
+    config.EMAIL_FROM = 'no-reply@flowforge.dev';
     refreshSessionServiceMock.createSession.mockResolvedValue({
       refreshToken: 'test-refresh-token',
     });
@@ -78,7 +84,7 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('creates user and sends verification email', async () => {
+    it('creates a new register response with verificationState created', async () => {
       const result = await authService.register({
         email: 'test@example.com',
         password: 'Password123',
@@ -87,7 +93,9 @@ describe('AuthService', () => {
 
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.name).toBe('Test User');
+      expect(result.email).toBe('test@example.com');
       expect(result.requiresEmailVerification).toBe(false);
+      expect(result.verificationState).toBe('created');
       expect(result.verificationToken).toBeDefined();
       expect(emailServiceMock.sendEmail).toHaveBeenCalledTimes(0);
 
@@ -96,31 +104,165 @@ describe('AuthService', () => {
       expect(user?.emailVerificationTokenHash).toBeDefined();
       expect(user?.emailVerificationExpiresAt).toBeDefined();
 
-      // Verify organization was created
       const org = await Organization.findOne({ ownerId: result.user.id });
       expect(org).toBeTruthy();
 
-      // Verify workspace was created
       const workspace = await Workspace.findOne({ organizationId: org!._id });
       expect(workspace).toBeTruthy();
       expect(workspace!.members).toHaveLength(1);
       expect(workspace!.members[0].role).toBe('owner');
     });
 
-    it('throws ConflictError for duplicate email', async () => {
+    it('reuses an existing unverified account and returns verificationState resent', async () => {
+      const first = await authService.register({
+        email: 'test@example.com',
+        password: 'Password123',
+        name: 'Test User',
+      });
+      const existingUser = await User.findOne({ email: 'test@example.com' });
+      existingUser!.isVerified = false;
+      existingUser!.name = 'Original User';
+      await existingUser!.save();
+      const originalTokenHash = existingUser!.emailVerificationTokenHash;
+
+      const resent = await authService.register({
+        email: 'test@example.com',
+        password: 'Password456',
+        name: 'Another User',
+      });
+
+      expect(resent.email).toBe('test@example.com');
+      expect(resent.verificationState).toBe('resent');
+      expect(resent.verificationToken).toBeDefined();
+      expect(resent.user.id).toBe(first.user.id);
+
+      const updatedUser = await User.findOne({ email: 'test@example.com' });
+      expect(updatedUser?.name).toBe('Original User');
+      expect(updatedUser?.emailVerificationTokenHash).toBeDefined();
+      expect(updatedUser?.emailVerificationTokenHash).not.toBe(originalTokenHash);
+      expect(await updatedUser!.comparePassword('Password123')).toBe(true);
+      expect(await updatedUser!.comparePassword('Password456')).toBe(false);
+      expect(await User.countDocuments({ email: 'test@example.com' })).toBe(1);
+      expect(await Organization.countDocuments({ ownerId: first.user.id })).toBe(1);
+      expect(await Workspace.countDocuments({ 'members.userId': first.user.id })).toBe(1);
+    });
+
+    it('throws a coded conflict for an existing verified email', async () => {
       await authService.register({
         email: 'test@example.com',
         password: 'Password123',
         name: 'Test User',
       });
 
-      await expect(
-        authService.register({
+      try {
+        await authService.register({
           email: 'test@example.com',
           password: 'Password456',
           name: 'Another User',
-        }),
-      ).rejects.toThrow('Email already registered');
+        });
+        throw new Error('Expected register to reject');
+      } catch (error) {
+        expect(error).toMatchObject({
+          message: 'Email already registered',
+          context: { code: 'EMAIL_ALREADY_REGISTERED' },
+        });
+      }
+    });
+
+    it('sends verification email in production and returns a created verification state', async () => {
+      config.NODE_ENV = 'production';
+
+      const result = await authService.register({
+        email: 'prod@example.com',
+        password: 'Password123',
+        name: 'Prod User',
+      });
+
+      expect(result.requiresEmailVerification).toBe(true);
+      expect(result.verificationState).toBe('created');
+      expect(result.verificationToken).toBeUndefined();
+      expect(emailServiceMock.sendEmail).toHaveBeenCalledTimes(1);
+
+      const user = await User.findOne({ email: 'prod@example.com' });
+      expect(user?.isVerified).toBe(false);
+    });
+
+    it('fails fast when verification email delivery fails in production', async () => {
+      config.NODE_ENV = 'production';
+      emailServiceMock.sendEmail.mockRejectedValue(
+        new ServiceUnavailableError(
+          'Email delivery is temporarily unavailable. Please try again shortly.',
+          {
+            code: 'EMAIL_DELIVERY_UNAVAILABLE',
+          },
+        ),
+      );
+
+      try {
+        await authService.register({
+          email: 'prod-fail@example.com',
+          password: 'Password123',
+          name: 'Prod Fail',
+        });
+        throw new Error('Expected register to reject');
+      } catch (error) {
+        expect(error).toMatchObject({
+          message: 'Email delivery is temporarily unavailable. Please try again shortly.',
+          context: { code: 'EMAIL_DELIVERY_UNAVAILABLE' },
+        });
+      }
+    });
+  });
+
+  describe('resendVerification', () => {
+    it('keeps missing and verified accounts enumeration-safe', async () => {
+      await expect(
+        authService.resendVerification({ email: 'missing@example.com' }),
+      ).resolves.toBeUndefined();
+
+      const registered = await authService.register({
+        email: 'verified@example.com',
+        password: 'Password123',
+        name: 'Verified User',
+      });
+      const user = await User.findById(registered.user.id);
+      user!.isVerified = true;
+      await user!.save();
+
+      await expect(
+        authService.resendVerification({ email: 'verified@example.com' }),
+      ).resolves.toBeUndefined();
+      expect(emailServiceMock.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('fails fast when resend email delivery fails in production', async () => {
+      config.NODE_ENV = 'production';
+      const registered = await authService.register({
+        email: 'pending@example.com',
+        password: 'Password123',
+        name: 'Pending User',
+      });
+      const user = await User.findById(registered.user.id);
+      user!.isVerified = false;
+      await user!.save();
+      emailServiceMock.sendEmail.mockRejectedValue(
+        new ServiceUnavailableError(
+          'Email delivery is temporarily unavailable. Please try again shortly.',
+          {
+            code: 'EMAIL_DELIVERY_UNAVAILABLE',
+          },
+        ),
+      );
+
+      try {
+        await authService.resendVerification({ email: 'pending@example.com' });
+        throw new Error('Expected resendVerification to reject');
+      } catch (error) {
+        expect(error).toMatchObject({
+          message: 'Email delivery is temporarily unavailable. Please try again shortly.',
+          context: { code: 'EMAIL_DELIVERY_UNAVAILABLE' },
+        });
+      }
     });
   });
 
@@ -181,6 +323,26 @@ describe('AuthService', () => {
 
       const updatedUser = await User.findOne({ email: 'test@example.com' });
       expect(updatedUser?.isVerified).toBe(true);
+    });
+
+    it('returns a coded forbidden error for unverified accounts in production', async () => {
+      config.NODE_ENV = 'production';
+      const user = await User.findOne({ email: 'test@example.com' });
+      user!.isVerified = false;
+      await user!.save();
+
+      try {
+        await authService.login({
+          email: 'test@example.com',
+          password: 'Password123',
+        });
+        throw new Error('Expected login to reject');
+      } catch (error) {
+        expect(error).toMatchObject({
+          message: 'Please verify your email before signing in.',
+          context: { code: 'EMAIL_UNVERIFIED' },
+        });
+      }
     });
 
     it('logs in with valid credentials after verification', async () => {

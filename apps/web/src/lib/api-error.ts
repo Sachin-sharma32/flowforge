@@ -1,6 +1,11 @@
-export function getApiErrorMessage(error: unknown, fallback: string): string {
+export interface ApiErrorDetails {
+  message: string;
+  code?: string;
+}
+
+export function getApiErrorDetails(error: unknown, fallback: string): ApiErrorDetails {
   if (typeof error !== 'object' || error === null) {
-    return fallback;
+    return { message: fallback };
   }
 
   const maybeError = error as {
@@ -9,25 +14,43 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
       data?: {
         error?: string;
         context?: {
+          code?: string;
           errors?: string[];
         };
       };
     };
   };
 
+  const code = maybeError.response?.data?.context?.code;
   const contextErrors = maybeError.response?.data?.context?.errors;
   if (Array.isArray(contextErrors) && contextErrors.length > 0) {
-    return contextErrors.join(', ');
+    return {
+      message: contextErrors.join(', '),
+      ...(typeof code === 'string' && code.trim().length > 0 ? { code } : {}),
+    };
   }
 
   const apiError = maybeError.response?.data?.error;
   if (typeof apiError === 'string' && apiError.trim().length > 0) {
-    return apiError;
+    return {
+      message: apiError,
+      ...(typeof code === 'string' && code.trim().length > 0 ? { code } : {}),
+    };
   }
 
   if (typeof maybeError.message === 'string' && maybeError.message.trim().length > 0) {
-    return maybeError.message;
+    return {
+      message: maybeError.message,
+      ...(typeof code === 'string' && code.trim().length > 0 ? { code } : {}),
+    };
   }
 
-  return fallback;
+  return {
+    message: fallback,
+    ...(typeof code === 'string' && code.trim().length > 0 ? { code } : {}),
+  };
+}
+
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  return getApiErrorDetails(error, fallback).message;
 }

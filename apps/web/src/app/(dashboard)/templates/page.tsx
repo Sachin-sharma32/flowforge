@@ -312,7 +312,7 @@ export default function TemplatesPage() {
         createFromTemplate({ workspaceId: currentWorkspace.id, templateId }),
       ).unwrap();
       toast.success('Workflow created from template');
-      router.push(`/workflows/${result.id || result._id}/edit`);
+      router.push(`/workflows/${result.id}/edit`);
     } catch (error) {
       toast.error('Failed to create workflow from template', {
         description: error instanceof Error ? error.message : String(error),
@@ -355,11 +355,11 @@ export default function TemplatesPage() {
           </div>
           <Carousel opts={{ align: 'start', loop: false }} className="w-full">
             <CarouselContent>
-              {templates.map((t: any) => (
-                <CarouselItem key={t.id || t._id} className="basis-full sm:basis-1/2 xl:basis-1/3">
+              {templates.map((template) => (
+                <CarouselItem key={template.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
                   <SuggestedWorkflowCard
-                    id={t.id || t._id}
-                    title={t.name}
+                    id={template.id}
+                    title={template.name}
                     apps={[]}
                     onUse={handleUseTemplate}
                   />

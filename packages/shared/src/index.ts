@@ -24,7 +24,15 @@ export type {
 } from './constants/execution-statuses';
 
 // Types
-export type { IUser, IUserResponse, IAuthTokens, ILoginResponse } from './types/user.types';
+export type {
+  IUser,
+  IUserResponse,
+  IAuthTokens,
+  ILoginResponse,
+  IRegisterResponse,
+  RegisterVerificationState,
+  AuthErrorCode,
+} from './types/user.types';
 export type {
   IWorkflow,
   IWorkflowStep,

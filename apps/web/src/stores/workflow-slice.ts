@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/api-error';
 import type { IWorkflow, IWorkflowListItem } from '@flowforge/shared';
@@ -13,6 +13,24 @@ interface WorkflowState {
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
+type WorkflowPagination = WorkflowState['pagination'];
+type WorkflowListArgs = { workspaceId: string; params?: Record<string, string> };
+type WorkflowArgs = { workspaceId: string; workflowId: string };
+type WorkflowMutationArgs = WorkflowArgs & { input: Record<string, unknown> };
+type WorkflowExecutionArgs = WorkflowArgs & { payload?: Record<string, unknown> };
+type WorkflowTemplateArgs = { workspaceId: string; templateId: string };
+type WorkflowListResponse = {
+  workflows: IWorkflowListItem[];
+  pagination: WorkflowPagination;
+};
+type WorkflowExecutionError = {
+  response?: {
+    data?: {
+      context?: { used?: number; limit?: number };
+    };
+  };
+};
+
 const initialState: WorkflowState = {
   workflows: [],
   templates: [],
@@ -23,29 +41,38 @@ const initialState: WorkflowState = {
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
 };
 
-export const fetchWorkflows = createAsyncThunk(
+const createWorkflowAsyncThunk = createAsyncThunk.withTypes<{ rejectValue: string }>();
+
+const getWorkflowsPath = (workspaceId: string) => `/workspaces/${workspaceId}/workflows`;
+const getWorkflowPath = (workspaceId: string, workflowId: string) =>
+  `${getWorkflowsPath(workspaceId)}/${workflowId}`;
+const getWorkflowTemplatesPath = (workspaceId: string) =>
+  `${getWorkflowsPath(workspaceId)}/templates`;
+
+const setWorkflowError = (state: WorkflowState, error?: string) => {
+  state.error = error ?? null;
+};
+
+export const fetchWorkflows = createWorkflowAsyncThunk<WorkflowListResponse, WorkflowListArgs>(
   'workflow/fetchWorkflows',
-  async (
-    { workspaceId, params }: { workspaceId: string; params?: Record<string, string> },
-    { rejectWithValue },
-  ) => {
+  async ({ workspaceId, params }, { rejectWithValue }) => {
     try {
-      const { data } = await api.get(`/workspaces/${workspaceId}/workflows`, { params });
-      return { workflows: data.data, pagination: data.pagination };
+      const { data } = await api.get(getWorkflowsPath(workspaceId), { params });
+      return {
+        workflows: data.data as IWorkflowListItem[],
+        pagination: data.pagination as WorkflowPagination,
+      };
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflows'));
     }
   },
 );
 
-export const fetchWorkflow = createAsyncThunk(
+export const fetchWorkflow = createWorkflowAsyncThunk<IWorkflow, WorkflowArgs>(
   'workflow/fetchWorkflow',
-  async (
-    { workspaceId, workflowId }: { workspaceId: string; workflowId: string },
-    { rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId }, { rejectWithValue }) => {
     try {
-      const { data } = await api.get(`/workspaces/${workspaceId}/workflows/${workflowId}`);
+      const { data } = await api.get(getWorkflowPath(workspaceId, workflowId));
       return data.data as IWorkflow;
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflow'));
@@ -53,34 +80,24 @@ export const fetchWorkflow = createAsyncThunk(
   },
 );
 
-export const createWorkflow = createAsyncThunk(
-  'workflow/createWorkflow',
-  async (
-    { workspaceId, input }: { workspaceId: string; input: Record<string, unknown> },
-    { dispatch, rejectWithValue },
-  ) => {
-    try {
-      const { data } = await api.post(`/workspaces/${workspaceId}/workflows`, input);
-      dispatch(fetchWorkflows({ workspaceId }));
-      return data.data as IWorkflow;
-    } catch (err: unknown) {
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to create workflow'));
-    }
-  },
-);
+export const createWorkflow = createWorkflowAsyncThunk<
+  IWorkflow,
+  { workspaceId: string; input: Record<string, unknown> }
+>('workflow/createWorkflow', async ({ workspaceId, input }, { dispatch, rejectWithValue }) => {
+  try {
+    const { data } = await api.post(getWorkflowsPath(workspaceId), input);
+    dispatch(fetchWorkflows({ workspaceId }));
+    return data.data as IWorkflow;
+  } catch (err: unknown) {
+    return rejectWithValue(getApiErrorMessage(err, 'Failed to create workflow'));
+  }
+});
 
-export const updateWorkflow = createAsyncThunk(
+export const updateWorkflow = createWorkflowAsyncThunk<IWorkflow, WorkflowMutationArgs>(
   'workflow/updateWorkflow',
-  async (
-    {
-      workspaceId,
-      workflowId,
-      input,
-    }: { workspaceId: string; workflowId: string; input: Record<string, unknown> },
-    { rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId, input }, { rejectWithValue }) => {
     try {
-      const { data } = await api.patch(`/workspaces/${workspaceId}/workflows/${workflowId}`, input);
+      const { data } = await api.patch(getWorkflowPath(workspaceId, workflowId), input);
       return data.data as IWorkflow;
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to update workflow'));
@@ -88,14 +105,11 @@ export const updateWorkflow = createAsyncThunk(
   },
 );
 
-export const deleteWorkflow = createAsyncThunk(
+export const deleteWorkflow = createWorkflowAsyncThunk<void, WorkflowArgs>(
   'workflow/deleteWorkflow',
-  async (
-    { workspaceId, workflowId }: { workspaceId: string; workflowId: string },
-    { dispatch, rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId }, { dispatch, rejectWithValue }) => {
     try {
-      await api.delete(`/workspaces/${workspaceId}/workflows/${workflowId}`);
+      await api.delete(getWorkflowPath(workspaceId, workflowId));
       dispatch(fetchWorkflows({ workspaceId }));
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to delete workflow'));
@@ -103,14 +117,11 @@ export const deleteWorkflow = createAsyncThunk(
   },
 );
 
-export const duplicateWorkflow = createAsyncThunk(
+export const duplicateWorkflow = createWorkflowAsyncThunk<void, WorkflowArgs>(
   'workflow/duplicateWorkflow',
-  async (
-    { workspaceId, workflowId }: { workspaceId: string; workflowId: string },
-    { dispatch, rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId }, { dispatch, rejectWithValue }) => {
     try {
-      await api.post(`/workspaces/${workspaceId}/workflows/${workflowId}/duplicate`);
+      await api.post(`${getWorkflowPath(workspaceId, workflowId)}/duplicate`);
       dispatch(fetchWorkflows({ workspaceId }));
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to duplicate workflow'));
@@ -118,16 +129,11 @@ export const duplicateWorkflow = createAsyncThunk(
   },
 );
 
-export const activateWorkflow = createAsyncThunk(
+export const activateWorkflow = createWorkflowAsyncThunk<IWorkflow, WorkflowArgs>(
   'workflow/activateWorkflow',
-  async (
-    { workspaceId, workflowId }: { workspaceId: string; workflowId: string },
-    { dispatch, rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId }, { dispatch, rejectWithValue }) => {
     try {
-      const { data } = await api.post(
-        `/workspaces/${workspaceId}/workflows/${workflowId}/activate`,
-      );
+      const { data } = await api.post(`${getWorkflowPath(workspaceId, workflowId)}/activate`);
       dispatch(fetchWorkflows({ workspaceId }));
       return data.data as IWorkflow;
     } catch (err: unknown) {
@@ -136,14 +142,11 @@ export const activateWorkflow = createAsyncThunk(
   },
 );
 
-export const pauseWorkflow = createAsyncThunk(
+export const pauseWorkflow = createWorkflowAsyncThunk<IWorkflow, WorkflowArgs>(
   'workflow/pauseWorkflow',
-  async (
-    { workspaceId, workflowId }: { workspaceId: string; workflowId: string },
-    { dispatch, rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId }, { dispatch, rejectWithValue }) => {
     try {
-      const { data } = await api.post(`/workspaces/${workspaceId}/workflows/${workflowId}/pause`);
+      const { data } = await api.post(`${getWorkflowPath(workspaceId, workflowId)}/pause`);
       dispatch(fetchWorkflows({ workspaceId }));
       return data.data as IWorkflow;
     } catch (err: unknown) {
@@ -152,35 +155,21 @@ export const pauseWorkflow = createAsyncThunk(
   },
 );
 
-export const executeWorkflow = createAsyncThunk(
+export const executeWorkflow = createWorkflowAsyncThunk<string, WorkflowExecutionArgs>(
   'workflow/executeWorkflow',
-  async (
-    {
-      workspaceId,
-      workflowId,
-      payload,
-    }: { workspaceId: string; workflowId: string; payload?: Record<string, unknown> },
-    { rejectWithValue },
-  ) => {
+  async ({ workspaceId, workflowId, payload }, { rejectWithValue }) => {
     try {
-      const { data } = await api.post(
-        `/workspaces/${workspaceId}/workflows/${workflowId}/execute`,
-        { payload },
-      );
+      const { data } = await api.post(`${getWorkflowPath(workspaceId, workflowId)}/execute`, {
+        payload,
+      });
       return data.data.id as string;
     } catch (err: unknown) {
-      const rawError = err as {
-        response?: {
-          data?: {
-            context?: { used?: number; limit?: number };
-          };
-        };
-      };
-      const context = rawError.response?.data?.context;
+      const context = (err as WorkflowExecutionError).response?.data?.context;
       const contextSuffix =
         context && typeof context.used === 'number' && typeof context.limit === 'number'
           ? ` (${context.used}/${context.limit} used this month)`
           : '';
+
       return rejectWithValue(
         `${getApiErrorMessage(err, 'Failed to execute workflow')}${contextSuffix}`,
       );
@@ -188,29 +177,24 @@ export const executeWorkflow = createAsyncThunk(
   },
 );
 
-export const fetchTemplates = createAsyncThunk(
-  'workflow/fetchTemplates',
-  async ({ workspaceId }: { workspaceId: string }, { rejectWithValue }) => {
-    try {
-      const { data } = await api.get(`/workspaces/${workspaceId}/workflows/templates/list`);
-      return data.data;
-    } catch (err: unknown) {
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch templates'));
-    }
-  },
-);
+export const fetchTemplates = createWorkflowAsyncThunk<
+  IWorkflowListItem[],
+  { workspaceId: string }
+>('workflow/fetchTemplates', async ({ workspaceId }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get(`${getWorkflowTemplatesPath(workspaceId)}/list`);
+    return data.data as IWorkflowListItem[];
+  } catch (err: unknown) {
+    return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch templates'));
+  }
+});
 
-export const createFromTemplate = createAsyncThunk(
+export const createFromTemplate = createWorkflowAsyncThunk<IWorkflow, WorkflowTemplateArgs>(
   'workflow/useTemplate',
-  async (
-    { workspaceId, templateId }: { workspaceId: string; templateId: string },
-    { rejectWithValue },
-  ) => {
+  async ({ workspaceId, templateId }, { rejectWithValue }) => {
     try {
-      const { data } = await api.post(
-        `/workspaces/${workspaceId}/workflows/templates/${templateId}/use`,
-      );
-      return data.data;
+      const { data } = await api.post(`${getWorkflowTemplatesPath(workspaceId)}/${templateId}/use`);
+      return data.data as IWorkflow;
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to create workflow from template'));
     }
@@ -227,56 +211,56 @@ const workflowSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchWorkflows
-      .addCase(fetchWorkflows.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
       .addCase(fetchWorkflows.fulfilled, (state, action) => {
         state.workflows = action.payload.workflows;
         state.pagination = action.payload.pagination;
         state.isLoading = false;
       })
-      .addCase(fetchWorkflows.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      // fetchWorkflow
-      .addCase(fetchWorkflow.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchWorkflow.fulfilled, (state, action: PayloadAction<IWorkflow>) => {
+      .addCase(fetchWorkflow.fulfilled, (state, action) => {
         state.currentWorkflow = action.payload;
         state.isLoading = false;
       })
-      .addCase(fetchWorkflow.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      // updateWorkflow
-      .addCase(updateWorkflow.fulfilled, (state, action: PayloadAction<IWorkflow>) => {
-        state.currentWorkflow = action.payload;
-      })
-      // activateWorkflow
-      .addCase(activateWorkflow.fulfilled, (state, action: PayloadAction<IWorkflow>) => {
-        state.currentWorkflow = action.payload;
-      })
-      // pauseWorkflow
-      .addCase(pauseWorkflow.fulfilled, (state, action: PayloadAction<IWorkflow>) => {
-        state.currentWorkflow = action.payload;
-      })
-      // fetchTemplates
       .addCase(fetchTemplates.pending, (state) => {
         state.isLoadingTemplates = true;
+        state.error = null;
       })
       .addCase(fetchTemplates.fulfilled, (state, action) => {
         state.isLoadingTemplates = false;
         state.templates = action.payload;
       })
-      .addCase(fetchTemplates.rejected, (state) => {
+      .addCase(fetchTemplates.rejected, (state, action) => {
         state.isLoadingTemplates = false;
-      });
+        setWorkflowError(state, action.payload);
+      })
+      .addMatcher(isAnyOf(fetchWorkflows.pending, fetchWorkflow.pending), (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addMatcher(isAnyOf(fetchWorkflows.rejected, fetchWorkflow.rejected), (state, action) => {
+        state.isLoading = false;
+        setWorkflowError(state, action.payload);
+      })
+      .addMatcher(
+        isAnyOf(updateWorkflow.fulfilled, activateWorkflow.fulfilled, pauseWorkflow.fulfilled),
+        (state, action) => {
+          state.currentWorkflow = action.payload;
+        },
+      )
+      .addMatcher(
+        isAnyOf(
+          createWorkflow.rejected,
+          updateWorkflow.rejected,
+          deleteWorkflow.rejected,
+          duplicateWorkflow.rejected,
+          activateWorkflow.rejected,
+          pauseWorkflow.rejected,
+          executeWorkflow.rejected,
+          createFromTemplate.rejected,
+        ),
+        (state, action) => {
+          setWorkflowError(state, action.payload);
+        },
+      );
   },
 });
 

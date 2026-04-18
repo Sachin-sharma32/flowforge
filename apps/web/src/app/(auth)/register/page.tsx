@@ -31,6 +31,7 @@ export default function RegisterPage() {
     error,
     notice,
     pendingVerificationEmail,
+    pendingVerificationState,
     isAuthenticated,
   } = useAppSelector((state) => state.auth);
   const shouldReduceMotion = useReducedMotion();
@@ -74,9 +75,19 @@ export default function RegisterPage() {
           className="space-y-3"
         >
           <TypographyMuted>
-            We sent a verification email to{' '}
-            <span className="font-medium">{pendingVerificationEmail}</span>. Open the link in that
-            email to activate your account.
+            {pendingVerificationState === 'resent' ? (
+              <>
+                This email is already awaiting verification. We sent a fresh link to{' '}
+                <span className="font-medium">{pendingVerificationEmail}</span>. Open the latest
+                email to activate your account.
+              </>
+            ) : (
+              <>
+                We sent a verification email to{' '}
+                <span className="font-medium">{pendingVerificationEmail}</span>. Open the link in
+                that email to activate your account.
+              </>
+            )}
           </TypographyMuted>
 
           <button

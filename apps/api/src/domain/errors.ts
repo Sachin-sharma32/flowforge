@@ -47,6 +47,11 @@ export class PaymentRequiredError extends AppError {
   readonly isOperational = true;
 }
 
+export class ServiceUnavailableError extends AppError {
+  readonly statusCode = 503;
+  readonly isOperational = true;
+}
+
 export class UnknownStepTypeError extends AppError {
   readonly statusCode = 400;
   readonly isOperational = true;

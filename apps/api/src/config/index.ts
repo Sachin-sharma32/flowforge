@@ -27,8 +27,8 @@ const envSchema = z.object({
   AUTH_REFRESH_REPLAY_TTL_SECONDS: z.coerce.number().default(3600),
   AUTH_REFRESH_SESSION_LIMIT: z.coerce.number().default(5),
   WEB_APP_URL: z.string().url().default('http://localhost:3000'),
-  API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
-  EMAIL_FROM: z.string().email().default('no-reply@flowforge.dev'),
+  API_PUBLIC_URL: z.string().url().optional(),
+  EMAIL_FROM: z.string().email().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_USER: z.string().optional(),
@@ -47,6 +47,17 @@ const envSchema = z.object({
   ENTERPRISE_EXECUTION_LIMIT: z.coerce.number().int().positive().default(100000),
 });
 
+function requireProductionEnv(
+  value: string | number | undefined,
+  key: string,
+  isProduction: boolean,
+): void {
+  if (isProduction && (value === undefined || value === '')) {
+    console.error(`${key} is required in production`);
+    process.exit(1);
+  }
+}
+
 function loadConfig() {
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
@@ -54,12 +65,12 @@ function loadConfig() {
     process.exit(1);
   }
 
+  const isProduction = result.data.NODE_ENV === 'production';
   const rawSecure = result.data.AUTH_COOKIE_SECURE;
-  const secure =
-    rawSecure === undefined
-      ? result.data.NODE_ENV === 'production'
-      : rawSecure.toLowerCase() === 'true';
+  const secure = rawSecure === undefined ? isProduction : rawSecure.toLowerCase() === 'true';
   const smtpSecure = (result.data.SMTP_SECURE || '').toLowerCase() === 'true';
+  const apiPublicUrl = result.data.API_PUBLIC_URL ?? 'http://localhost:4000';
+  const emailFrom = result.data.EMAIL_FROM ?? 'no-reply@flowforge.dev';
 
   if (result.data.AUTH_COOKIE_SAME_SITE === 'none' && !secure) {
     console.error('AUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAME_SITE is "none"');
@@ -76,8 +87,17 @@ function loadConfig() {
     process.exit(1);
   }
 
+  requireProductionEnv(result.data.API_PUBLIC_URL, 'API_PUBLIC_URL', isProduction);
+  requireProductionEnv(result.data.EMAIL_FROM, 'EMAIL_FROM', isProduction);
+  requireProductionEnv(result.data.SMTP_HOST, 'SMTP_HOST', isProduction);
+  requireProductionEnv(result.data.SMTP_PORT, 'SMTP_PORT', isProduction);
+  requireProductionEnv(result.data.SMTP_USER, 'SMTP_USER', isProduction);
+  requireProductionEnv(result.data.SMTP_PASS, 'SMTP_PASS', isProduction);
+
   return {
     ...result.data,
+    API_PUBLIC_URL: apiPublicUrl,
+    EMAIL_FROM: emailFrom,
     AUTH_COOKIE_SECURE: secure,
     SMTP_SECURE: smtpSecure,
   };

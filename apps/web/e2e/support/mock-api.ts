@@ -44,11 +44,20 @@ interface MockExecution {
   durationMs?: number;
 }
 
+type MockAuthErrorCode =
+  | 'EMAIL_UNVERIFIED'
+  | 'EMAIL_ALREADY_REGISTERED'
+  | 'EMAIL_DELIVERY_UNAVAILABLE';
+
+type MockRegisterVerificationState = 'created' | 'resent';
+
 interface AuthOverrides {
   loginSuccess?: boolean;
   registerSuccess?: boolean;
   meAuthorized?: boolean;
   errorMessage?: string;
+  errorCode?: MockAuthErrorCode;
+  registerVerificationState?: MockRegisterVerificationState;
   user?: Partial<MockUser>;
 }
 
@@ -74,7 +83,11 @@ export interface MockApiOverrides {
 }
 
 interface MockApiState {
-  auth: Required<AuthOverrides> & { user: MockUser };
+  auth: Omit<Required<AuthOverrides>, 'errorCode' | 'registerVerificationState' | 'user'> & {
+    errorCode?: MockAuthErrorCode;
+    registerVerificationState: MockRegisterVerificationState;
+    user: MockUser;
+  };
   workspaces: MockWorkspace[];
   workflows: MockWorkflow[];
   workflowById: Record<string, MockWorkflow>;
@@ -129,10 +142,11 @@ function success<T>(data: T, extras?: Record<string, unknown>) {
   };
 }
 
-function error(message: string) {
+function error(message: string, code?: MockAuthErrorCode) {
   return {
     success: false,
     error: message,
+    ...(code ? { context: { code } } : {}),
   };
 }
 
@@ -167,6 +181,8 @@ function buildState(overrides: MockApiOverrides): MockApiState {
       registerSuccess: overrides.auth?.registerSuccess ?? true,
       meAuthorized: overrides.auth?.meAuthorized ?? true,
       errorMessage: overrides.auth?.errorMessage ?? 'Invalid credentials',
+      errorCode: overrides.auth?.errorCode,
+      registerVerificationState: overrides.auth?.registerVerificationState ?? 'created',
       user,
     },
     workspaces: overrides.workspaces?.list ?? [defaultWorkspace],
@@ -196,7 +212,11 @@ export async function installApiMocks(page: Page, overrides: MockApiOverrides = 
 
     if (method === 'POST' && path.endsWith('/auth/login')) {
       if (!state.auth.loginSuccess) {
-        await fulfillJson(route, 401, error(state.auth.errorMessage));
+        await fulfillJson(
+          route,
+          state.auth.errorCode === 'EMAIL_UNVERIFIED' ? 403 : 401,
+          error(state.auth.errorMessage, state.auth.errorCode),
+        );
         return;
       }
 
@@ -228,8 +248,13 @@ export async function installApiMocks(page: Page, overrides: MockApiOverrides = 
     }
 
     if (method === 'POST' && path.endsWith('/auth/register')) {
+      const body = request.postDataJSON() as { email?: string } | null;
       if (!state.auth.registerSuccess) {
-        await fulfillJson(route, 400, error('Registration failed'));
+        await fulfillJson(
+          route,
+          state.auth.errorCode === 'EMAIL_ALREADY_REGISTERED' ? 409 : 503,
+          error(state.auth.errorMessage, state.auth.errorCode),
+        );
         return;
       }
 
@@ -237,7 +262,9 @@ export async function installApiMocks(page: Page, overrides: MockApiOverrides = 
         route,
         201,
         success({
+          email: body?.email ?? state.auth.user.email,
           requiresEmailVerification: true,
+          verificationState: state.auth.registerVerificationState,
         }),
       );
       return;

@@ -31,13 +31,12 @@ test.describe('Auth Flows', () => {
     await expect(page.getByText('Invalid credentials')).toBeVisible();
   });
 
-  test('login for unverified accounts does not offer resend from the sign-in page', async ({
-    page,
-  }) => {
+  test('login for unverified accounts offers resend from the sign-in page', async ({ page }) => {
     await installApiMocks(page, {
       auth: {
         loginSuccess: false,
         errorMessage: 'Please verify your email before signing in.',
+        errorCode: 'EMAIL_UNVERIFIED',
       },
     });
 
@@ -47,7 +46,12 @@ test.describe('Auth Flows', () => {
     await page.getByTestId('login-submit').click();
 
     await expect(page.getByText('Please verify your email before signing in.')).toBeVisible();
-    await expect(page.getByText('Resend verification email')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Resend verification email' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Resend verification email' }).click();
+    await expect(
+      page.getByText('If an unverified account exists, a new verification link has been sent.'),
+    ).toBeVisible();
   });
 
   test('register success shows the verification pending state instead of routing to dashboard', async ({
@@ -68,6 +72,69 @@ test.describe('Auth Flows', () => {
     await expect(
       page.getByRole('button', { name: 'I already verified, continue to sign in' }),
     ).toBeVisible();
+  });
+
+  test('duplicate unverified register shows the resent verification state', async ({ page }) => {
+    await installApiMocks(page, {
+      auth: {
+        registerVerificationState: 'resent',
+      },
+    });
+
+    await page.goto('/register');
+    await page.getByTestId('register-name-input').fill('Playwright User');
+    await page.getByTestId('register-email-input').fill('new-user@flowforge.dev');
+    await page.getByTestId('register-password-input').fill('Password123');
+    await page.getByTestId('register-submit').click();
+
+    await expect(page).toHaveURL(/\/register$/);
+    await expect(
+      page.getByText('This email is already awaiting verification. We sent a fresh link to'),
+    ).toBeVisible();
+  });
+
+  test('verified duplicate register stays on the form and shows the duplicate error', async ({
+    page,
+  }) => {
+    await installApiMocks(page, {
+      auth: {
+        registerSuccess: false,
+        errorMessage: 'Email already registered',
+        errorCode: 'EMAIL_ALREADY_REGISTERED',
+      },
+    });
+
+    await page.goto('/register');
+    await page.getByTestId('register-name-input').fill('Playwright User');
+    await page.getByTestId('register-email-input').fill('existing-user@flowforge.dev');
+    await page.getByTestId('register-password-input').fill('Password123');
+    await page.getByTestId('register-submit').click();
+
+    await expect(page).toHaveURL(/\/register$/);
+    await expect(page.getByText('Email already registered')).toBeVisible();
+    await expect(page.getByTestId('register-form')).toBeVisible();
+  });
+
+  test('mail delivery failure keeps the register form visible', async ({ page }) => {
+    await installApiMocks(page, {
+      auth: {
+        registerSuccess: false,
+        errorMessage: 'Email delivery is temporarily unavailable. Please try again shortly.',
+        errorCode: 'EMAIL_DELIVERY_UNAVAILABLE',
+      },
+    });
+
+    await page.goto('/register');
+    await page.getByTestId('register-name-input').fill('Playwright User');
+    await page.getByTestId('register-email-input').fill('mail-fail@flowforge.dev');
+    await page.getByTestId('register-password-input').fill('Password123');
+    await page.getByTestId('register-submit').click();
+
+    await expect(page).toHaveURL(/\/register$/);
+    await expect(
+      page.getByText('Email delivery is temporarily unavailable. Please try again shortly.'),
+    ).toBeVisible();
+    await expect(page.getByTestId('register-form')).toBeVisible();
   });
 
   test('social auth buttons stay within the form on narrow screens', async ({ page }) => {

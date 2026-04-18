@@ -23,3 +23,18 @@ export interface ILoginResponse {
   user: IUserResponse;
   tokens: IAuthTokens;
 }
+
+export type RegisterVerificationState = 'created' | 'resent';
+
+export interface IRegisterResponse {
+  user: IUserResponse;
+  email: string;
+  requiresEmailVerification: boolean;
+  verificationState: RegisterVerificationState;
+  verificationToken?: string;
+}
+
+export type AuthErrorCode =
+  | 'EMAIL_UNVERIFIED'
+  | 'EMAIL_ALREADY_REGISTERED'
+  | 'EMAIL_DELIVERY_UNAVAILABLE';

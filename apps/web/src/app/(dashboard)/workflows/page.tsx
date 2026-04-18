@@ -433,11 +433,11 @@ export default function WorkflowsPage() {
         </Card>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {workflows.map((workflow: any) => (
+          {workflows.map((workflow) => (
             <Card
-              key={workflow.id || workflow._id}
+              key={workflow.id}
               className="group cursor-pointer"
-              onClick={() => router.push(`/workflows/${workflow.id || workflow._id}`)}
+              onClick={() => router.push(`/workflows/${workflow.id}`)}
             >
               <div className="h-1 w-full bg-muted    opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <CardContent className="space-y-4 p-6">
@@ -472,7 +472,7 @@ export default function WorkflowsPage() {
                                 await dispatch(
                                   duplicateWorkflow({
                                     workspaceId: currentWorkspace.id,
-                                    workflowId: workflow.id || workflow._id,
+                                    workflowId: workflow.id,
                                   }),
                                 ).unwrap();
                                 toast.success('Workflow duplicated', {
@@ -498,7 +498,7 @@ export default function WorkflowsPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setWorkflowToDelete({
-                              id: workflow.id || workflow._id,
+                              id: workflow.id,
                               name: workflow.name,
                             });
                             setOpenMenu(null);
@@ -517,7 +517,7 @@ export default function WorkflowsPage() {
                   <Badge variant={statusColors[workflow.status] || 'default'}>
                     {workflow.status}
                   </Badge>
-                  <Badge variant="outline">{workflow.steps?.length || 0} steps</Badge>
+                  <Badge variant="outline">{workflow.stepCount || 0} steps</Badge>
                   <Badge variant="outline">
                     {workflow.folderId
                       ? folderMap.get(workflow.folderId) || 'Folder'
@@ -545,11 +545,11 @@ export default function WorkflowsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {workflows.map((workflow: any) => (
+              {workflows.map((workflow) => (
                 <TableRow
-                  key={workflow.id || workflow._id}
+                  key={workflow.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/workflows/${workflow.id || workflow._id}`)}
+                  onClick={() => router.push(`/workflows/${workflow.id}`)}
                 >
                   <TableCell>
                     <div className="min-w-0">
@@ -564,7 +564,7 @@ export default function WorkflowsPage() {
                       {workflow.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{workflow.steps?.length || 0}</TableCell>
+                  <TableCell>{workflow.stepCount || 0}</TableCell>
                   <TableCell>
                     {workflow.folderId
                       ? folderMap.get(workflow.folderId) || 'Folder'
@@ -592,7 +592,7 @@ export default function WorkflowsPage() {
                                   await dispatch(
                                     duplicateWorkflow({
                                       workspaceId: currentWorkspace.id,
-                                      workflowId: workflow.id || workflow._id,
+                                      workflowId: workflow.id,
                                     }),
                                   ).unwrap();
                                   toast.success('Workflow duplicated', {
@@ -617,7 +617,7 @@ export default function WorkflowsPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setWorkflowToDelete({
-                                id: workflow.id || workflow._id,
+                                id: workflow.id,
                                 name: workflow.name,
                               });
                             }}

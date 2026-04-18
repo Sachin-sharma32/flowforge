@@ -10,7 +10,13 @@ import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { login, clearError, clearNotice, clearOtpState } from '@/stores/auth-store';
+import {
+  login,
+  clearError,
+  clearNotice,
+  clearOtpState,
+  resendVerificationEmail,
+} from '@/stores/auth-store';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { OtpLoginForm } from '@/components/auth/otp-login-form';
@@ -25,7 +31,8 @@ export default function LoginPage() {
   const [oauthStatus, setOauthStatus] = useState<string | null>(null);
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { isLoading, error, notice, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isLoading, isResendingVerification, error, errorCode, notice, isAuthenticated } =
+    useAppSelector((state) => state.auth);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -50,6 +57,15 @@ export default function LoginPage() {
         : null;
   const resolvedNotice = notice || queryNotice;
   const resolvedError = queryError || error;
+  const showVerificationResend =
+    !queryError && errorCode === 'EMAIL_UNVERIFIED' && email.trim().length > 0;
+
+  const handleResendVerification = async () => {
+    if (!email.trim()) return;
+    dispatch(clearError());
+    dispatch(clearNotice());
+    await dispatch(resendVerificationEmail({ email: email.trim() }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,6 +180,23 @@ export default function LoginPage() {
                 )}
               </Button>
             </motion.div>
+
+            {showVerificationResend ? (
+              <motion.div
+                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.18 }}
+              >
+                <button
+                  type="button"
+                  className="inline-flex w-fit text-sm font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline disabled:pointer-events-none disabled:opacity-50"
+                  onClick={handleResendVerification}
+                  disabled={isResendingVerification}
+                >
+                  {isResendingVerification ? 'Resending link...' : 'Resend verification email'}
+                </button>
+              </motion.div>
+            ) : null}
           </motion.form>
         </TabsContent>
 

@@ -99,7 +99,7 @@ export default function NewWorkflowPage() {
         }),
       ).unwrap();
 
-      router.push(`/workflows/${result.id || (result as any)._id}/edit`);
+      router.push(`/workflows/${result.id}/edit`);
     } catch (err) {
       toast.error('Failed to create workflow', {
         description: err instanceof Error ? err.message : 'Please try again.',

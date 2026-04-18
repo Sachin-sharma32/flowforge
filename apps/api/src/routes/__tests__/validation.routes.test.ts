@@ -7,6 +7,8 @@ import { createApp } from '../../server';
 import { Execution } from '../../models/execution.model';
 import { Workflow } from '../../models/workflow.model';
 import { Folder } from '../../models/folder.model';
+import { User } from '../../models/user.model';
+import { authLimiter } from '../../middleware/rate-limit.middleware';
 
 interface AuthContext {
   token: string;
@@ -18,6 +20,7 @@ interface ApiResponsePayload {
   error?: string;
   context?: {
     errors?: string[];
+    code?: string;
   };
   data?: unknown;
 }
@@ -79,9 +82,11 @@ describe('API validation hardening', () => {
     const registerPayload = await parseJson<ApiResponsePayload>(registerResponse);
     const registerData = registerPayload.data as
       | {
+          verificationState?: string;
           verificationToken?: string;
         }
       | undefined;
+    expect(registerData?.verificationState).toBe('created');
     const verificationToken = registerData?.verificationToken;
     if (verificationToken) {
       const verifyResponse = await request('/auth/verify-email', {
@@ -128,6 +133,9 @@ describe('API validation hardening', () => {
 
   afterEach(async () => {
     await Promise.all([Execution.deleteMany({}), Workflow.deleteMany({}), Folder.deleteMany({})]);
+    authLimiter.resetKey('127.0.0.1');
+    authLimiter.resetKey('::1');
+    authLimiter.resetKey('::ffff:127.0.0.1');
   });
 
   afterAll(async () => {
@@ -156,6 +164,75 @@ describe('API validation hardening', () => {
     expect(payload.success).toBe(false);
     expect(payload.error).toBe('Validation failed');
     expect(Array.isArray(payload.context?.errors)).toBe(true);
+  });
+
+  it('returns pending verification instead of a conflict for duplicate unverified registration', async () => {
+    const email = `pending_${Date.now()}@example.com`;
+    const firstResponse = await request('/auth/register', {
+      method: 'POST',
+      body: {
+        name: 'Pending User',
+        email,
+        password: 'Password123',
+      },
+    });
+    expect(firstResponse.status).toBe(201);
+
+    const user = await User.findOne({ email });
+    user!.isVerified = false;
+    user!.name = 'Pending User';
+    await user!.save();
+
+    const secondResponse = await request('/auth/register', {
+      method: 'POST',
+      body: {
+        name: 'Another Name',
+        email,
+        password: 'Password456',
+      },
+    });
+    const secondPayload = await parseJson<ApiResponsePayload>(secondResponse);
+    const secondData = secondPayload.data as
+      | { verificationState?: string; email?: string }
+      | undefined;
+
+    expect(secondResponse.status).toBe(201);
+    expect(secondPayload.success).toBe(true);
+    expect(secondData?.verificationState).toBe('resent');
+    expect(secondData?.email).toBe(email);
+    expect(await User.countDocuments({ email })).toBe(1);
+
+    const updatedUser = await User.findOne({ email });
+    expect(updatedUser?.name).toBe('Pending User');
+    expect(await updatedUser!.comparePassword('Password123')).toBe(true);
+    expect(await updatedUser!.comparePassword('Password456')).toBe(false);
+  });
+
+  it('returns a coded conflict for duplicate verified registration', async () => {
+    const email = `verified_${Date.now()}@example.com`;
+    const firstResponse = await request('/auth/register', {
+      method: 'POST',
+      body: {
+        name: 'Verified User',
+        email,
+        password: 'Password123',
+      },
+    });
+    expect(firstResponse.status).toBe(201);
+
+    const secondResponse = await request('/auth/register', {
+      method: 'POST',
+      body: {
+        name: 'Verified User Again',
+        email,
+        password: 'Password456',
+      },
+    });
+    const secondPayload = await parseJson<ApiResponsePayload>(secondResponse);
+
+    expect(secondResponse.status).toBe(409);
+    expect(secondPayload.error).toBe('Email already registered');
+    expect(secondPayload.context).toEqual({ code: 'EMAIL_ALREADY_REGISTERED' });
   });
 
   it('redirects email verification links back to login without creating a session', async () => {

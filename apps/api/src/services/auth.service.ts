@@ -15,6 +15,8 @@ import type {
   RegisterInput,
   LoginInput,
   IUserResponse,
+  IRegisterResponse,
+  RegisterVerificationState,
   ResendVerificationInput,
   VerifyEmailInput,
   GoogleOneTapInput,
@@ -38,12 +40,6 @@ interface AuthResult {
 interface RefreshResult {
   tokens: { accessToken: string };
   refreshToken: string;
-}
-
-interface RegisterResult {
-  user: IUserResponse;
-  requiresEmailVerification: boolean;
-  verificationToken?: string;
 }
 
 interface OAuthProfile {
@@ -105,11 +101,27 @@ export class AuthService {
     private readonly emailService = new EmailService(),
   ) {}
 
-  async register(input: RegisterInput): Promise<RegisterResult> {
+  async register(input: RegisterInput): Promise<IRegisterResponse> {
     const normalizedEmail = input.email.toLowerCase().trim();
     const existingUser = await User.findOne({ email: normalizedEmail });
+
+    if (existingUser?.isVerified) {
+      throw new ConflictError('Email already registered', {
+        code: 'EMAIL_ALREADY_REGISTERED',
+      });
+    }
+
     if (existingUser) {
-      throw new ConflictError('Email already registered');
+      const verification = await this.rotateEmailVerification(existingUser);
+      if (config.NODE_ENV === 'production') {
+        await this.sendVerificationEmail(
+          existingUser.email,
+          existingUser.name,
+          verification.rawToken,
+        );
+      }
+
+      return this.buildRegisterResponse(existingUser, 'resent', verification.rawToken);
     }
 
     const verification = this.createEmailVerificationToken();
@@ -127,11 +139,7 @@ export class AuthService {
       await this.sendVerificationEmail(user.email, user.name, verification.rawToken);
     }
 
-    return {
-      user: this.toUserResponse(user),
-      requiresEmailVerification: config.NODE_ENV === 'production',
-      ...(config.NODE_ENV !== 'production' ? { verificationToken: verification.rawToken } : {}),
-    };
+    return this.buildRegisterResponse(user, 'created', verification.rawToken);
   }
 
   async verifyEmail(input: VerifyEmailInput): Promise<void> {
@@ -165,11 +173,7 @@ export class AuthService {
       return;
     }
 
-    const verification = this.createEmailVerificationToken();
-    user.emailVerificationTokenHash = verification.tokenHash;
-    user.emailVerificationExpiresAt = verification.expiresAt;
-    await user.save();
-
+    const verification = await this.rotateEmailVerification(user);
     await this.sendVerificationEmail(user.email, user.name, verification.rawToken);
   }
 
@@ -197,7 +201,9 @@ export class AuthService {
         user.emailVerificationExpiresAt = undefined;
         await user.save();
       } else {
-        throw new ForbiddenError('Please verify your email before signing in.');
+        throw new ForbiddenError('Please verify your email before signing in.', {
+          code: 'EMAIL_UNVERIFIED',
+        });
       }
     }
 
@@ -656,6 +662,32 @@ export class AuthService {
 
   private getOAuthRedirectUri(provider: OAuthProvider): string {
     return `${config.API_PUBLIC_URL}/api/v1/auth/oauth/${provider}/callback`;
+  }
+
+  private buildRegisterResponse(
+    user: IUserDocument,
+    verificationState: RegisterVerificationState,
+    verificationToken: string,
+  ): IRegisterResponse {
+    return {
+      user: this.toUserResponse(user),
+      email: user.email,
+      requiresEmailVerification: config.NODE_ENV === 'production',
+      verificationState,
+      ...(config.NODE_ENV !== 'production' ? { verificationToken } : {}),
+    };
+  }
+
+  private async rotateEmailVerification(user: IUserDocument): Promise<{
+    rawToken: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }> {
+    const verification = this.createEmailVerificationToken();
+    user.emailVerificationTokenHash = verification.tokenHash;
+    user.emailVerificationExpiresAt = verification.expiresAt;
+    await user.save();
+    return verification;
   }
 
   private createEmailVerificationToken(): {
