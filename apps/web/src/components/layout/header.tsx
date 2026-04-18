@@ -13,6 +13,7 @@ import { AvatarWithStatus } from '@/components/ui/avatar-with-status';
 import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
+import { InvitationBell } from '@/components/notifications/invitation-bell';
 
 export function Header() {
   const dispatch = useAppDispatch();
@@ -36,6 +37,7 @@ export function Header() {
         </div>
       </div>
       <div className="flex items-center gap-4">
+        <InvitationBell />
         <ThemeToggleButton />
 
         {user && (

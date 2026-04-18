@@ -32,6 +32,13 @@ export const updateMemberRoleSchema = z
   })
   .strict();
 
+export const workspaceMembersListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).optional(),
+  })
+  .strict();
+
 export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 export type UpdateWorkspaceInput = z.infer<typeof updateWorkspaceSchema>;
 export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;

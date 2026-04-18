@@ -40,7 +40,21 @@ import { fetchFolders } from '@/stores/folder-slice';
 import { fetchWorkflows } from '@/stores/workflow-slice';
 import { useExecutionSocket } from '@/hooks/use-execution-socket';
 import { useDebounce } from '@/hooks/use-debounce';
-import { PlayCircle, Search, SlidersHorizontal } from 'lucide-react';
+import { PlayCircle, Search, SlidersHorizontal, ExternalLink } from 'lucide-react';
+import {
+  ViewToggle,
+  getStoredViewMode,
+  storeViewMode,
+  type ViewMode,
+} from '@/components/ui/view-toggle';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { formatDuration, formatDate, intervalToDuration } from 'date-fns';
 import {
   TypographyH1,
@@ -68,6 +82,16 @@ export default function ExecutionsPage() {
   const [timeRange, setTimeRange] = useState<DateTimeRangeValue>({});
   const [page, setPage] = useState(1);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  // Local dialog state — only committed on Apply
+  const [dlgStatus, setDlgStatus] = useState('');
+  const [dlgWorkflowId, setDlgWorkflowId] = useState('');
+  const [dlgFolderId, setDlgFolderId] = useState('');
+  const [dlgTriggerType, setDlgTriggerType] = useState('');
+  const [dlgSortBy, setDlgSortBy] = useState('createdAt');
+  const [dlgSortOrder, setDlgSortOrder] = useState('desc');
+  const [dlgTimeRange, setDlgTimeRange] = useState<DateTimeRangeValue>({});
+  const [viewMode, setViewMode] = useState<ViewMode>(() => getStoredViewMode('executions'));
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -235,15 +259,36 @@ export default function ExecutionsPage() {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             {activeFilterCount > 0 ? `${activeFilterCount} active filters` : 'No filters applied'}
           </div>
-          <Button variant="outline" onClick={() => setIsFiltersOpen(true)}>
-            <SlidersHorizontal className="mr-2 h-4 w-4" />
-            Sort & Filter
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle
+              value={viewMode}
+              onChange={(mode) => {
+                setViewMode(mode);
+                storeViewMode('executions', mode);
+              }}
+            />
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDlgStatus(status);
+                setDlgWorkflowId(workflowId);
+                setDlgFolderId(folderId);
+                setDlgTriggerType(triggerType);
+                setDlgSortBy(sortBy);
+                setDlgSortOrder(sortOrder);
+                setDlgTimeRange(timeRange);
+                setIsFiltersOpen(true);
+              }}
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Sort & Filter
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-lg md:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Sort & Filter Executions</DialogTitle>
             <DialogDescription>Adjust filters to narrow the execution list.</DialogDescription>
@@ -262,8 +307,8 @@ export default function ExecutionsPage() {
               </div>
 
               <Select
-                value={status || 'all'}
-                onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
+                value={dlgStatus || 'all'}
+                onValueChange={(value) => setDlgStatus(value === 'all' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All statuses" />
@@ -279,8 +324,8 @@ export default function ExecutionsPage() {
               </Select>
 
               <Select
-                value={triggerType || 'all'}
-                onValueChange={(value) => setTriggerType(value === 'all' ? '' : value)}
+                value={dlgTriggerType || 'all'}
+                onValueChange={(value) => setDlgTriggerType(value === 'all' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All triggers" />
@@ -296,8 +341,8 @@ export default function ExecutionsPage() {
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
               <Select
-                value={workflowId || 'all'}
-                onValueChange={(value) => setWorkflowId(value === 'all' ? '' : value)}
+                value={dlgWorkflowId || 'all'}
+                onValueChange={(value) => setDlgWorkflowId(value === 'all' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All workflows" />
@@ -313,8 +358,8 @@ export default function ExecutionsPage() {
               </Select>
 
               <Select
-                value={folderId || 'all'}
-                onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
+                value={dlgFolderId || 'all'}
+                onValueChange={(value) => setDlgFolderId(value === 'all' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All folders" />
@@ -329,7 +374,7 @@ export default function ExecutionsPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={dlgSortBy} onValueChange={setDlgSortBy}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -340,7 +385,7 @@ export default function ExecutionsPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={sortOrder} onValueChange={setSortOrder}>
+              <Select value={dlgSortOrder} onValueChange={setDlgSortOrder}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sort order" />
                 </SelectTrigger>
@@ -351,8 +396,8 @@ export default function ExecutionsPage() {
               </Select>
 
               <DateTimeRangePicker
-                value={timeRange}
-                onChange={setTimeRange}
+                value={dlgTimeRange}
+                onChange={setDlgTimeRange}
                 className="xl:col-span-2"
               />
             </div>
@@ -371,11 +416,25 @@ export default function ExecutionsPage() {
                 setSortOrder('desc');
                 setTimeRange({});
                 setPage(1);
+                setIsFiltersOpen(false);
               }}
             >
               Reset
             </Button>
-            <Button onClick={() => setIsFiltersOpen(false)}>Apply</Button>
+            <Button
+              onClick={() => {
+                setStatus(dlgStatus);
+                setWorkflowId(dlgWorkflowId);
+                setFolderId(dlgFolderId);
+                setTriggerType(dlgTriggerType);
+                setSortBy(dlgSortBy);
+                setSortOrder(dlgSortOrder);
+                setTimeRange(dlgTimeRange);
+                setIsFiltersOpen(false);
+              }}
+            >
+              Apply
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -400,7 +459,7 @@ export default function ExecutionsPage() {
             </Empty>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Execution History</CardTitle>
@@ -463,6 +522,74 @@ export default function ExecutionsPage() {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Execution History</CardTitle>
+            <TypographySmall>{executions.length} visible runs</TypographySmall>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Workflow</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Started At</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {executions.map((execution: any) => {
+                  const workflow = execution.workflowId as
+                    | { id?: string; _id?: string; name?: string }
+                    | undefined;
+                  const executionId = execution.id || execution._id;
+                  const workflowName = workflow?.name || 'Workflow';
+
+                  return (
+                    <TableRow
+                      key={executionId}
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/executions/${executionId}`)}
+                    >
+                      <TableCell>
+                        <span className="font-medium">{workflowName}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={statusVariant(execution.status)}
+                          className={execution.status === 'running' ? 'pulse-soft' : ''}
+                        >
+                          {execution.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="tabular-nums text-muted-foreground">
+                          {execution.createdAt
+                            ? formatDate(new Date(execution.createdAt), 'PPp')
+                            : '—'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="tabular-nums text-muted-foreground">
+                          {execution.durationMs
+                            ? formatDuration(
+                                intervalToDuration({ start: 0, end: execution.durationMs }),
+                              )
+                            : '—'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

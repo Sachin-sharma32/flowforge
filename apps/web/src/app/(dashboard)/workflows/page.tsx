@@ -72,6 +72,20 @@ import {
   LogOutIcon,
   TrashIcon,
 } from 'lucide-react';
+import {
+  ViewToggle,
+  getStoredViewMode,
+  storeViewMode,
+  type ViewMode,
+} from '@/components/ui/view-toggle';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const statusColors: Record<string, 'success' | 'warning' | 'secondary' | 'default'> = {
   active: 'success',
@@ -95,10 +109,18 @@ export default function WorkflowsPage() {
   const [timeRange, setTimeRange] = useState<DateTimeRangeValue>({});
   const [page, setPage] = useState(1);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  // Local dialog state — only committed on Apply
+  const [dlgStatus, setDlgStatus] = useState('');
+  const [dlgFolderId, setDlgFolderId] = useState('');
+  const [dlgSortBy, setDlgSortBy] = useState('updatedAt');
+  const [dlgSortOrder, setDlgSortOrder] = useState('desc');
+  const [dlgTimeRange, setDlgTimeRange] = useState<DateTimeRangeValue>({});
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [workflowToDelete, setWorkflowToDelete] = useState<{ id: string; name: string } | null>(
     null,
   );
+  const [viewMode, setViewMode] = useState<ViewMode>(() => getStoredViewMode('workflows'));
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -236,15 +258,35 @@ export default function WorkflowsPage() {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             {activeFilterCount > 0 ? `${activeFilterCount} active filters` : 'No filters applied'}
           </div>
-          <Button variant="outline" onClick={() => setIsFiltersOpen(true)}>
-            <SlidersHorizontal className="mr-2 h-4 w-4" />
-            Sort & Filter
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle
+              value={viewMode}
+              onChange={(mode) => {
+                setViewMode(mode);
+                storeViewMode('workflows', mode);
+              }}
+            />
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Sync local dialog state from committed filters
+                setDlgStatus(status);
+                setDlgFolderId(folderId);
+                setDlgSortBy(sortBy);
+                setDlgSortOrder(sortOrder);
+                setDlgTimeRange(timeRange);
+                setIsFiltersOpen(true);
+              }}
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Sort & Filter
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-        <DialogContent className="min-w-fit">
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Sort & Filter Workflows</DialogTitle>
             <DialogDescription>Adjust filters to narrow the workflow list.</DialogDescription>
@@ -262,8 +304,8 @@ export default function WorkflowsPage() {
             </div>
 
             <Select
-              value={status || 'all'}
-              onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
+              value={dlgStatus || 'all'}
+              onValueChange={(value) => setDlgStatus(value === 'all' ? '' : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
@@ -277,8 +319,8 @@ export default function WorkflowsPage() {
             </Select>
 
             <Select
-              value={folderId || 'all'}
-              onValueChange={(value) => setFolderId(value === 'all' ? '' : value)}
+              value={dlgFolderId || 'all'}
+              onValueChange={(value) => setDlgFolderId(value === 'all' ? '' : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All folders" />
@@ -293,7 +335,7 @@ export default function WorkflowsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={dlgSortBy} onValueChange={setDlgSortBy}>
               <SelectTrigger>
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -305,7 +347,7 @@ export default function WorkflowsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={sortOrder} onValueChange={setSortOrder}>
+            <Select value={dlgSortOrder} onValueChange={setDlgSortOrder}>
               <SelectTrigger>
                 <SelectValue placeholder="Sort order" />
               </SelectTrigger>
@@ -316,8 +358,8 @@ export default function WorkflowsPage() {
             </Select>
 
             <DateTimeRangePicker
-              value={timeRange}
-              onChange={setTimeRange}
+              value={dlgTimeRange}
+              onChange={setDlgTimeRange}
               className="xl:col-span-2"
             />
           </div>
@@ -334,11 +376,22 @@ export default function WorkflowsPage() {
                 setSortOrder('desc');
                 setTimeRange({});
                 setPage(1);
+                setIsFiltersOpen(false);
               }}
             >
               Reset
             </Button>
-            <Button type="button" onClick={() => setIsFiltersOpen(false)}>
+            <Button
+              type="button"
+              onClick={() => {
+                setStatus(dlgStatus);
+                setFolderId(dlgFolderId);
+                setSortBy(dlgSortBy);
+                setSortOrder(dlgSortOrder);
+                setTimeRange(dlgTimeRange);
+                setIsFiltersOpen(false);
+              }}
+            >
               Apply
             </Button>
           </DialogFooter>
@@ -378,7 +431,7 @@ export default function WorkflowsPage() {
             </Empty>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {workflows.map((workflow: any) => (
             <Card
@@ -479,6 +532,109 @@ export default function WorkflowsPage() {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Steps</TableHead>
+                <TableHead>Folder</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {workflows.map((workflow: any) => (
+                <TableRow
+                  key={workflow.id || workflow._id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/workflows/${workflow.id || workflow._id}`)}
+                >
+                  <TableCell>
+                    <div className="min-w-0">
+                      <span className="font-medium">{workflow.name}</span>
+                      <TypographyMuted className="mt-0.5 line-clamp-1 text-xs">
+                        {workflow.description || 'No description'}
+                      </TypographyMuted>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusColors[workflow.status] || 'default'}>
+                      {workflow.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{workflow.steps?.length || 0}</TableCell>
+                  <TableCell>
+                    {workflow.folderId
+                      ? folderMap.get(workflow.folderId) || 'Folder'
+                      : 'Uncategorized'}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (currentWorkspace) {
+                                try {
+                                  await dispatch(
+                                    duplicateWorkflow({
+                                      workspaceId: currentWorkspace.id,
+                                      workflowId: workflow.id || workflow._id,
+                                    }),
+                                  ).unwrap();
+                                  toast.success('Workflow duplicated', {
+                                    description: `${workflow.name} was duplicated.`,
+                                  });
+                                } catch (error) {
+                                  toast.error('Failed to duplicate workflow', {
+                                    description:
+                                      error instanceof Error ? error.message : 'Please try again.',
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <Copy />
+                            Duplicate
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setWorkflowToDelete({
+                                id: workflow.id || workflow._id,
+                                name: workflow.name,
+                              });
+                            }}
+                            variant="destructive"
+                          >
+                            <TrashIcon />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <ConfirmActionDialog

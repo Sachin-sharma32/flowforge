@@ -6,6 +6,7 @@ export interface IWorkflowDocument extends Document {
   name: string;
   description: string;
   status: 'draft' | 'active' | 'paused' | 'archived';
+  isTemplate: boolean;
   trigger: {
     type: 'webhook' | 'cron' | 'manual';
     config: Record<string, unknown>;
@@ -38,6 +39,7 @@ const workflowSchema = new Schema<IWorkflowDocument>(
       enum: ['draft', 'active', 'paused', 'archived'],
       default: 'draft',
     },
+    isTemplate: { type: Boolean, default: false, index: true },
     trigger: {
       type: { type: String, enum: ['webhook', 'cron', 'manual'], required: true },
       config: { type: Schema.Types.Mixed, default: {} },

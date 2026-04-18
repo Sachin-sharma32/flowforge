@@ -54,8 +54,26 @@ export const resetPasswordSchema = z
   })
   .strict();
 
+export const requestOtpSchema = z
+  .object({
+    email: z.string().email('Invalid email address'),
+  })
+  .strict();
+
+export const verifyOtpSchema = z
+  .object({
+    email: z.string().email('Invalid email address'),
+    otp: z
+      .string()
+      .length(6, 'OTP must be 6 digits')
+      .regex(/^\d{6}$/, 'OTP must be 6 digits'),
+  })
+  .strict();
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 export type GoogleOneTapInput = z.infer<typeof googleOneTapSchema>;
+export type RequestOtpInput = z.infer<typeof requestOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;

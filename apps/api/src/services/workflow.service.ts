@@ -188,7 +188,11 @@ export class WorkflowService {
       workspaceRole,
     } = query;
 
-    const filter: Record<string, unknown> = { workspaceId, status: { $ne: 'archived' } };
+    const filter: Record<string, unknown> = {
+      workspaceId,
+      status: { $ne: 'archived' },
+      isTemplate: { $ne: true },
+    };
 
     if (status) filter.status = status;
     if (search) filter.name = { $regex: search, $options: 'i' };
@@ -418,5 +422,35 @@ export class WorkflowService {
     }
 
     return date;
+  }
+
+  async listTemplates(workspaceId: string) {
+    const templates = await Workflow.find({
+      workspaceId,
+      isTemplate: true,
+      status: { $ne: 'archived' },
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
+    return templates;
+  }
+
+  async createFromTemplate(templateId: string, workspaceId: string, userId: string) {
+    const template = await Workflow.findOne({ _id: templateId, workspaceId, isTemplate: true });
+    if (!template) throw new NotFoundError('Template not found');
+
+    return Workflow.create({
+      workspaceId,
+      folderId: null,
+      name: `${template.name}`,
+      description: template.description,
+      trigger: template.trigger,
+      steps: template.steps,
+      variables: template.variables,
+      isTemplate: false,
+      status: 'draft',
+      createdBy: userId,
+      updatedBy: userId,
+    });
   }
 }

@@ -98,5 +98,12 @@ export const workflowExecuteSchema = z
   })
   .strict();
 
+export const folderListQuerySchema = z
+  .object({
+    page: pageSchema.optional(),
+    limit: limitSchema.optional(),
+  })
+  .strict();
+
 export type WorkflowListQueryInput = z.infer<typeof workflowListQuerySchema>;
 export type ExecutionListQueryInput = z.infer<typeof executionListQuerySchema>;

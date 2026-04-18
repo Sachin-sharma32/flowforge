@@ -5,16 +5,20 @@ import type { IWorkflow, IWorkflowListItem } from '@flowforge/shared';
 
 interface WorkflowState {
   workflows: IWorkflowListItem[];
+  templates: IWorkflowListItem[];
   currentWorkflow: IWorkflow | null;
   isLoading: boolean;
+  isLoadingTemplates: boolean;
   error: string | null;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
 const initialState: WorkflowState = {
   workflows: [],
+  templates: [],
   currentWorkflow: null,
   isLoading: false,
+  isLoadingTemplates: false,
   error: null,
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
 };
@@ -184,6 +188,35 @@ export const executeWorkflow = createAsyncThunk(
   },
 );
 
+export const fetchTemplates = createAsyncThunk(
+  'workflow/fetchTemplates',
+  async ({ workspaceId }: { workspaceId: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/workspaces/${workspaceId}/workflows/templates/list`);
+      return data.data;
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch templates'));
+    }
+  },
+);
+
+export const createFromTemplate = createAsyncThunk(
+  'workflow/useTemplate',
+  async (
+    { workspaceId, templateId }: { workspaceId: string; templateId: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.post(
+        `/workspaces/${workspaceId}/workflows/templates/${templateId}/use`,
+      );
+      return data.data;
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to create workflow from template'));
+    }
+  },
+);
+
 const workflowSlice = createSlice({
   name: 'workflow',
   initialState,
@@ -232,6 +265,17 @@ const workflowSlice = createSlice({
       // pauseWorkflow
       .addCase(pauseWorkflow.fulfilled, (state, action: PayloadAction<IWorkflow>) => {
         state.currentWorkflow = action.payload;
+      })
+      // fetchTemplates
+      .addCase(fetchTemplates.pending, (state) => {
+        state.isLoadingTemplates = true;
+      })
+      .addCase(fetchTemplates.fulfilled, (state, action) => {
+        state.isLoadingTemplates = false;
+        state.templates = action.payload;
+      })
+      .addCase(fetchTemplates.rejected, (state) => {
+        state.isLoadingTemplates = false;
       });
   },
 });

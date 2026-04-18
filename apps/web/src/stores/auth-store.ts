@@ -13,6 +13,8 @@ interface AuthState {
   error: string | null;
   notice: string | null;
   pendingVerificationEmail: string | null;
+  otpSentTo: string | null;
+  isOtpSending: boolean;
 }
 
 const initialState: AuthState = {
@@ -23,6 +25,8 @@ const initialState: AuthState = {
   error: null,
   notice: null,
   pendingVerificationEmail: null,
+  otpSentTo: null,
+  isOtpSending: false,
 };
 
 export const login = createAsyncThunk(
@@ -93,6 +97,32 @@ export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
   clearAccessToken();
 });
 
+export const requestOtp = createAsyncThunk(
+  'auth/requestOtp',
+  async (input: { email: string }, { rejectWithValue }) => {
+    try {
+      await api.post('/auth/otp/request', input);
+      return input.email;
+    } catch (error: unknown) {
+      return rejectWithValue(getApiErrorMessage(error, 'Failed to send OTP'));
+    }
+  },
+);
+
+export const verifyOtp = createAsyncThunk(
+  'auth/verifyOtp',
+  async (input: { email: string; otp: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post('/auth/otp/verify', input);
+      setAccessToken(data.data.tokens.accessToken);
+      return data.data.user;
+    } catch (error: unknown) {
+      clearAccessToken();
+      return rejectWithValue(getApiErrorMessage(error, 'OTP verification failed'));
+    }
+  },
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -106,6 +136,10 @@ const authSlice = createSlice({
     clearPendingVerification(state) {
       state.pendingVerificationEmail = null;
       state.notice = null;
+    },
+    clearOtpState(state) {
+      state.otpSentTo = null;
+      state.isOtpSending = false;
     },
   },
   extraReducers: (builder) => {
@@ -171,9 +205,38 @@ const authSlice = createSlice({
         state.error = null;
         state.notice = null;
         state.pendingVerificationEmail = null;
+        state.otpSentTo = null;
+        state.isOtpSending = false;
+      })
+      .addCase(requestOtp.pending, (state) => {
+        state.isOtpSending = true;
+        state.error = null;
+      })
+      .addCase(requestOtp.fulfilled, (state, action: PayloadAction<string>) => {
+        state.isOtpSending = false;
+        state.otpSentTo = action.payload;
+      })
+      .addCase(requestOtp.rejected, (state, action) => {
+        state.isOtpSending = false;
+        state.error = action.payload as string;
+      })
+      .addCase(verifyOtp.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyOtp.fulfilled, (state, action: PayloadAction<IUserResponse>) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.otpSentTo = null;
+      })
+      .addCase(verifyOtp.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { clearError, clearNotice, clearPendingVerification } = authSlice.actions;
+export const { clearError, clearNotice, clearPendingVerification, clearOtpState } =
+  authSlice.actions;
 export const authReducer = authSlice.reducer;

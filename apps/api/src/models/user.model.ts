@@ -9,6 +9,8 @@ export interface IUserDocument extends Document {
   isVerified: boolean;
   emailVerificationTokenHash?: string;
   emailVerificationExpiresAt?: Date;
+  otpHash?: string;
+  otpExpiresAt?: Date;
   oauthProviders?: {
     google?: {
       id?: string;
@@ -41,6 +43,8 @@ const userSchema = new Schema<IUserDocument>(
     isVerified: { type: Boolean, default: false },
     emailVerificationTokenHash: { type: String },
     emailVerificationExpiresAt: { type: Date },
+    otpHash: { type: String },
+    otpExpiresAt: { type: Date },
     oauthProviders: {
       google: {
         id: { type: String },
@@ -80,6 +84,8 @@ userSchema.set('toJSON', {
     delete ret.passwordHash;
     delete ret.emailVerificationTokenHash;
     delete ret.emailVerificationExpiresAt;
+    delete ret.otpHash;
+    delete ret.otpExpiresAt;
     delete ret.oauthProviders;
   },
 });

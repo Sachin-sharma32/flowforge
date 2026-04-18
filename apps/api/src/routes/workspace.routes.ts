@@ -18,6 +18,11 @@ export const workspaceRoutes = Router();
 
 workspaceRoutes.use(authenticate);
 
+// Invitation routes (must be before /:id to avoid conflicts)
+workspaceRoutes.get('/invitations/mine', WorkspaceController.getMyInvitations);
+workspaceRoutes.post('/invitations/:token/accept', WorkspaceController.acceptInvitation);
+workspaceRoutes.post('/invitations/:token/decline', WorkspaceController.declineInvitation);
+
 workspaceRoutes.get('/', WorkspaceController.list);
 workspaceRoutes.post('/', validate(createWorkspaceSchema), WorkspaceController.create);
 workspaceRoutes.get('/:id', validate(workspaceParamsSchema, 'params'), WorkspaceController.getById);
@@ -62,4 +67,12 @@ workspaceRoutes.delete(
   validate(workspaceMemberParamsSchema, 'params'),
   requirePermission(Permissions.MANAGE_MEMBERS),
   WorkspaceController.removeMember,
+);
+
+// Invitations for a specific workspace
+workspaceRoutes.get(
+  '/:id/invitations',
+  validate(workspaceParamsSchema, 'params'),
+  requirePermission(Permissions.MANAGE_MEMBERS),
+  WorkspaceController.getWorkspaceInvitations,
 );

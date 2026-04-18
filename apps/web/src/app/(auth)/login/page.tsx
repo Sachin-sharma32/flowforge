@@ -10,8 +10,10 @@ import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { login, clearError, clearNotice } from '@/stores/auth-store';
+import { login, clearError, clearNotice, clearOtpState } from '@/stores/auth-store';
 import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { OtpLoginForm } from '@/components/auth/otp-login-form';
 
 const ROUTE_PROGRESS_START_EVENT = 'flowforge:route-progress:start';
 const ROUTE_PROGRESS_STOP_EVENT = 'flowforge:route-progress:stop';
@@ -23,8 +25,14 @@ export default function LoginPage() {
   const [oauthStatus, setOauthStatus] = useState<string | null>(null);
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { isLoading, error, notice } = useAppSelector((state) => state.auth);
+  const { isLoading, error, notice, isAuthenticated } = useAppSelector((state) => state.auth);
   const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,73 +76,101 @@ export default function LoginPage() {
       footerLinkHref="/register"
       icon={LogIn}
     >
-      <motion.form
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
-        onSubmit={handleSubmit}
-        data-testid="login-form"
-        data-route-progress
-        className="space-y-5"
+      <SocialAuthButtons disabled={isLoading} />
+
+      <Tabs
+        defaultValue="password"
+        onValueChange={() => {
+          dispatch(clearError());
+          dispatch(clearOtpState());
+        }}
       >
-        <SocialAuthButtons disabled={isLoading} />
+        <TabsList className="w-full">
+          <TabsTrigger value="password" className="flex-1">
+            Password
+          </TabsTrigger>
+          <TabsTrigger value="otp" className="flex-1">
+            Email Code
+          </TabsTrigger>
+        </TabsList>
 
-        <Field>
-          <motion.div
-            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.04 }}
-            className="space-y-2"
+        <TabsContent value="password">
+          <motion.form
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: shouldReduceMotion ? 0.05 : 0.3 }}
+            onSubmit={handleSubmit}
+            data-testid="login-form"
+            data-route-progress
+            className="space-y-5"
           >
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              data-testid="login-email-input"
-              required
-            />
-          </motion.div>
-        </Field>
+            <Field>
+              <motion.div
+                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.04 }}
+                className="space-y-2"
+              >
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  data-testid="login-email-input"
+                  required
+                />
+              </motion.div>
+            </Field>
 
-        <Field>
-          <motion.div
-            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.09 }}
-            className="space-y-2"
-          >
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              data-testid="login-password-input"
-              required
-            />
-          </motion.div>
-        </Field>
+            <Field>
+              <motion.div
+                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.09 }}
+                className="space-y-2"
+              >
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="login-password-input"
+                  required
+                />
+              </motion.div>
+            </Field>
 
-        <motion.div
-          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.14 }}
-        >
-          <Button type="submit" className="w-full" disabled={isLoading} data-testid="login-submit">
-            {isLoading ? (
-              <>
-                <Spinner /> Signing in...
-              </>
-            ) : (
-              'Sign in'
-            )}
-          </Button>
-        </motion.div>
-      </motion.form>
+            <motion.div
+              initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0.05 : 0.3, delay: 0.14 }}
+            >
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                data-testid="login-submit"
+              >
+                {isLoading ? (
+                  <>
+                    <Spinner /> Signing in...
+                  </>
+                ) : (
+                  'Sign in'
+                )}
+              </Button>
+            </motion.div>
+          </motion.form>
+        </TabsContent>
+
+        <TabsContent value="otp">
+          <OtpLoginForm />
+        </TabsContent>
+      </Tabs>
     </AuthFormShell>
   );
 }

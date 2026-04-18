@@ -28,6 +28,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar';
 
 const navigation = [
@@ -55,13 +56,15 @@ export function Sidebar() {
   const usageRatio = Math.min(100, Math.round((usedRuns / monthlyLimit) * 100));
 
   return (
-    <SidebarRoot>
-      <SidebarHeader className="px-7 py-4">
+    <SidebarRoot collapsible="icon">
+      <SidebarHeader className="px-4 py-4">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted shadow-sm transition-transform duration-300 hover:scale-105">
-            <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary shadow-sm transition-transform duration-300 hover:scale-105">
+            <Zap className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
           </span>
-          <span className="text-lg font-bold tracking-tight">FlowForge</span>
+          <span className="text-lg font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+            FlowForge
+          </span>
         </Link>
       </SidebarHeader>
 
@@ -88,14 +91,14 @@ export function Sidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <div className="rounded-xl bg-muted p-5 transition-colors duration-300 hover:bg-accent/70">
-          <TypographySmall className="font-semibold uppercase tracking-normal">
+        <div className="rounded-xl bg-muted p-3 transition-colors duration-300 hover:bg-accent/70 group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:p-1.5">
+          <TypographySmall className="font-semibold uppercase tracking-normal group-data-[collapsible=icon]:hidden">
             Free Plan
           </TypographySmall>
-          <TypographyMuted className="mt-1 text-sm font-medium text-foreground">
+          <TypographyMuted className="mt-1 text-sm font-medium text-foreground group-data-[collapsible=icon]:hidden">
             {usedRuns.toLocaleString()} / {monthlyLimit.toLocaleString()} runs
           </TypographyMuted>
-          <Progress value={usageRatio} className="mt-2 h-1.5" />
+          <Progress value={usageRatio} className="mt-2 h-1.5 group-data-[collapsible=icon]:mt-0" />
         </div>
       </SidebarFooter>
 

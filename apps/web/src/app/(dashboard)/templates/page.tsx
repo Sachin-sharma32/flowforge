@@ -11,8 +11,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TypographyH1, TypographyH2, TypographyMuted } from '@/components/ui/typography';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks';
+import { fetchTemplates, createFromTemplate } from '@/stores/workflow-slice';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 // ─── App Icons ───────────────────────────────────────────────────
 
@@ -226,11 +230,13 @@ function WorkflowSection({
   titleNode,
   workflows,
   onDismiss,
+  onUse,
 }: {
   title: string;
   titleNode?: React.ReactNode;
   workflows: WorkflowCard[];
   onDismiss: (id: string) => void;
+  onUse?: (id: string) => void;
 }) {
   if (workflows.length === 0) return null;
   return (
@@ -245,12 +251,13 @@ function WorkflowSection({
       >
         <CarouselContent>
           {workflows.map((wf) => (
-            <CarouselItem key={wf.id} className="md:basis-1/2 xl:basis-1/3">
+            <CarouselItem key={wf.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
               <SuggestedWorkflowCard
                 id={wf.id}
                 title={wf.title}
                 apps={wf.apps}
                 onDismiss={onDismiss}
+                onUse={onUse}
               />
             </CarouselItem>
           ))}
@@ -279,6 +286,16 @@ export default function TemplatesPage() {
   const [worksWell, setWorksWell] = useState(WORKS_WELL);
   const [marketing, setMarketing] = useState(MARKETING);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { templates, isLoadingTemplates } = useAppSelector((state) => state.workflow);
+
+  useEffect(() => {
+    if (currentWorkspace?.id) {
+      dispatch(fetchTemplates({ workspaceId: currentWorkspace.id }));
+    }
+  }, [currentWorkspace?.id, dispatch]);
 
   const handleDismissConfirm = (_reason: string) => {
     if (!dismissingId) return;
@@ -286,6 +303,26 @@ export default function TemplatesPage() {
     setWorksWell((prev) => prev.filter((w) => w.id !== dismissingId));
     setMarketing((prev) => prev.filter((w) => w.id !== dismissingId));
     setDismissingId(null);
+  };
+
+  const handleUseTemplate = async (templateId: string) => {
+    if (!currentWorkspace?.id) return;
+    try {
+      const result = await dispatch(
+        createFromTemplate({ workspaceId: currentWorkspace.id, templateId }),
+      ).unwrap();
+      toast.success('Workflow created from template');
+      router.push(`/workflows/${result.id || result._id}/edit`);
+    } catch (error) {
+      toast.error('Failed to create workflow from template', {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  const handleUseHardcodedTemplate = (templateId: string) => {
+    // Navigate to workflow creation for hardcoded/seed templates
+    router.push('/workflows/new');
   };
 
   return (
@@ -306,6 +343,35 @@ export default function TemplatesPage() {
         </div>
       </div>
 
+      {/* ── Backend templates ── */}
+      {templates.length > 0 && (
+        <section>
+          <div className="mb-4">
+            <TypographyH2>Your Workspace Templates</TypographyH2>
+            <TypographyMuted>
+              Templates created in your workspace. Click &quot;Use Template&quot; to create a new
+              workflow.
+            </TypographyMuted>
+          </div>
+          <Carousel opts={{ align: 'start', loop: false }} className="w-full">
+            <CarouselContent>
+              {templates.map((t: any) => (
+                <CarouselItem key={t.id || t._id} className="basis-full sm:basis-1/2 xl:basis-1/3">
+                  <SuggestedWorkflowCard
+                    id={t.id || t._id}
+                    title={t.name}
+                    apps={[]}
+                    onUse={handleUseTemplate}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </section>
+      )}
+
       {/* ── Sections ── */}
       <section>
         <div className="mb-4">
@@ -321,12 +387,13 @@ export default function TemplatesPage() {
         >
           <CarouselContent>
             {FEATURED.map((template) => (
-              <CarouselItem key={template.id} className="md:basis-1/2 xl:basis-1/3">
+              <CarouselItem key={template.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
                 <SuggestedWorkflowCard
                   id={template.id}
                   title={template.title}
                   apps={template.apps}
                   onDismiss={setDismissingId}
+                  onUse={handleUseHardcodedTemplate}
                 />
               </CarouselItem>
             ))}
@@ -340,6 +407,7 @@ export default function TemplatesPage() {
         title="Recommended for you"
         workflows={recommended}
         onDismiss={setDismissingId}
+        onUse={handleUseHardcodedTemplate}
       />
 
       <WorkflowSection
@@ -365,12 +433,14 @@ export default function TemplatesPage() {
         }
         workflows={worksWell}
         onDismiss={setDismissingId}
+        onUse={handleUseHardcodedTemplate}
       />
 
       <WorkflowSection
         title="Marketing &amp; Leads"
         workflows={marketing}
         onDismiss={setDismissingId}
+        onUse={handleUseHardcodedTemplate}
       />
 
       {/* ── Dismiss feedback modal ── */}

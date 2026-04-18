@@ -18,6 +18,18 @@ export const workflowRoutes = Router({ mergeParams: true });
 workflowRoutes.use(authenticate);
 
 workflowRoutes.get(
+  '/templates/list',
+  validate(workspaceIdParamsSchema, 'params'),
+  requirePermission(Permissions.VIEW_WORKFLOWS),
+  WorkflowController.listTemplates,
+);
+workflowRoutes.post(
+  '/templates/:templateId/use',
+  validate(workspaceIdParamsSchema, 'params'),
+  requirePermission(Permissions.CREATE_WORKFLOW),
+  WorkflowController.createFromTemplate,
+);
+workflowRoutes.get(
   '/',
   validate(workspaceIdParamsSchema, 'params'),
   validate(workflowListQuerySchema, 'query'),

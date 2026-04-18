@@ -17,7 +17,7 @@ import { fetchWorkspaces } from '@/stores/workspace-slice';
 import { api } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/api-error';
 import type { IWorkspaceBillingSummary } from '@flowforge/shared';
-import { Settings, Users, CreditCard } from 'lucide-react';
+import { Settings, Users, CreditCard, Plug } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useCommandMenuSetting } from '@/hooks/use-command-menu-setting';
@@ -246,6 +246,20 @@ export default function SettingsPage() {
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Plug className="h-5 w-5" /> Connectors
+          </CardTitle>
+          <CardDescription>Configure integrations and external services</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/connectors">
+            <Button variant="outline">Manage Connectors</Button>
+          </Link>
         </CardContent>
       </Card>
 

@@ -10,6 +10,8 @@ import {
   verifyEmailSchema,
   resendVerificationSchema,
   googleOneTapSchema,
+  requestOtpSchema,
+  verifyOtpSchema,
 } from '@flowforge/shared';
 
 export const authRoutes = Router();
@@ -37,6 +39,8 @@ authRoutes.post(
 authRoutes.get('/oauth/:provider/start', authLimiter, AuthController.oauthStart);
 authRoutes.get('/oauth/:provider/callback', authLimiter, AuthController.oauthCallback);
 authRoutes.post('/login', authLimiter, validate(loginSchema), AuthController.login);
+authRoutes.post('/otp/request', authLimiter, validate(requestOtpSchema), AuthController.requestOtp);
+authRoutes.post('/otp/verify', authLimiter, validate(verifyOtpSchema), AuthController.verifyOtp);
 authRoutes.post('/refresh', authLimiter, requireCsrfToken, AuthController.refresh);
 authRoutes.post('/logout', requireCsrfToken, AuthController.logout);
 authRoutes.post('/logout-all', authenticate, AuthController.logoutAll);

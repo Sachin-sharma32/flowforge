@@ -2,6 +2,20 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Folder, FolderPlus, MoreVertical, Pin, PinOff, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  ViewToggle,
+  getStoredViewMode,
+  storeViewMode,
+  type ViewMode,
+} from '@/components/ui/view-toggle';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,6 +53,7 @@ import {
   EmptyContent,
 } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { useRouter } from 'next/navigation';
 
 import {
   Combobox,
@@ -91,6 +106,7 @@ function writePinnedFolders(folderIds: string[]) {
 export default function FoldersPage() {
   const anchor = useComboboxAnchor();
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { user } = useAppSelector((state) => state.auth);
   const { folders, isLoading, error } = useAppSelector((state) => state.folder);
@@ -104,6 +120,7 @@ export default function FoldersPage() {
   const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<string[]>([]);
   const [pinnedFolders, setPinnedFolders] = useState<string[]>([]);
   const [folderToDelete, setFolderToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => getStoredViewMode('folders'));
 
   useEffect(() => {
     if (!currentWorkspace?.id) return;
@@ -272,10 +289,19 @@ export default function FoldersPage() {
             Organize workflows with cleaner folder-level permissions.
           </TypographyMuted>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} disabled={!canManageFolders}>
-          <FolderPlus className="mr-2 h-4 w-4" />
-          New Folder
-        </Button>
+        <div className="flex items-center gap-2">
+          <ViewToggle
+            value={viewMode}
+            onChange={(mode) => {
+              setViewMode(mode);
+              storeViewMode('folders', mode);
+            }}
+          />
+          <Button onClick={() => setIsCreateOpen(true)} disabled={!canManageFolders}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            New Folder
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -302,14 +328,18 @@ export default function FoldersPage() {
             </Empty>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {sortedFolders.map((folder) => {
             const isPinned = pinnedFolders.includes(folder.id);
             const minRole = folder.accessControl.minViewRole;
 
             return (
-              <Card key={folder.id} className="overflow-visible">
+              <Card
+                key={folder.id}
+                className="overflow-visible cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
+                onClick={() => router.push(`/workflows?folderId=${folder.id}`)}
+              >
                 <CardContent className="relative space-y-4 p-4">
                   <div
                     className="absolute left-4 top-0 h-3 w-16 -translate-y-1/2 rounded-t-lg border border-border border-b-0"
@@ -335,12 +365,12 @@ export default function FoldersPage() {
                     </div>
 
                     <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <Button variant="ghost" size="icon">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onClick={() => togglePinnedFolder(folder.id)}>
                           {isPinned ? (
                             <>
@@ -393,6 +423,105 @@ export default function FoldersPage() {
             );
           })}
         </div>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Workflows</TableHead>
+                <TableHead>Pinned</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedFolders.map((folder) => {
+                const isPinned = pinnedFolders.includes(folder.id);
+                const minRole = folder.accessControl.minViewRole;
+
+                return (
+                  <TableRow
+                    key={folder.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/workflows?folderId=${folder.id}`)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-lg"
+                          style={{ backgroundColor: `${folder.color}33` }}
+                        >
+                          <Folder className="h-4 w-4" style={{ color: folder.color }} />
+                        </div>
+                        <span className="font-medium">{folder.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {workflowCounts.get(folder.id) || folder.workflowCount || 0}
+                    </TableCell>
+                    <TableCell>
+                      {isPinned ? (
+                        <Pin className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => togglePinnedFolder(folder.id)}>
+                            {isPinned ? (
+                              <>
+                                <PinOff className="h-4 w-4" /> Unpin folder
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="h-4 w-4" /> Pin folder
+                              </>
+                            )}
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel>
+                            <span className="inline-flex items-center gap-1.5">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              Access
+                            </span>
+                          </DropdownMenuLabel>
+                          {ROLE_OPTIONS.map((role) => (
+                            <DropdownMenuCheckboxItem
+                              key={role.value}
+                              checked={minRole === role.value}
+                              disabled={!canManageFolders}
+                              onCheckedChange={() => handleSetAccess(folder.id, role.value)}
+                            >
+                              {role.label}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={!canManageFolders}
+                            onClick={() => setFolderToDelete({ id: folder.id, name: folder.name })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete folder
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

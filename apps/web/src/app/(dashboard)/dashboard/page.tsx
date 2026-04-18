@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   CalendarRange,
@@ -45,6 +46,22 @@ import {
   type DateTimeRangeValue,
 } from '@/components/ui/date-time-range-picker';
 import { formatDuration } from 'date-fns';
+import {
+  ConnectorConfigDialog,
+  CONNECTOR_DEFINITIONS,
+  getConnectorStatus,
+  type ConnectorDefinition,
+} from '@/components/connectors/connector-config-dialog';
+
+function formatAvgRuntime(ms: number): string {
+  if (ms <= 0) return '0s';
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const totalSeconds = ms / 1000;
+  if (totalSeconds < 60) return `${totalSeconds.toFixed(1)}s`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.round(totalSeconds % 60);
+  return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}
 
 function diffDays(from: string, to: string): number {
   const fromDate = new Date(from);
@@ -58,6 +75,7 @@ function diffDays(from: string, to: string): number {
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const workspaceId = useAppSelector(selectCurrentWorkspaceId);
 
   const stats = useAppSelector(selectExecutionStats);
@@ -147,14 +165,10 @@ export default function DashboardPage() {
     [executions],
   );
 
-  const activeConnectors = [
-    { name: 'Google Calendar', status: 'Connected', color: 'bg-primary' },
-    { name: 'Slack', status: 'Connected', color: 'bg-primary-container' },
-    { name: 'Notion', status: 'Connected', color: 'bg-on-surface-variant' },
-    { name: 'Gmail', status: 'Connected', color: 'bg-secondary' },
-    { name: 'Google Drive', status: 'Connected', color: 'bg-tertiary' },
-    { name: 'Webhook', status: 'Connected', color: 'bg-muted-foreground' },
-  ];
+  const activeConnectors = CONNECTOR_DEFINITIONS;
+
+  const [selectedConnector, setSelectedConnector] = useState<ConnectorDefinition | null>(null);
+  const [isConnectorDialogOpen, setIsConnectorDialogOpen] = useState(false);
 
   return (
     <div className="space-y-8 pb-10">
@@ -205,7 +219,9 @@ export default function DashboardPage() {
             <CardTitle className="text-sm text-muted-foreground">Avg Runtime</CardTitle>
           </CardHeader>
           <CardContent>
-            <TypographyH3 className="text-3xl font-bold">10</TypographyH3>
+            <TypographyH3 className="text-3xl font-bold tabular-nums">
+              {formatAvgRuntime(stats?.avgDurationMs ?? 0)}
+            </TypographyH3>
             <TypographySmall className="mt-1">Mean completion time</TypographySmall>
           </CardContent>
         </Card>
@@ -258,7 +274,12 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 failedAlerts.map((execution) => (
-                  <div key={execution.id} className="rounded-md bg-surface-container-high p-3">
+                  <button
+                    key={execution.id}
+                    type="button"
+                    onClick={() => router.push(`/executions/${execution.id}`)}
+                    className="w-full cursor-pointer rounded-md bg-surface-container-high p-3 text-left transition-colors hover:bg-accent"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <AlertTriangle className="h-4 w-4" />
@@ -267,7 +288,7 @@ export default function DashboardPage() {
                       <Badge variant="destructive">Failed</Badge>
                     </div>
                     <TypographySmall className="mt-1">Run ID: {execution.id}</TypographySmall>
-                  </div>
+                  </button>
                 ))
               )}
             </CardContent>
@@ -279,15 +300,29 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
-                {activeConnectors.map((connector) => (
-                  <div key={connector.name} className="rounded-md bg-surface-container-high p-3">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <span className={`h-2.5 w-2.5 rounded-full ${connector.color}`} />
-                      {connector.name}
-                    </div>
-                    <TypographySmall className="mt-1">{connector.status}</TypographySmall>
-                  </div>
-                ))}
+                {activeConnectors.map((connector) => {
+                  const status = getConnectorStatus(connector.type);
+                  return (
+                    <button
+                      key={connector.name}
+                      onClick={() => {
+                        setSelectedConnector(connector);
+                        setIsConnectorDialogOpen(true);
+                      }}
+                      className="rounded-md bg-surface-container-high p-3 text-left hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${status === 'connected' ? 'bg-green-500' : connector.color}`}
+                        />
+                        {connector.name}
+                      </div>
+                      <TypographySmall className="mt-1">
+                        {status === 'connected' ? 'Connected' : 'Not configured'}
+                      </TypographySmall>
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -304,9 +339,15 @@ export default function DashboardPage() {
               <TypographyMuted>No folders or workflows yet.</TypographyMuted>
             ) : (
               folderUsage.map((folder) => (
-                <div
+                <button
                   key={folder.id}
-                  className="flex items-center justify-between rounded-md bg-surface-container-high px-3 py-2"
+                  type="button"
+                  onClick={() =>
+                    folder.id === 'uncategorized'
+                      ? router.push('/workflows')
+                      : router.push(`/workflows?folderId=${folder.id}`)
+                  }
+                  className="flex w-full cursor-pointer items-center justify-between rounded-md bg-surface-container-high px-3 py-2 transition-colors hover:bg-accent"
                 >
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <span
@@ -316,7 +357,7 @@ export default function DashboardPage() {
                     {folder.name}
                   </div>
                   <TypographySmall>{folder.count} workflows</TypographySmall>
-                </div>
+                </button>
               ))
             )}
           </CardContent>
@@ -360,6 +401,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ConnectorConfigDialog
+        connector={selectedConnector}
+        open={isConnectorDialogOpen}
+        onOpenChange={setIsConnectorDialogOpen}
+      />
     </div>
   );
 }

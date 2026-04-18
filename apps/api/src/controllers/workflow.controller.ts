@@ -150,4 +150,27 @@ export class WorkflowController {
       next(error);
     }
   }
+
+  static async listTemplates(req: Request, res: Response, next: NextFunction) {
+    try {
+      const templates = await workflowService.listTemplates(req.params.workspaceId);
+      res.json({ success: true, data: templates });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async createFromTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = requireUser(req);
+      const workflow = await workflowService.createFromTemplate(
+        req.params.templateId,
+        req.params.workspaceId,
+        user.userId,
+      );
+      res.status(201).json({ success: true, data: workflow });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

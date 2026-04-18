@@ -232,4 +232,34 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async requestOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.requestOtp(req.body);
+      res.json({
+        success: true,
+        data: {
+          message: 'If an account exists with that email, a sign-in code has been sent.',
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.verifyOtp(req.body);
+      setAuthCookies(res, result.refreshToken);
+      res.json({
+        success: true,
+        data: {
+          user: result.user,
+          tokens: result.tokens,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -18,6 +18,8 @@ import type {
   ResendVerificationInput,
   VerifyEmailInput,
   GoogleOneTapInput,
+  RequestOtpInput,
+  VerifyOtpInput,
 } from '@flowforge/shared';
 import { JwtPayload } from '../middleware/auth.middleware';
 import { RefreshSessionService } from './refresh-session.service';
@@ -198,6 +200,59 @@ export class AuthService {
         throw new ForbiddenError('Please verify your email before signing in.');
       }
     }
+
+    return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
+  }
+
+  async requestOtp(input: RequestOtpInput): Promise<void> {
+    const normalizedEmail = input.email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Always return success to prevent account enumeration
+    if (!user) {
+      return;
+    }
+
+    if (!user.isVerified) {
+      return;
+    }
+
+    const otp = this.generateOtp();
+    user.otpHash = this.hashToken(otp);
+    user.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    await user.save();
+
+    await this.sendOtpEmail(user.email, user.name, otp);
+  }
+
+  async verifyOtp(input: VerifyOtpInput): Promise<AuthResult> {
+    const normalizedEmail = input.email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      throw new UnauthorizedError('Invalid email or OTP');
+    }
+
+    if (!user.otpHash || !user.otpExpiresAt) {
+      throw new UnauthorizedError('Invalid email or OTP');
+    }
+
+    if (user.otpExpiresAt < new Date()) {
+      user.otpHash = undefined;
+      user.otpExpiresAt = undefined;
+      await user.save();
+      throw new UnauthorizedError('OTP has expired. Please request a new one.');
+    }
+
+    const otpHash = this.hashToken(input.otp);
+    if (otpHash !== user.otpHash) {
+      throw new UnauthorizedError('Invalid email or OTP');
+    }
+
+    // Clear OTP after successful use
+    user.otpHash = undefined;
+    user.otpExpiresAt = undefined;
+    await user.save();
 
     return this.issueAuthResult(this.toUserResponse(user), user._id.toString());
   }
@@ -729,5 +784,31 @@ export class AuthService {
     const localPart = email.split('@')[0] || 'FlowForge User';
     const normalized = localPart.replace(/[._-]+/g, ' ').trim();
     return normalized.length > 0 ? normalized : 'FlowForge User';
+  }
+
+  private generateOtp(): string {
+    const bytes = randomBytes(4);
+    const num = bytes.readUInt32BE(0) % 1_000_000;
+    return num.toString().padStart(6, '0');
+  }
+
+  private async sendOtpEmail(email: string, name: string, otp: string): Promise<void> {
+    const subject = 'Your FlowForge sign-in code';
+    const html = `
+      <p>Hi ${this.escapeHtml(name)},</p>
+      <p>Your one-time sign-in code is:</p>
+      <p style="font-size:28px;font-weight:bold;letter-spacing:4px;font-family:monospace">${otp}</p>
+      <p>This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
+    `;
+    const text = [
+      `Hi ${name},`,
+      '',
+      `Your one-time sign-in code is: ${otp}`,
+      '',
+      'This code expires in 5 minutes.',
+      "If you didn't request this, you can safely ignore this email.",
+    ].join('\n');
+
+    await this.emailService.sendEmail({ to: email, subject, html, text });
   }
 }

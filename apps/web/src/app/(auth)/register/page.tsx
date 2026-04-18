@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { UserRoundPlus } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
@@ -25,9 +25,21 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { isLoading, isResendingVerification, error, notice, pendingVerificationEmail } =
-    useAppSelector((state) => state.auth);
+  const {
+    isLoading,
+    isResendingVerification,
+    error,
+    notice,
+    pendingVerificationEmail,
+    isAuthenticated,
+  } = useAppSelector((state) => state.auth);
   const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

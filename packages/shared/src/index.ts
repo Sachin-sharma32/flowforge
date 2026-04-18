@@ -61,6 +61,8 @@ export {
   googleOneTapSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  requestOtpSchema,
+  verifyOtpSchema,
 } from './validation/auth.schema';
 export type {
   RegisterInput,
@@ -68,6 +70,8 @@ export type {
   VerifyEmailInput,
   ResendVerificationInput,
   GoogleOneTapInput,
+  RequestOtpInput,
+  VerifyOtpInput,
 } from './validation/auth.schema';
 
 export { createWorkflowSchema, updateWorkflowSchema } from './validation/workflow.schema';
@@ -81,6 +85,7 @@ export {
   updateWorkspaceSchema,
   inviteMemberSchema,
   updateMemberRoleSchema,
+  workspaceMembersListQuerySchema,
 } from './validation/workspace.schema';
 export type {
   CreateWorkspaceInput,
@@ -101,5 +106,6 @@ export {
   executionListQuerySchema,
   executionTimelineQuerySchema,
   workflowExecuteSchema,
+  folderListQuerySchema,
 } from './validation/request.schema';
 export type { WorkflowListQueryInput, ExecutionListQueryInput } from './validation/request.schema';

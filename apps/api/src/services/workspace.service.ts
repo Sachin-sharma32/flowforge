@@ -1,9 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { Workspace, IWorkspaceDocument } from '../models/workspace.model';
 import { Organization } from '../models/organization.model';
 import { User } from '../models/user.model';
+import { Invitation } from '../models/invitation.model';
 import { NotFoundError, ConflictError, ForbiddenError } from '../domain/errors';
 import { CreateWorkspaceInput, InviteMemberInput, RoleType } from '@flowforge/shared';
+import { EmailService } from './email.service';
+import { config } from '../config';
 
 interface WorkspaceMemberListItem {
   userId: string;
@@ -127,28 +131,63 @@ export class WorkspaceService {
     await Workspace.findByIdAndDelete(workspaceId);
   }
 
-  async inviteMember(workspaceId: string, input: InviteMemberInput) {
+  async inviteMember(workspaceId: string, input: InviteMemberInput, invitedBy: string) {
     const workspace = await Workspace.findById(workspaceId);
     if (!workspace) throw new NotFoundError('Workspace not found');
 
-    const user = await User.findOne({ email: input.email.toLowerCase().trim() });
-    if (!user) throw new NotFoundError('User not found with that email');
+    const email = input.email.toLowerCase().trim();
 
-    const existingMember = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString(),
-    );
-    if (existingMember) {
-      throw new ConflictError('User is already a member of this workspace');
+    // Check if user is already a member
+    const user = await User.findOne({ email });
+    if (user) {
+      const existingMember = workspace.members.find(
+        (m) => m.userId.toString() === user._id.toString(),
+      );
+      if (existingMember) {
+        throw new ConflictError('User is already a member of this workspace');
+      }
     }
 
-    workspace.members.push({
-      userId: user._id,
+    // Check for existing pending invitation
+    const existingInvitation = await Invitation.findOne({
+      workspaceId,
+      email,
+      status: 'pending',
+      expiresAt: { $gt: new Date() },
+    });
+    if (existingInvitation) {
+      throw new ConflictError('An invitation has already been sent to this email');
+    }
+
+    // Create invitation
+    const token = crypto.randomBytes(32).toString('hex');
+    const invitation = await Invitation.create({
+      workspaceId,
+      email,
       role: input.role,
-      joinedAt: new Date(),
+      invitedBy,
+      token,
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     });
 
-    await workspace.save();
-    return workspace;
+    // Send invitation email
+    const inviteUrl = `${config.WEB_APP_URL}/invitations?token=${token}`;
+    const emailService = new EmailService();
+    await emailService.sendEmail({
+      to: email,
+      subject: `You've been invited to join ${workspace.name} on FlowForge`,
+      html: `
+        <h2>Workspace Invitation</h2>
+        <p>You've been invited to join <strong>${workspace.name}</strong> as a <strong>${input.role}</strong>.</p>
+        <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;border-radius:6px;">Accept Invitation</a></p>
+        <p>Or copy this link: ${inviteUrl}</p>
+        <p>This invitation expires in 7 days.</p>
+      `,
+      text: `You've been invited to join ${workspace.name} as a ${input.role}. Accept here: ${inviteUrl}`,
+    });
+
+    return invitation;
   }
 
   async updateMemberRole(workspaceId: string, memberId: string, role: RoleType) {
@@ -181,5 +220,72 @@ export class WorkspaceService {
     workspace.members = workspace.members.filter((m) => m.userId.toString() !== memberId);
     await workspace.save();
     return workspace;
+  }
+
+  async acceptInvitation(token: string, userId: string) {
+    const invitation = await Invitation.findOne({ token, status: 'pending' });
+    if (!invitation) throw new NotFoundError('Invitation not found or already used');
+    if (invitation.expiresAt < new Date()) throw new ForbiddenError('Invitation has expired');
+
+    const user = await User.findById(userId);
+    if (!user) throw new NotFoundError('User not found');
+    if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+      throw new ForbiddenError('This invitation was sent to a different email address');
+    }
+
+    const workspace = await Workspace.findById(invitation.workspaceId);
+    if (!workspace) throw new NotFoundError('Workspace no longer exists');
+
+    const existingMember = workspace.members.find((m) => m.userId.toString() === userId);
+    if (existingMember) {
+      invitation.status = 'accepted';
+      await invitation.save();
+      return workspace;
+    }
+
+    workspace.members.push({
+      userId: user._id,
+      role: invitation.role as any,
+      joinedAt: new Date(),
+    });
+    await workspace.save();
+
+    invitation.status = 'accepted';
+    await invitation.save();
+
+    return workspace;
+  }
+
+  async declineInvitation(token: string, userId: string) {
+    const invitation = await Invitation.findOne({ token, status: 'pending' });
+    if (!invitation) throw new NotFoundError('Invitation not found or already used');
+
+    const user = await User.findById(userId);
+    if (!user) throw new NotFoundError('User not found');
+    if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+      throw new ForbiddenError('This invitation was sent to a different email address');
+    }
+
+    invitation.status = 'declined';
+    await invitation.save();
+    return invitation;
+  }
+
+  async getInvitationsForUser(email: string) {
+    return Invitation.find({
+      email: email.toLowerCase(),
+      status: 'pending',
+      expiresAt: { $gt: new Date() },
+    })
+      .populate('workspaceId', 'name')
+      .populate('invitedBy', 'name email');
+  }
+
+  async getInvitationsForWorkspace(workspaceId: string) {
+    return Invitation.find({
+      workspaceId,
+      status: 'pending',
+      expiresAt: { $gt: new Date() },
+    }).populate('invitedBy', 'name email');
   }
 }

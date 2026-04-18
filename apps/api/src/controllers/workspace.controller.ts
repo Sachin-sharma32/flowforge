@@ -70,8 +70,12 @@ export class WorkspaceController {
 
   static async inviteMember(req: Request, res: Response, next: NextFunction) {
     try {
-      const workspace = await workspaceService.inviteMember(req.params.id, req.body);
-      res.json({ success: true, data: workspace });
+      const invitation = await workspaceService.inviteMember(
+        req.params.id,
+        req.body,
+        req.user!.userId,
+      );
+      res.json({ success: true, data: { message: 'Invitation sent', invitation } });
     } catch (error) {
       next(error);
     }
@@ -94,6 +98,47 @@ export class WorkspaceController {
     try {
       const workspace = await workspaceService.removeMember(req.params.id, req.params.userId);
       res.json({ success: true, data: workspace });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMyInvitations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await (await import('../models/user.model')).User.findById(req.user!.userId);
+      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+      const invitations = await workspaceService.getInvitationsForUser(user.email);
+      res.json({ success: true, data: invitations });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async acceptInvitation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const workspace = await workspaceService.acceptInvitation(req.params.token, req.user!.userId);
+      res.json({ success: true, data: workspace });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async declineInvitation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const invitation = await workspaceService.declineInvitation(
+        req.params.token,
+        req.user!.userId,
+      );
+      res.json({ success: true, data: invitation });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getWorkspaceInvitations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const invitations = await workspaceService.getInvitationsForWorkspace(req.params.id);
+      res.json({ success: true, data: invitations });
     } catch (error) {
       next(error);
     }

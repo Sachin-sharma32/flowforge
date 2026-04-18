@@ -45,6 +45,8 @@ export interface SuggestedWorkflowCardProps {
   apps: AppInfo[];
   /** Called when the user clicks "Dismiss" from the 3-dot menu */
   onDismiss?: (id: string) => void;
+  /** Called when the user clicks "Use Template" */
+  onUse?: (id: string) => void;
 }
 
 // --- Sub-components --- //
@@ -84,28 +86,50 @@ function ExtraAppsBadge({ app }: { app: AppInfo }) {
 
 // --- Main card --- //
 
-export function SuggestedWorkflowCard({ id, title, apps, onDismiss }: SuggestedWorkflowCardProps) {
+export function SuggestedWorkflowCard({
+  id,
+  title,
+  apps,
+  onDismiss,
+  onUse,
+}: SuggestedWorkflowCardProps) {
   const [isDropdown, setIsDropdown] = useState(false);
 
+  const handleCardClick = () => {
+    if (onUse) onUse(id);
+  };
+
   return (
-    <div className="group relative flex h-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7 transition-all duration-300 ease-out cursor-pointer hover:shadow-sm hover:border-border">
+    <div
+      className="group relative flex h-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7 transition-all duration-300 ease-out cursor-pointer hover:shadow-md hover:border-primary/30"
+      onClick={handleCardClick}
+    >
       {/* Title + menu */}
       <div className="mb-auto flex items-start justify-between gap-3">
         <TypographyH3 className="leading-snug text-foreground line-clamp-3">{title}</TypographyH3>
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
               className="rounded-full"
-              onClick={() => setIsDropdown(!isDropdown)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDropdown(!isDropdown);
+              }}
             >
               <MoreVertical className="h-4.5 w-4.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
-              <DropdownMenuItem variant="destructive">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDismiss?.(id);
+                }}
+              >
                 <TrashIcon />
                 Dismiss
               </DropdownMenuItem>
