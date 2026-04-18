@@ -3,8 +3,14 @@ import { z } from 'zod';
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  MONGODB_URI: z.string().default('mongodb://localhost:27017/flowforge'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  MONGODB_URI: z
+    .string()
+    .default('mongodb+srv://sachin:parasf@1234@cluster0.ga05pix.mongodb.net/?appName=Cluster0'),
+  REDIS_URL: z
+    .string()
+    .default(
+      'rediss://default:gQAAAAAAATd4AAIncDI4NDNhZmZlNDYxMjQ0ZDExYjdlZmRhYzAxOGZiYWQwZXAyNzk3MzY@pleasing-shepherd-79736.upstash.io:6379',
+    ),
   JWT_SECRET: z.string().min(16),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
