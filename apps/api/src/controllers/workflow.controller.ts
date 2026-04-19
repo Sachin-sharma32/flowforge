@@ -153,8 +153,23 @@ export class WorkflowController {
 
   static async listTemplates(req: Request, res: Response, next: NextFunction) {
     try {
-      const templates = await workflowService.listTemplates(req.params.workspaceId);
+      const user = requireUser(req);
+      const templates = await workflowService.listTemplates(req.params.workspaceId, user.userId);
       res.json({ success: true, data: templates });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async dismissTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = requireUser(req);
+      await workflowService.dismissTemplate(
+        req.params.templateId,
+        req.params.workspaceId,
+        user.userId,
+      );
+      res.json({ success: true, data: { templateId: req.params.templateId } });
     } catch (error) {
       next(error);
     }

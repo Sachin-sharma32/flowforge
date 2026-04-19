@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Workflow, IWorkflowDocument } from '../models/workflow.model';
+import { User } from '../models/user.model';
 import { NotFoundError, ValidationError } from '../domain/errors';
 import { CreateWorkflowInput, RoleType, UpdateWorkflowInput } from '@flowforge/shared';
 import { StepFactory } from '../engine/step-factory';
@@ -451,7 +452,10 @@ export class WorkflowService {
     return date;
   }
 
-  async listTemplates(workspaceId: string): Promise<WorkflowTemplateSummary[]> {
+  async listTemplates(workspaceId: string, userId: string): Promise<WorkflowTemplateSummary[]> {
+    const user = await User.findById(userId).select('dismissedTemplateIds').lean();
+    const dismissedTemplateIds = new Set(user?.dismissedTemplateIds || []);
+
     // Get both workspace templates and global templates
     const rawTemplates = await Workflow.find({
       $or: [
@@ -461,21 +465,39 @@ export class WorkflowService {
     })
       .sort({ isGlobalTemplate: -1, updatedAt: -1 })
       .lean();
-    return rawTemplates.map((t) => ({
-      id: t._id.toString(),
-      name: t.name || 'Untitled Template',
-      description: t.description || '',
-      status: t.status || 'draft',
-      isTemplate: t.isTemplate ?? true,
-      isGlobalTemplate: t.isGlobalTemplate ?? false,
-      category: t.category || 'other',
-      triggerType: t.trigger?.type || 'manual',
-      stepCount: t.steps?.length || 0,
-      folderId: t.folderId ? t.folderId.toString() : null,
-      lastExecutedAt: t.lastExecutedAt,
-      createdAt: t.createdAt || new Date(),
-      updatedAt: t.updatedAt || new Date(),
-    }));
+    return rawTemplates
+      .filter((template) => !dismissedTemplateIds.has(template._id.toString()))
+      .map((template) => ({
+        id: template._id.toString(),
+        name: template.name || 'Untitled Template',
+        description: template.description || '',
+        status: template.status || 'draft',
+        isTemplate: template.isTemplate ?? true,
+        isGlobalTemplate: template.isGlobalTemplate ?? false,
+        category: template.category || 'other',
+        triggerType: template.trigger?.type || 'manual',
+        stepCount: template.steps?.length || 0,
+        folderId: template.folderId ? template.folderId.toString() : null,
+        lastExecutedAt: template.lastExecutedAt,
+        createdAt: template.createdAt || new Date(),
+        updatedAt: template.updatedAt || new Date(),
+      }));
+  }
+
+  async dismissTemplate(templateId: string, workspaceId: string, userId: string): Promise<void> {
+    const template = await Workflow.findOne({
+      _id: templateId,
+      status: { $ne: 'archived' },
+      $or: [{ workspaceId, isTemplate: true }, { isGlobalTemplate: true }],
+    });
+
+    if (!template) {
+      throw new NotFoundError('Template not found');
+    }
+
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { dismissedTemplateIds: templateId },
+    });
   }
 
   async createGlobalTemplate(

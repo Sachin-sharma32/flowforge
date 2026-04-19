@@ -6,6 +6,7 @@ export interface IUserDocument extends Document {
   passwordHash?: string;
   name: string;
   avatar?: string;
+  dismissedTemplateIds: string[];
   isVerified: boolean;
   isSuperAdmin: boolean;
   emailVerificationTokenHash?: string;
@@ -41,6 +42,7 @@ const userSchema = new Schema<IUserDocument>(
     passwordHash: { type: String, required: false },
     name: { type: String, required: true, trim: true },
     avatar: { type: String },
+    dismissedTemplateIds: { type: [String], default: [] },
     isVerified: { type: Boolean, default: false },
     isSuperAdmin: { type: Boolean, default: false },
     emailVerificationTokenHash: { type: String },
@@ -79,7 +81,7 @@ userSchema.methods.comparePassword = async function (password: string): Promise<
 };
 
 userSchema.set('toJSON', {
-  transform(_doc, ret: Record<string, any>) {
+  transform(_doc, ret: Record<string, unknown>) {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;

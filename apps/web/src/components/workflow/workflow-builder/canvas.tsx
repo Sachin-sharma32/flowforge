@@ -47,6 +47,7 @@ interface CanvasProps {
     steps: WorkflowStep[];
   };
   onSave: (steps: unknown[]) => Promise<void>;
+  onDraftChange?: (steps: unknown[]) => void;
   autoSave?: boolean;
 }
 
@@ -229,7 +230,7 @@ function createStepId(): string {
 
 const SELECT_NONE_VALUE = '__flowforge_none__';
 
-export function Canvas({ workflow, onSave, autoSave = true }: CanvasProps) {
+export function Canvas({ workflow, onSave, onDraftChange, autoSave = true }: CanvasProps) {
   const [steps, setSteps] = useState<BuilderStep[]>(() => toBuilderSteps(workflow.steps));
   const [selectedStepId, setSelectedStepId] = useState<string | null>(
     workflow.steps[0]?.id || null,
@@ -366,12 +367,13 @@ export function Canvas({ workflow, onSave, autoSave = true }: CanvasProps) {
         }
       }
     },
-    [onSave, toast],
+    [onSave],
   );
 
   useEffect(() => {
     latestStepsRef.current = steps;
-  }, [steps]);
+    onDraftChange?.(fromBuilderSteps(steps));
+  }, [steps, onDraftChange]);
 
   useEffect(() => {
     if (!autoSave) return;

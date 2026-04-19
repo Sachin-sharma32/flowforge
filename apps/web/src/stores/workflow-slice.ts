@@ -201,6 +201,18 @@ export const createFromTemplate = createWorkflowAsyncThunk<IWorkflow, WorkflowTe
   },
 );
 
+export const dismissTemplate = createWorkflowAsyncThunk<string, WorkflowTemplateArgs>(
+  'workflow/dismissTemplate',
+  async ({ workspaceId, templateId }, { rejectWithValue }) => {
+    try {
+      await api.post(`${getWorkflowTemplatesPath(workspaceId)}/${templateId}/dismiss`);
+      return templateId;
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to dismiss template'));
+    }
+  },
+);
+
 // Super Admin Template Management - Global templates don't need workspaceId
 const ADMIN_TEMPLATES_PATH = '/admin/workflows/templates';
 
@@ -274,6 +286,18 @@ const workflowSlice = createSlice({
         state.isLoadingTemplates = true;
         state.error = null;
       })
+      .addCase(fetchTemplates.fulfilled, (state, action) => {
+        state.templates = action.payload;
+        state.isLoadingTemplates = false;
+      })
+      .addCase(fetchTemplates.rejected, (state, action) => {
+        state.templates = [];
+        state.isLoadingTemplates = false;
+        setWorkflowError(state, action.payload);
+      })
+      .addCase(dismissTemplate.fulfilled, (state, action) => {
+        state.templates = state.templates.filter((template) => template.id !== action.payload);
+      })
       .addCase(fetchGlobalTemplate.fulfilled, (state, action) => {
         state.currentWorkflow = action.payload;
         state.isLoading = false;
@@ -297,6 +321,7 @@ const workflowSlice = createSlice({
           pauseWorkflow.rejected,
           executeWorkflow.rejected,
           createFromTemplate.rejected,
+          dismissTemplate.rejected,
           fetchGlobalTemplate.rejected,
         ),
         (state, action) => {

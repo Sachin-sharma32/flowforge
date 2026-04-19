@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Canvas } from '@/components/workflow/workflow-builder/canvas';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
@@ -18,6 +18,8 @@ export default function WorkflowEditPage() {
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { currentWorkflow, isLoading } = useAppSelector((state) => state.workflow);
+  const latestDraftStepsRef = useRef<unknown[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (currentWorkspace?.id && workflowId) {
@@ -25,8 +27,14 @@ export default function WorkflowEditPage() {
     }
   }, [currentWorkspace?.id, workflowId, dispatch]);
 
+  useEffect(() => {
+    if (!currentWorkflow) return;
+    latestDraftStepsRef.current = currentWorkflow.steps;
+  }, [currentWorkflow]);
+
   const handleSave = async (steps: unknown[]) => {
     if (!currentWorkspace?.id) return;
+    latestDraftStepsRef.current = steps;
     try {
       await dispatch(
         updateWorkflow({ workspaceId: currentWorkspace.id, workflowId, input: { steps } }),
@@ -40,6 +48,35 @@ export default function WorkflowEditPage() {
               ? err.message
               : 'Failed to save workflow',
       });
+    }
+  };
+
+  const handleSaveAndExit = async () => {
+    if (!currentWorkspace?.id || !currentWorkflow) return;
+
+    setIsSaving(true);
+
+    try {
+      await dispatch(
+        updateWorkflow({
+          workspaceId: currentWorkspace.id,
+          workflowId,
+          input: { steps: latestDraftStepsRef.current },
+        }),
+      ).unwrap();
+      toast.success('Workflow saved');
+      router.push('/workflows');
+    } catch (err: unknown) {
+      toast.error('Failed to save workflow', {
+        description:
+          typeof err === 'string'
+            ? err
+            : err instanceof Error
+              ? err.message
+              : 'Failed to save workflow',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -61,7 +98,10 @@ export default function WorkflowEditPage() {
           <TypographyH1 className="text-lg">{currentWorkflow.name}</TypographyH1>
           <TypographyMuted className="text-xs">Visual Workflow Editor</TypographyMuted>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="default" size="sm" onClick={handleSaveAndExit} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Workflow'}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => router.push('/workflows')}>
             Back To Workflows
           </Button>
@@ -74,6 +114,9 @@ export default function WorkflowEditPage() {
             steps: currentWorkflow.steps,
           }}
           onSave={handleSave}
+          onDraftChange={(steps) => {
+            latestDraftStepsRef.current = steps;
+          }}
         />
       </div>
     </div>

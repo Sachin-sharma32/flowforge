@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { WorkflowController } from '../controllers/workflow.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
@@ -7,6 +8,7 @@ import { validate } from '../middleware/validate.middleware';
 import {
   Permissions,
   createWorkflowSchema,
+  objectIdSchema,
   updateWorkflowSchema,
   workflowExecuteSchema,
   workflowListQuerySchema,
@@ -15,6 +17,12 @@ import {
 } from '@flowforge/shared';
 
 export const workflowRoutes = Router({ mergeParams: true });
+const templateUseParamsSchema = z
+  .object({
+    workspaceId: objectIdSchema,
+    templateId: objectIdSchema,
+  })
+  .strict();
 
 workflowRoutes.use(authenticate);
 
@@ -27,9 +35,15 @@ workflowRoutes.get(
 );
 workflowRoutes.post(
   '/templates/:templateId/use',
-  validate(workspaceIdParamsSchema, 'params'),
+  validate(templateUseParamsSchema, 'params'),
   requirePermission(Permissions.CREATE_WORKFLOW),
   WorkflowController.createFromTemplate,
+);
+workflowRoutes.post(
+  '/templates/:templateId/dismiss',
+  validate(templateUseParamsSchema, 'params'),
+  requirePermission(Permissions.VIEW_WORKFLOWS),
+  WorkflowController.dismissTemplate,
 );
 
 // Super admin only routes for global template management

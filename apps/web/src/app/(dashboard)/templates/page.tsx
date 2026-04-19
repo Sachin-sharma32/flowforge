@@ -1,10 +1,11 @@
 'use client';
 
-import { Sparkles, Shield, Plus } from 'lucide-react';
+import { Sparkles, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FeedbackModal } from '@/components/ui/feedback-modal';
 import { SuggestedWorkflowCard } from '@/components/workflow/suggested-workflow-card';
 import {
+  type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
@@ -14,7 +15,7 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 import { TypographyH1, TypographyH2, TypographyMuted } from '@/components/ui/typography';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
-import { fetchTemplates, createFromTemplate } from '@/stores/workflow-slice';
+import { dismissTemplate, fetchTemplates } from '@/stores/workflow-slice';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -55,6 +56,26 @@ function TemplateCategorySection({
   onUse: (id: string) => void;
   isGlobal?: boolean;
 }) {
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [showCarouselControls, setShowCarouselControls] = useState(false);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    const syncControlVisibility = () => {
+      setShowCarouselControls(carouselApi.canScrollPrev() || carouselApi.canScrollNext());
+    };
+
+    syncControlVisibility();
+    carouselApi.on('reInit', syncControlVisibility);
+    carouselApi.on('select', syncControlVisibility);
+
+    return () => {
+      carouselApi.off('reInit', syncControlVisibility);
+      carouselApi.off('select', syncControlVisibility);
+    };
+  }, [carouselApi]);
+
   if (templates.length === 0) return null;
 
   return (
@@ -68,7 +89,7 @@ function TemplateCategorySection({
           </span>
         )}
       </div>
-      <Carousel opts={{ align: 'start', loop: false }} className="w-full">
+      <Carousel opts={{ align: 'start', loop: false }} setApi={setCarouselApi} className="w-full">
         <CarouselContent>
           {templates.map((template) => (
             <CarouselItem key={template.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
@@ -82,8 +103,12 @@ function TemplateCategorySection({
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        {showCarouselControls && (
+          <>
+            <CarouselPrevious />
+            <CarouselNext />
+          </>
+        )}
       </Carousel>
     </section>
   );
@@ -91,7 +116,6 @@ function TemplateCategorySection({
 
 export default function TemplatesPage() {
   const [dismissingId, setDismissingId] = useState<string | null>(null);
-  const [dismissedTemplates, setDismissedTemplates] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
@@ -105,30 +129,27 @@ export default function TemplatesPage() {
     }
   }, [currentWorkspace?.id, dispatch]);
 
-  const handleDismissConfirm = (_reason: string) => {
-    if (!dismissingId) return;
-    setDismissedTemplates((prev) => new Set(prev).add(dismissingId));
-    setDismissingId(null);
-    toast.success('Template dismissed');
-  };
-
-  const handleUseTemplate = async (templateId: string) => {
-    if (!currentWorkspace?.id) return;
+  const handleDismissConfirm = async (_reason: string) => {
+    if (!dismissingId || !currentWorkspace?.id) return;
     try {
-      const result = await dispatch(
-        createFromTemplate({ workspaceId: currentWorkspace.id, templateId }),
+      await dispatch(
+        dismissTemplate({ workspaceId: currentWorkspace.id, templateId: dismissingId }),
       ).unwrap();
-      toast.success('Workflow created from template');
-      router.push(`/workflows/${result.id}/edit`);
+      toast.success('Template dismissed');
     } catch (error) {
-      toast.error('Failed to create workflow from template', {
+      toast.error('Failed to dismiss template', {
         description: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      setDismissingId(null);
     }
   };
 
-  // Filter out dismissed templates
-  const visibleTemplates = templates.filter((t) => !dismissedTemplates.has(t.id));
+  const handleUseTemplate = (templateId: string) => {
+    router.push(`/workflows/new?templateId=${encodeURIComponent(templateId)}`);
+  };
+
+  const visibleTemplates = templates;
 
   // Group templates by category
   const templatesByCategory = useMemo(() => {
@@ -184,10 +205,6 @@ export default function TemplatesPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => router.push('/workflows/new')} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Workflow
-            </Button>
             {isSuperAdmin && (
               <Button
                 onClick={() => router.push('/admin/templates/new')}
@@ -230,7 +247,6 @@ export default function TemplatesPage() {
       ) : (
         <div className="flex flex-col items-center justify-center py-16 space-y-4">
           <TypographyMuted>No templates available in your workspace.</TypographyMuted>
-          <Button onClick={() => router.push('/workflows/new')}>Create New Workflow</Button>
         </div>
       )}
 

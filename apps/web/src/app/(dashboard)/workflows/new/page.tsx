@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
-import { createWorkflow } from '@/stores/workflow-slice';
+import { createFromTemplate, createWorkflow, updateWorkflow } from '@/stores/workflow-slice';
 import { fetchFolders } from '@/stores/folder-slice';
 import {
   Webhook,
@@ -54,14 +54,29 @@ const triggerTypes = [
 
 export default function NewWorkflowPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get('templateId')?.trim() || null;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [triggerType, setTriggerType] = useState('manual');
   const [folderId, setFolderId] = useState('');
   const dispatch = useAppDispatch();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
+  const { user } = useAppSelector((state) => state.auth);
+  const templateOptions = useAppSelector((state) => state.workflow.templates);
+  const selectedTemplate = useMemo(
+    () => templateOptions.find((template) => template.id === templateId) || null,
+    [templateId, templateOptions],
+  );
   const folders = useAppSelector((state) => state.folder.folders);
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    setName((current) => (current.trim() ? current : selectedTemplate.name));
+    setDescription((current) => (current.trim() ? current : selectedTemplate.description));
+    setTriggerType(selectedTemplate.triggerType || 'manual');
+  }, [selectedTemplate]);
 
   const handleBuilderSpotlightMove = useCallback((event: React.MouseEvent<HTMLElement>) => {
     const surface = event.currentTarget;
@@ -83,27 +98,58 @@ export default function NewWorkflowPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentWorkspace?.id || !name.trim()) return;
+    if (!currentWorkspace?.id) return;
+    if (!templateId && !name.trim()) return;
 
     setIsCreating(true);
 
     try {
-      const result = await dispatch(
-        createWorkflow({
-          workspaceId: currentWorkspace.id,
-          input: {
-            name: name.trim(),
-            description,
-            folderId: folderId || undefined,
-            trigger: { type: triggerType, config: {} },
-            steps: [],
-          },
-        }),
-      ).unwrap();
+      if (templateId) {
+        const created = await dispatch(
+          createFromTemplate({
+            workspaceId: currentWorkspace.id,
+            templateId,
+          }),
+        ).unwrap();
 
-      router.push(`/workflows/${result.id}/edit`);
+        const hasNameOverride = Boolean(name.trim()) && name.trim() !== created.name;
+        const hasDescriptionOverride = description !== created.description;
+        const hasFolderOverride = Boolean(folderId);
+        const hasTriggerOverride = triggerType !== created.trigger.type;
+
+        if (hasNameOverride || hasDescriptionOverride || hasFolderOverride || hasTriggerOverride) {
+          await dispatch(
+            updateWorkflow({
+              workspaceId: currentWorkspace.id,
+              workflowId: created.id,
+              input: {
+                ...(hasNameOverride ? { name: name.trim() } : {}),
+                ...(hasDescriptionOverride ? { description } : {}),
+                ...(hasFolderOverride ? { folderId } : {}),
+                ...(hasTriggerOverride ? { trigger: { type: triggerType, config: {} } } : {}),
+              },
+            }),
+          ).unwrap();
+        }
+      } else {
+        await dispatch(
+          createWorkflow({
+            workspaceId: currentWorkspace.id,
+            input: {
+              name: name.trim(),
+              description,
+              folderId: folderId || undefined,
+              trigger: { type: triggerType, config: {} },
+              steps: [],
+            },
+          }),
+        ).unwrap();
+      }
+
+      toast.success('Workflow saved');
+      router.push('/workflows');
     } catch (err) {
-      toast.error('Failed to create workflow', {
+      toast.error('Failed to save workflow', {
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     } finally {
@@ -162,7 +208,7 @@ export default function NewWorkflowPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     data-testid="workflow-name-input"
-                    required
+                    required={!templateId}
                   />
                 </Field>
                 <Field>
@@ -242,10 +288,10 @@ export default function NewWorkflowPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={isCreating || !name.trim()}
+                disabled={isCreating || (!templateId && !name.trim())}
                 data-testid="workflow-create-submit"
               >
-                {isCreating ? 'Creating...' : 'Create & Open Editor'}
+                {isCreating ? 'Saving...' : 'Save Workflow'}
                 {!isCreating && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </div>
