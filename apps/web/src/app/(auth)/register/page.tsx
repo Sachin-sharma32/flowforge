@@ -11,6 +11,7 @@ import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { TypographyMuted } from '@/components/ui/typography';
+import { getAccessToken } from '@/lib/auth-token-store';
 import {
   register,
   clearError,
@@ -37,7 +38,8 @@ export default function RegisterPage() {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    const token = getAccessToken();
+    if (isAuthenticated || token) {
       router.replace('/dashboard');
     }
   }, [isAuthenticated, router]);

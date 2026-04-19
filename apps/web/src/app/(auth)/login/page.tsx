@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { AuthFormShell } from '@/components/auth/auth-form-shell';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { getAccessToken } from '@/lib/auth-token-store';
 import {
   login,
   clearError,
@@ -36,7 +37,8 @@ export default function LoginPage() {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    const token = getAccessToken();
+    if (isAuthenticated || token) {
       router.replace('/dashboard');
     }
   }, [isAuthenticated, router]);

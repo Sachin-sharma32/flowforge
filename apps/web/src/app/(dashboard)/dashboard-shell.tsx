@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header';
 import { PageTransition } from '@/components/ui/page-transition';
 import { fetchProfile } from '@/stores/auth-store';
 import { fetchWorkspaces } from '@/stores/workspace-slice';
+import { getAccessToken } from '@/lib/auth-token-store';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { cn } from '@/lib/utils';
 import { pushRecentRoute } from '@/lib/recent-routes';
@@ -27,6 +28,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const bootstrap = async () => {
       setMounted(true);
+
+      const token = getAccessToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
 
       if (!user) {
         const profileResult = await dispatch(fetchProfile());
