@@ -11,6 +11,8 @@ import {
   Zap,
   LayoutTemplate,
   FolderKanban,
+  Shield,
+  Plus,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchExecutionStats } from '@/stores/execution-slice';
@@ -23,6 +25,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -40,11 +43,15 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
+const adminNavigation = [{ name: 'Create Template', href: '/admin/templates/new', icon: Plus }];
+
 export function Sidebar() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const workspaceId = useAppSelector(selectCurrentWorkspaceId);
   const stats = useAppSelector(selectExecutionStats);
+  const { user } = useAppSelector((state) => state.auth);
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -88,6 +95,32 @@ export function Sidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isSuperAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+              <Shield className="h-3 w-3" />
+              Admin
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminNavigation.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                        <Link href={item.href}>
+                          <item.icon />
+                          <span>{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4">

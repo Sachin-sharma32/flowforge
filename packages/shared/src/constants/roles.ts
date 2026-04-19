@@ -27,6 +27,7 @@ export const Permissions = {
   VIEW_EXECUTIONS: 'view_executions',
   MANAGE_SETTINGS: 'manage_settings',
   DELETE_WORKSPACE: 'delete_workspace',
+  MANAGE_TEMPLATES: 'manage_templates',
 } as const;
 
 export type PermissionType = (typeof Permissions)[keyof typeof Permissions];
@@ -60,3 +61,29 @@ export const ROLE_PERMISSIONS: Record<RoleType, PermissionType[]> = {
 export function hasPermission(role: RoleType, permission: PermissionType): boolean {
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
+
+// ─── Template Categories ──────────────────────────────────────────
+
+export const TemplateCategory = {
+  FEATURED: 'featured',
+  RECOMMENDED: 'recommended',
+  PRODUCTIVITY: 'productivity',
+  MARKETING: 'marketing',
+  SALES: 'sales',
+  OPERATIONS: 'operations',
+  DEVELOPER: 'developer',
+  OTHER: 'other',
+} as const;
+
+export type TemplateCategoryType = (typeof TemplateCategory)[keyof typeof TemplateCategory];
+
+export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategoryType, string> = {
+  [TemplateCategory.FEATURED]: 'Featured',
+  [TemplateCategory.RECOMMENDED]: 'Recommended',
+  [TemplateCategory.PRODUCTIVITY]: 'Productivity',
+  [TemplateCategory.MARKETING]: 'Marketing',
+  [TemplateCategory.SALES]: 'Sales',
+  [TemplateCategory.OPERATIONS]: 'Operations',
+  [TemplateCategory.DEVELOPER]: 'Developer',
+  [TemplateCategory.OTHER]: 'Other',
+};

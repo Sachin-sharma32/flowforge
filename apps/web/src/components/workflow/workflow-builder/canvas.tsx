@@ -47,6 +47,7 @@ interface CanvasProps {
     steps: WorkflowStep[];
   };
   onSave: (steps: unknown[]) => Promise<void>;
+  autoSave?: boolean;
 }
 
 interface BuilderStep {
@@ -228,7 +229,7 @@ function createStepId(): string {
 
 const SELECT_NONE_VALUE = '__flowforge_none__';
 
-export function Canvas({ workflow, onSave }: CanvasProps) {
+export function Canvas({ workflow, onSave, autoSave = true }: CanvasProps) {
   const [steps, setSteps] = useState<BuilderStep[]>(() => toBuilderSteps(workflow.steps));
   const [selectedStepId, setSelectedStepId] = useState<string | null>(
     workflow.steps[0]?.id || null,
@@ -373,6 +374,7 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
   }, [steps]);
 
   useEffect(() => {
+    if (!autoSave) return;
     if (!hasUnsavedChanges) return;
 
     const timeout = window.setTimeout(() => {
@@ -382,9 +384,10 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [hasUnsavedChanges, persistSteps]);
+  }, [hasUnsavedChanges, persistSteps, autoSave]);
 
   useEffect(() => {
+    if (!autoSave) return;
     const flushOnLeave = () => {
       if (!hasUnsavedChanges || isSavingRef.current) return;
       void persistSteps(latestStepsRef.current);
@@ -396,16 +399,17 @@ export function Canvas({ workflow, onSave }: CanvasProps) {
       window.removeEventListener('beforeunload', flushOnLeave);
       window.removeEventListener('pagehide', flushOnLeave);
     };
-  }, [hasUnsavedChanges, persistSteps]);
+  }, [hasUnsavedChanges, persistSteps, autoSave]);
 
   useEffect(() => {
     return () => {
       mountedRef.current = false;
+      if (!autoSave) return;
       if (hasUnsavedChanges && !isSavingRef.current) {
         void persistSteps(latestStepsRef.current);
       }
     };
-  }, [hasUnsavedChanges, persistSteps]);
+  }, [hasUnsavedChanges, persistSteps, autoSave]);
 
   const selectedIndex = selectedStep ? steps.findIndex((step) => step.id === selectedStep.id) : -1;
   const branchTargets =

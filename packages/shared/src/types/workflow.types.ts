@@ -22,17 +22,20 @@ export interface IWorkflowTrigger {
 
 export interface IWorkflow {
   id: string;
-  workspaceId: string;
+  workspaceId?: string | null;
   folderId?: string | null;
   name: string;
   description: string;
   status: WorkflowStatusValue;
+  isTemplate?: boolean;
+  isGlobalTemplate?: boolean;
+  category?: string;
   trigger: IWorkflowTrigger;
   steps: IWorkflowStep[];
   variables: Array<{ key: string; value: string; isSecret: boolean }>;
   version: number;
-  createdBy: string;
-  updatedBy: string;
+  createdBy?: string | null;
+  updatedBy?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +46,9 @@ export interface IWorkflowListItem {
   name: string;
   description: string;
   status: WorkflowStatusValue;
+  isTemplate?: boolean;
+  isGlobalTemplate?: boolean;
+  category?: string;
   triggerType: TriggerTypeValue;
   stepCount: number;
   lastExecutedAt?: Date;

@@ -280,10 +280,20 @@ export class WorkflowService {
     workspaceId: string,
     workspaceRole?: RoleType,
   ): Promise<IWorkflowDocument> {
-    const workflow = await Workflow.findOne({ _id: workflowId, workspaceId });
+    // First try to find workflow in the workspace
+    let workflow = await Workflow.findOne({ _id: workflowId, workspaceId });
+
+    // If not found and this is a global template, try finding without workspaceId
+    if (!workflow) {
+      workflow = await Workflow.findOne({ _id: workflowId, isGlobalTemplate: true });
+    }
+
     if (!workflow) throw new NotFoundError('Workflow not found');
 
-    await this.ensureWorkflowFolderAccess(workflow, workspaceRole, 'view');
+    // Only check folder access for non-global templates
+    if (!workflow.isGlobalTemplate && workspaceRole) {
+      await this.ensureWorkflowFolderAccess(workflow, workspaceRole, 'view');
+    }
 
     return workflow;
   }
@@ -442,18 +452,139 @@ export class WorkflowService {
   }
 
   async listTemplates(workspaceId: string): Promise<WorkflowTemplateSummary[]> {
+    // Get both workspace templates and global templates
     const rawTemplates = await Workflow.find({
-      workspaceId,
-      isTemplate: true,
-      status: { $ne: 'archived' },
+      $or: [
+        { workspaceId, isTemplate: true, status: { $ne: 'archived' } },
+        { isGlobalTemplate: true, status: { $ne: 'archived' } },
+      ],
     })
-      .sort({ updatedAt: -1 })
+      .sort({ isGlobalTemplate: -1, updatedAt: -1 })
       .lean();
-    return rawTemplates.map(({ _id, __v, ...rest }) => ({ ...rest, id: _id.toString() }));
+    return rawTemplates.map((t) => ({
+      id: t._id.toString(),
+      name: t.name || 'Untitled Template',
+      description: t.description || '',
+      status: t.status || 'draft',
+      isTemplate: t.isTemplate ?? true,
+      isGlobalTemplate: t.isGlobalTemplate ?? false,
+      category: t.category || 'other',
+      triggerType: t.trigger?.type || 'manual',
+      stepCount: t.steps?.length || 0,
+      folderId: t.folderId ? t.folderId.toString() : null,
+      lastExecutedAt: t.lastExecutedAt,
+      createdAt: t.createdAt || new Date(),
+      updatedAt: t.updatedAt || new Date(),
+    }));
+  }
+
+  async createGlobalTemplate(
+    input: CreateWorkflowInput & { category?: string },
+    userId: string,
+  ): Promise<IWorkflowDocument> {
+    const stepsWithPositions = (input.steps || []).map((step, index) => ({
+      ...step,
+      position: { x: 100 + (index % 3) * 250, y: 100 + Math.floor(index / 3) * 150 },
+    }));
+
+    this.validateSteps(stepsWithPositions);
+
+    const workflow = await Workflow.create({
+      name: input.name,
+      description: input.description || '',
+      workspaceId: null,
+      folderId: null,
+      isTemplate: true,
+      isGlobalTemplate: true,
+      category: input.category || 'other',
+      trigger: input.trigger || { type: 'manual', config: {} },
+      steps: stepsWithPositions,
+      variables: input.variables || [],
+      status: 'draft',
+      createdBy: userId,
+      updatedBy: userId,
+    });
+
+    return workflow;
+  }
+
+  async updateGlobalTemplate(
+    templateId: string,
+    input: UpdateWorkflowInput & { category?: string },
+    userId: string,
+  ): Promise<IWorkflowDocument> {
+    const existing = await Workflow.findOne({
+      _id: templateId,
+      isGlobalTemplate: true,
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Global template not found');
+    }
+
+    const updateData: Record<string, unknown> = {
+      updatedBy: userId,
+    };
+
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.description !== undefined) updateData.description = input.description;
+    if (input.category !== undefined) updateData.category = input.category;
+    if (input.trigger !== undefined) updateData.trigger = input.trigger;
+    if (input.variables !== undefined) updateData.variables = input.variables;
+
+    if (input.steps !== undefined) {
+      const stepsWithPositions = input.steps.map((step, index) => ({
+        ...step,
+        position: step.position || {
+          x: 100 + (index % 3) * 250,
+          y: 100 + Math.floor(index / 3) * 150,
+        },
+      }));
+      this.validateSteps(stepsWithPositions);
+      updateData.steps = stepsWithPositions;
+    }
+
+    const workflow = await Workflow.findOneAndUpdate(
+      { _id: templateId, isGlobalTemplate: true },
+      updateData,
+      { new: true },
+    );
+
+    if (!workflow) {
+      throw new NotFoundError('Global template not found');
+    }
+
+    return workflow;
+  }
+
+  async getGlobalTemplateById(templateId: string): Promise<IWorkflowDocument> {
+    const workflow = await Workflow.findOne({ _id: templateId, isGlobalTemplate: true });
+    if (!workflow) throw new NotFoundError('Global template not found');
+    return workflow;
+  }
+
+  async deleteGlobalTemplate(templateId: string): Promise<void> {
+    const existing = await Workflow.findOne({
+      _id: templateId,
+      isGlobalTemplate: true,
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Global template not found');
+    }
+
+    await Workflow.findOneAndUpdate(
+      { _id: templateId, isGlobalTemplate: true },
+      { status: 'archived' },
+    );
   }
 
   async createFromTemplate(templateId: string, workspaceId: string, userId: string) {
-    const template = await Workflow.findOne({ _id: templateId, workspaceId, isTemplate: true });
+    // Find template - either in workspace OR as a global template
+    const template = await Workflow.findOne({
+      _id: templateId,
+      $or: [{ workspaceId, isTemplate: true }, { isGlobalTemplate: true }],
+    });
     if (!template) throw new NotFoundError('Template not found');
 
     return Workflow.create({

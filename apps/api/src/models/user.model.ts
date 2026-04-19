@@ -7,6 +7,7 @@ export interface IUserDocument extends Document {
   name: string;
   avatar?: string;
   isVerified: boolean;
+  isSuperAdmin: boolean;
   emailVerificationTokenHash?: string;
   emailVerificationExpiresAt?: Date;
   otpHash?: string;
@@ -41,6 +42,7 @@ const userSchema = new Schema<IUserDocument>(
     name: { type: String, required: true, trim: true },
     avatar: { type: String },
     isVerified: { type: Boolean, default: false },
+    isSuperAdmin: { type: Boolean, default: false },
     emailVerificationTokenHash: { type: String },
     emailVerificationExpiresAt: { type: Date },
     otpHash: { type: String },

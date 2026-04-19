@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -44,8 +45,8 @@ export function DashboardBreadcrumbs() {
           const isLast = index === segments.length - 1;
 
           return (
-            <>
-              <BreadcrumbItem key={href}>
+            <React.Fragment key={href}>
+              <BreadcrumbItem>
                 {index > 0 ? (
                   <BreadcrumbSeparator>
                     <DotIcon />
@@ -59,7 +60,7 @@ export function DashboardBreadcrumbs() {
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-            </>
+            </React.Fragment>
           );
         })}
       </BreadcrumbList>

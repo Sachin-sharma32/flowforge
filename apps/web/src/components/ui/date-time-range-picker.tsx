@@ -88,8 +88,8 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
   };
 
   return (
-    <div className="flex gap-2">
-      <ButtonGroup>
+    <div className="flex flex-wrap gap-2">
+      <ButtonGroup className="flex-wrap">
         {PRESETS.map((preset) => (
           <Button
             key={preset.label}
@@ -102,10 +102,10 @@ export function DateTimeRangePicker({ value, onChange, className }: DateTimeRang
         ))}
       </ButtonGroup>
       <Dialog>
-        <DialogTrigger>
-          <Button variant="secondary" size="sm">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {label}
+        <DialogTrigger asChild>
+          <Button variant="secondary" size="sm" className="max-w-full">
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">{label}</span>
           </Button>
         </DialogTrigger>
         <DialogContent showCloseButton={false} className="min-w-fit">

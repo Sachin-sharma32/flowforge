@@ -21,7 +21,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const user = useAppSelector((state) => state.auth.user);
   const [mounted, setMounted] = useState(false);
   const isWorkflowBuilderRoute =
-    pathname === '/workflows/new' || /^\/workflows\/[^/]+\/edit$/.test(pathname);
+    pathname === '/workflows/new' ||
+    pathname === '/admin/templates/new' ||
+    /^\/workflows\/[^/]+\/edit$/.test(pathname) ||
+    /^\/admin\/templates\/[^/]+\/edit$/.test(pathname);
 
   useEffect(() => {
     let cancelled = false;

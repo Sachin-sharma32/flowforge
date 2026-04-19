@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { WorkflowController } from '../controllers/workflow.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireSuperAdmin } from '../middleware/super-admin.middleware';
 import { validate } from '../middleware/validate.middleware';
 import {
   Permissions,
@@ -17,6 +18,7 @@ export const workflowRoutes = Router({ mergeParams: true });
 
 workflowRoutes.use(authenticate);
 
+// Public template routes (available to all authenticated users)
 workflowRoutes.get(
   '/templates/list',
   validate(workspaceIdParamsSchema, 'params'),
@@ -28,6 +30,24 @@ workflowRoutes.post(
   validate(workspaceIdParamsSchema, 'params'),
   requirePermission(Permissions.CREATE_WORKFLOW),
   WorkflowController.createFromTemplate,
+);
+
+// Super admin only routes for global template management
+workflowRoutes.get(
+  '/admin/templates/:templateId',
+  requireSuperAdmin,
+  WorkflowController.getGlobalTemplate,
+);
+workflowRoutes.post('/admin/templates', requireSuperAdmin, WorkflowController.createGlobalTemplate);
+workflowRoutes.patch(
+  '/admin/templates/:templateId',
+  requireSuperAdmin,
+  WorkflowController.updateGlobalTemplate,
+);
+workflowRoutes.delete(
+  '/admin/templates/:templateId',
+  requireSuperAdmin,
+  WorkflowController.deleteGlobalTemplate,
 );
 workflowRoutes.get(
   '/',

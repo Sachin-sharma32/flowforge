@@ -800,6 +800,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       ...(user.avatar ? { avatar: user.avatar } : {}),
+      isSuperAdmin: user.isSuperAdmin ?? false,
     };
   }
 

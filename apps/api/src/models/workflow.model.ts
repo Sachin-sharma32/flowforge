@@ -1,12 +1,14 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWorkflowDocument extends Document {
-  workspaceId: mongoose.Types.ObjectId;
+  workspaceId?: mongoose.Types.ObjectId | null;
   folderId?: mongoose.Types.ObjectId | null;
   name: string;
   description: string;
   status: 'draft' | 'active' | 'paused' | 'archived';
   isTemplate: boolean;
+  isGlobalTemplate: boolean;
+  category?: string;
   trigger: {
     type: 'webhook' | 'cron' | 'manual';
     config: Record<string, unknown>;
@@ -22,15 +24,21 @@ export interface IWorkflowDocument extends Document {
   variables: Array<{ key: string; value: string; isSecret: boolean }>;
   version: number;
   lastExecutedAt?: Date;
-  createdBy: mongoose.Types.ObjectId;
-  updatedBy: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId | null;
+  updatedBy?: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const workflowSchema = new Schema<IWorkflowDocument>(
   {
-    workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
+    workspaceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Workspace',
+      index: true,
+      default: null,
+      sparse: true,
+    },
     folderId: { type: Schema.Types.ObjectId, ref: 'Folder', index: true, default: null },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
@@ -40,6 +48,8 @@ const workflowSchema = new Schema<IWorkflowDocument>(
       default: 'draft',
     },
     isTemplate: { type: Boolean, default: false, index: true },
+    isGlobalTemplate: { type: Boolean, default: false, index: true },
+    category: { type: String, default: null },
     trigger: {
       type: { type: String, enum: ['webhook', 'cron', 'manual'], required: true },
       config: { type: Schema.Types.Mixed, default: {} },

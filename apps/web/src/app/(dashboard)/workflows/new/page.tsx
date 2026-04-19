@@ -24,7 +24,9 @@ import {
   LayoutTemplate,
   ArrowLeft,
   Lightbulb,
+  Shield,
 } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { TypographyH1, TypographyMuted, TypographySmall } from '@/components/ui/typography';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -283,6 +285,26 @@ export default function NewWorkflowPage() {
               </AlertDescription>
             </div>
           </Alert>
+          {user?.isSuperAdmin && (
+            <Alert className="flex items-start gap-3 border-primary/20 bg-primary/5">
+              <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div>
+                <AlertTitle>Create a Template</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2">
+                  <span>
+                    Want to share this workflow as a reusable template for your team or all users?
+                  </span>
+                  <Link
+                    href="/admin/templates/new"
+                    className="inline-flex items-center text-primary hover:underline"
+                  >
+                    Create Template
+                    <ArrowRight className="ml-1 h-3 w-3" />
+                  </Link>
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
         </div>
       </aside>
     </div>

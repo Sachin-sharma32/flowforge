@@ -173,4 +173,48 @@ export class WorkflowController {
       next(error);
     }
   }
+
+  // Super Admin only methods
+
+  static async getGlobalTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const workflow = await workflowService.getGlobalTemplateById(req.params.templateId);
+      res.json({ success: true, data: workflow });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async createGlobalTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = requireUser(req);
+      const workflow = await workflowService.createGlobalTemplate(req.body, user.userId);
+      res.status(201).json({ success: true, data: workflow });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateGlobalTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = requireUser(req);
+      const workflow = await workflowService.updateGlobalTemplate(
+        req.params.templateId,
+        req.body,
+        user.userId,
+      );
+      res.json({ success: true, data: workflow });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteGlobalTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      await workflowService.deleteGlobalTemplate(req.params.templateId);
+      res.json({ success: true, data: { message: 'Global template archived' } });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

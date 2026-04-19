@@ -5,8 +5,10 @@ export {
   Permissions,
   ROLE_PERMISSIONS,
   hasPermission,
+  TemplateCategory,
+  TEMPLATE_CATEGORY_LABELS,
 } from './constants/roles';
-export type { RoleType, PermissionType } from './constants/roles';
+export type { RoleType, PermissionType, TemplateCategoryType } from './constants/roles';
 
 export {
   StepType,

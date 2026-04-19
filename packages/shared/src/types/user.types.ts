@@ -4,6 +4,7 @@ export interface IUser {
   name: string;
   avatar?: string;
   isVerified: boolean;
+  isSuperAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,6 +14,7 @@ export interface IUserResponse {
   email: string;
   name: string;
   avatar?: string;
+  isSuperAdmin: boolean;
 }
 
 export interface IAuthTokens {

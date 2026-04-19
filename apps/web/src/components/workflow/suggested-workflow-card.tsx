@@ -107,30 +107,35 @@ export function SuggestedWorkflowCard({
       {/* Title + menu */}
       <div className="mb-auto flex items-start justify-between gap-3">
         <TypographyH3 className="leading-snug text-foreground line-clamp-3">{title}</TypographyH3>
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 setIsDropdown(!isDropdown);
               }}
             >
-              <MoreVertical className="h-4.5 w-4.5" />
+              <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
             <DropdownMenuGroup>
               <DropdownMenuItem
                 variant="destructive"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   onDismiss?.(id);
                 }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
               >
-                <TrashIcon />
+                <TrashIcon className="h-4 w-4" />
                 Dismiss
               </DropdownMenuItem>
             </DropdownMenuGroup>

@@ -1,9 +1,9 @@
 'use client';
 
-import { RefreshCcw, Sparkles, MessageSquare, Video, Trello } from 'lucide-react';
+import { Sparkles, Shield, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FeedbackModal } from '@/components/ui/feedback-modal';
-import { SuggestedWorkflowCard, type AppInfo } from '@/components/workflow/suggested-workflow-card';
+import { SuggestedWorkflowCard } from '@/components/workflow/suggested-workflow-card';
 import {
   Carousel,
   CarouselContent,
@@ -11,263 +11,23 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { TypographyH1, TypographyH2, TypographyMuted } from '@/components/ui/typography';
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { fetchTemplates, createFromTemplate } from '@/stores/workflow-slice';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-// ─── App Icons ───────────────────────────────────────────────────
-
-const GCalIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="16" rx="2" fill="white" stroke="#E0E0E0" strokeWidth="1" />
-    <path d="M21 9H3V6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V9Z" fill="#4285F4" />
-    <path d="M3 9H8V20H5C3.89543 20 3 19.1046 3 18V9Z" fill="#34A853" />
-    <path d="M21 9H16V20H19C20.1046 20 21 19.1046 21 18V9Z" fill="#FBBC04" />
-    <path d="M8 9H16V20H8V9Z" fill="#EA4335" />
-    <rect x="3" y="4" width="18" height="16" rx="2" stroke="#E0E0E0" strokeWidth="1" />
-  </svg>
-);
-
-const NotionIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M19.5 4H4.5V20H19.5V4ZM3 2.5C3 1.67157 3.67157 1 4.5 1H19.5C20.3284 1 21 1.67157 21 2.5V21.5C21 22.3284 20.3284 23 19.5 23H4.5C3.67157 23 3 22.3284 3 21.5V2.5Z"
-      fill="currentColor"
-    />
-    <path d="M8 6H10.5L16 14.5V6H18V18H15.5L10 9.5V18H8V6Z" fill="currentColor" />
-  </svg>
-);
-
-const GmailIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M20 5H4C2.89543 5 2 5.89543 2 7V17C2 18.1046 2.89543 19 4 19H20C21.1046 19 22 18.1046 22 17V7C22 5.89543 21.1046 5 20 5Z"
-      fill="white"
-      stroke="#EA4335"
-      strokeWidth="1.5"
-    />
-    <path
-      d="M2.5 6.5L12 13L21.5 6.5"
-      stroke="#EA4335"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const CalendlyIcon = ({ className }: { className?: string }) => (
-  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="9" fill="white" stroke="#006BFF" strokeWidth="1.5" />
-    <path
-      d="M12 7V12L15 15"
-      stroke="#006BFF"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-// ─── Workflow Data ───────────────────────────────────────────────
-
-type WorkflowCard = { id: string; title: string; apps: AppInfo[] };
-
-const RECOMMENDED: WorkflowCard[] = [
-  {
-    id: '1',
-    title: 'Create logged schedule items from updated calendar events',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Create meeting records from new calendar events in log',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Create event records from calendar every hour',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '4',
-    title: 'Sync new calendar attendees to Notion database',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '11',
-    title: 'Send failed workflow alerts to Slack and email',
-    apps: [
-      {
-        name: 'Slack',
-        icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" />,
-        verified: true,
-      },
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-    ],
-  },
-  {
-    id: '12',
-    title: 'Auto-summarize customer updates into weekly digest docs',
-    apps: [
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-    ],
-  },
-];
-
-const WORKS_WELL: WorkflowCard[] = [
-  {
-    id: '5',
-    title: 'Add booked attendees to host calendar events instantly',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Calendly', icon: <CalendlyIcon /> },
-    ],
-  },
-  {
-    id: '6',
-    title: 'Create booking task and performer outreach for paid events',
-    apps: [
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      {
-        name: '+4',
-        icon: null,
-        extraApps: [
-          { name: 'Slack', icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" /> },
-          { name: 'Zoom', icon: <Video className="w-3.5 h-3.5 text-blue-500" /> },
-          { name: 'Trello', icon: <Trello className="w-3.5 h-3.5 text-blue-700" /> },
-          { name: 'Asana', icon: <div className="w-3.5 h-3.5 bg-red-400 rounded-full" /> },
-        ],
-      },
-    ],
-  },
-  {
-    id: '7',
-    title: 'Create production calendar exports to spreadsheet rows',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Google Sheets', icon: <GCalIcon /> },
-    ],
-  },
-];
-
-const MARKETING: WorkflowCard[] = [
-  {
-    id: '8',
-    title: 'Track new website leads in CRM instantly',
-    apps: [
-      { name: 'HubSpot', icon: <div className="h-3.5 w-3.5 bg-orange-500 rounded-full" /> },
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-    ],
-  },
-  {
-    id: '9',
-    title: 'Send welcome email sequence to new newsletter subscribers',
-    apps: [
-      { name: 'Mailchimp', icon: <div className="h-3.5 w-3.5 bg-yellow-400 rounded-full" /> },
-      { name: 'Slack', icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" /> },
-    ],
-  },
-  {
-    id: '10',
-    title: 'Automatically post blog updates to company social media',
-    apps: [
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-      { name: 'Twitter', icon: <div className="h-3.5 w-3.5 bg-primary rounded-sm" /> },
-    ],
-  },
-  {
-    id: '13',
-    title: 'Push high-intent lead signals to sales channel instantly',
-    apps: [
-      {
-        name: 'Slack',
-        icon: <MessageSquare className="w-3.5 h-3.5 text-pink-600" />,
-        verified: true,
-      },
-      { name: 'Notion', icon: <NotionIcon />, verified: true },
-    ],
-  },
-  {
-    id: '14',
-    title: 'Create webinar follow-up tasks and invite reminders',
-    apps: [
-      { name: 'Google Calendar', icon: <GCalIcon />, verified: true },
-      { name: 'Gmail', icon: <GmailIcon />, verified: true },
-    ],
-  },
-];
-
-const FEATURED: WorkflowCard[] = [
-  ...RECOMMENDED.slice(0, 3),
-  ...WORKS_WELL.slice(0, 2),
-  ...MARKETING.slice(0, 1),
-];
-
-// ─── Section Component ──────────────────────────────────────────
-
-function WorkflowSection({
-  title,
-  titleNode,
-  workflows,
-  onDismiss,
-  onUse,
-}: {
-  title: string;
-  titleNode?: React.ReactNode;
-  workflows: WorkflowCard[];
-  onDismiss: (id: string) => void;
-  onUse?: (id: string) => void;
-}) {
-  if (workflows.length === 0) return null;
-  return (
-    <section className="w-full">
-      <div className="mb-6">{titleNode ?? <TypographyH2>{title}</TypographyH2>}</div>
-      <Carousel
-        opts={{
-          align: 'start',
-          loop: false,
-        }}
-        className="w-full"
-      >
-        <CarouselContent>
-          {workflows.map((wf) => (
-            <CarouselItem key={wf.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
-              <SuggestedWorkflowCard
-                id={wf.id}
-                title={wf.title}
-                apps={wf.apps}
-                onDismiss={onDismiss}
-                onUse={onUse}
-              />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-    </section>
-  );
-}
+const TEMPLATE_CATEGORY_LABELS: Record<string, string> = {
+  featured: 'Featured',
+  recommended: 'Recommended',
+  productivity: 'Productivity',
+  marketing: 'Marketing',
+  sales: 'Sales',
+  operations: 'Operations',
+  developer: 'Developer',
+  other: 'Other',
+};
 
 // ─── Dismiss feedback options ───────────────────────────────────
 
@@ -281,15 +41,63 @@ const DISMISS_OPTIONS = [
 
 // ─── Page ───────────────────────────────────────────────────────
 
+// Component to render a category section
+function TemplateCategorySection({
+  title,
+  templates,
+  onDismiss,
+  onUse,
+  isGlobal = false,
+}: {
+  title: string;
+  templates: Array<{ id: string; name: string; category?: string }>;
+  onDismiss: (id: string) => void;
+  onUse: (id: string) => void;
+  isGlobal?: boolean;
+}) {
+  if (templates.length === 0) return null;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2">
+        <TypographyH2>{title}</TypographyH2>
+        {isGlobal && (
+          <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            <Shield className="mr-1 h-3 w-3" />
+            Global
+          </span>
+        )}
+      </div>
+      <Carousel opts={{ align: 'start', loop: false }} className="w-full">
+        <CarouselContent>
+          {templates.map((template) => (
+            <CarouselItem key={template.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
+              <SuggestedWorkflowCard
+                id={template.id}
+                title={template.name}
+                apps={[]}
+                onDismiss={onDismiss}
+                onUse={onUse}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious />
+        <CarouselNext />
+      </Carousel>
+    </section>
+  );
+}
+
 export default function TemplatesPage() {
-  const [recommended, setRecommended] = useState(RECOMMENDED);
-  const [worksWell, setWorksWell] = useState(WORKS_WELL);
-  const [marketing, setMarketing] = useState(MARKETING);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [dismissedTemplates, setDismissedTemplates] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { currentWorkspace } = useAppSelector((state) => state.workspace);
   const { templates, isLoadingTemplates } = useAppSelector((state) => state.workflow);
+  const { user } = useAppSelector((state) => state.auth);
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
 
   useEffect(() => {
     if (currentWorkspace?.id) {
@@ -299,10 +107,9 @@ export default function TemplatesPage() {
 
   const handleDismissConfirm = (_reason: string) => {
     if (!dismissingId) return;
-    setRecommended((prev) => prev.filter((w) => w.id !== dismissingId));
-    setWorksWell((prev) => prev.filter((w) => w.id !== dismissingId));
-    setMarketing((prev) => prev.filter((w) => w.id !== dismissingId));
+    setDismissedTemplates((prev) => new Set(prev).add(dismissingId));
     setDismissingId(null);
+    toast.success('Template dismissed');
   };
 
   const handleUseTemplate = async (templateId: string) => {
@@ -320,128 +127,112 @@ export default function TemplatesPage() {
     }
   };
 
-  const handleUseHardcodedTemplate = (templateId: string) => {
-    // Navigate to workflow creation for hardcoded/seed templates
-    router.push('/workflows/new');
-  };
+  // Filter out dismissed templates
+  const visibleTemplates = templates.filter((t) => !dismissedTemplates.has(t.id));
+
+  // Group templates by category
+  const templatesByCategory = useMemo(() => {
+    const grouped: Record<string, typeof visibleTemplates> = {};
+
+    // Initialize all categories
+    Object.keys(TEMPLATE_CATEGORY_LABELS).forEach((key) => {
+      grouped[key] = [];
+    });
+
+    // Group templates
+    visibleTemplates.forEach((template) => {
+      const category = template.category || 'other';
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(template);
+    });
+
+    return grouped;
+  }, [visibleTemplates]);
+
+  // Define category display order
+  const categoryOrder = [
+    'featured',
+    'recommended',
+    'productivity',
+    'marketing',
+    'sales',
+    'operations',
+    'developer',
+    'other',
+  ];
+
+  // Check if there are any templates
+  const hasTemplates = visibleTemplates.length > 0;
 
   return (
     <div className="mx-auto w-full space-y-16 pb-24 animate-in fade-in duration-500">
       {/* ── Hero header ── */}
       <div className="animate-in fade-in-0 pt-4" style={{ animationDelay: '0ms' }}>
-        <div className="flex items-center gap-4 mb-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted shadow-sm">
-            <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted shadow-sm">
+              <Sparkles className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
+            </div>
+            <div>
+              <TypographyH1>Workflow Templates</TypographyH1>
+              <TypographyMuted className="text-base mt-1">
+                Start fast with pre-built automations — customize any template to match your exact
+                needs.
+              </TypographyMuted>
+            </div>
           </div>
-          <div>
-            <TypographyH1>Workflow Templates</TypographyH1>
-            <TypographyMuted className="text-base mt-1">
-              Start fast with pre-built automations — customize any template to match your exact
-              needs.
-            </TypographyMuted>
+          <div className="flex gap-2">
+            <Button onClick={() => router.push('/workflows/new')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Workflow
+            </Button>
+            {isSuperAdmin && (
+              <Button
+                onClick={() => router.push('/admin/templates/new')}
+                className="gap-2"
+                variant="outline"
+              >
+                <Shield className="h-4 w-4" />
+                Create Template
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Backend templates ── */}
-      {templates.length > 0 && (
-        <section>
-          <div className="mb-4">
-            <TypographyH2>Your Workspace Templates</TypographyH2>
-            <TypographyMuted>
-              Templates created in your workspace. Click &quot;Use Template&quot; to create a new
-              workflow.
-            </TypographyMuted>
-          </div>
-          <Carousel opts={{ align: 'start', loop: false }} className="w-full">
-            <CarouselContent>
-              {templates.map((template) => (
-                <CarouselItem key={template.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
-                  <SuggestedWorkflowCard
-                    id={template.id}
-                    title={template.name}
-                    apps={[]}
-                    onUse={handleUseTemplate}
-                  />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </section>
-      )}
-
-      {/* ── Sections ── */}
-      <section>
-        <div className="mb-4">
-          <TypographyH2>Featured This Week</TypographyH2>
-          <TypographyMuted>Quick-start templates curated for high-velocity teams.</TypographyMuted>
+      {/* ── Database templates ── */}
+      {isLoadingTemplates ? (
+        <div className="flex items-center justify-center py-16">
+          <TypographyMuted>Loading templates...</TypographyMuted>
         </div>
-        <Carousel
-          opts={{
-            align: 'start',
-            loop: false,
-          }}
-          className="w-full"
-        >
-          <CarouselContent>
-            {FEATURED.map((template) => (
-              <CarouselItem key={template.id} className="basis-full sm:basis-1/2 xl:basis-1/3">
-                <SuggestedWorkflowCard
-                  id={template.id}
-                  title={template.title}
-                  apps={template.apps}
-                  onDismiss={setDismissingId}
-                  onUse={handleUseHardcodedTemplate}
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
-      </section>
+      ) : hasTemplates ? (
+        <div className="space-y-12">
+          {categoryOrder.map((categoryKey) => {
+            const categoryTemplates = templatesByCategory[categoryKey] || [];
+            if (categoryTemplates.length === 0) return null;
 
-      <WorkflowSection
-        title="Recommended for you"
-        workflows={recommended}
-        onDismiss={setDismissingId}
-        onUse={handleUseHardcodedTemplate}
-      />
+            const isGlobal = categoryTemplates.some((t) => t.isGlobalTemplate);
 
-      <WorkflowSection
-        title="Works well with Google Calendar"
-        titleNode={
-          <div className="flex flex-wrap items-center gap-4">
-            <TypographyH2 className="flex flex-wrap items-center gap-2.5">
-              Works well with
-              <span className="inline-flex items-center gap-1.5 text-xl font-semibold">
-                <GCalIcon className="h-5 w-5" />
-                Google Calendar
-              </span>
-            </TypographyH2>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-primary hover:text-primary/80"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Change App
-            </Button>
-          </div>
-        }
-        workflows={worksWell}
-        onDismiss={setDismissingId}
-        onUse={handleUseHardcodedTemplate}
-      />
-
-      <WorkflowSection
-        title="Marketing &amp; Leads"
-        workflows={marketing}
-        onDismiss={setDismissingId}
-        onUse={handleUseHardcodedTemplate}
-      />
+            return (
+              <TemplateCategorySection
+                key={categoryKey}
+                title={TEMPLATE_CATEGORY_LABELS[categoryKey]}
+                templates={categoryTemplates}
+                onDismiss={setDismissingId}
+                onUse={handleUseTemplate}
+                isGlobal={isGlobal}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 space-y-4">
+          <TypographyMuted>No templates available in your workspace.</TypographyMuted>
+          <Button onClick={() => router.push('/workflows/new')}>Create New Workflow</Button>
+        </div>
+      )}
 
       {/* ── Dismiss feedback modal ── */}
       {dismissingId && (

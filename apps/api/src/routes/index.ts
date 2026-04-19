@@ -6,6 +6,7 @@ import { executionRoutes } from './execution.routes';
 import { folderRoutes } from './folder.routes';
 import { webhookRoutes } from './webhook.routes';
 import { billingRoutes, workspaceBillingRoutes } from './billing.routes';
+import { adminWorkflowRoutes } from './admin-workflow.routes';
 
 export const routes = Router();
 
@@ -17,3 +18,4 @@ routes.use('/workspaces/:workspaceId/folders', folderRoutes);
 routes.use('/workspaces/:workspaceId/billing', workspaceBillingRoutes);
 routes.use('/webhooks', webhookRoutes);
 routes.use('/billing', billingRoutes);
+routes.use('/admin/workflows', adminWorkflowRoutes);

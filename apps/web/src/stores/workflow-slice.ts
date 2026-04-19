@@ -201,6 +201,56 @@ export const createFromTemplate = createWorkflowAsyncThunk<IWorkflow, WorkflowTe
   },
 );
 
+// Super Admin Template Management - Global templates don't need workspaceId
+const ADMIN_TEMPLATES_PATH = '/admin/workflows/templates';
+
+export const fetchGlobalTemplate = createWorkflowAsyncThunk<IWorkflow, { templateId: string }>(
+  'workflow/fetchGlobalTemplate',
+  async ({ templateId }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`${ADMIN_TEMPLATES_PATH}/${templateId}`);
+      return data.data as IWorkflow;
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch global template'));
+    }
+  },
+);
+
+export const createGlobalTemplate = createWorkflowAsyncThunk<
+  IWorkflow,
+  { input: Record<string, unknown> }
+>('workflow/createGlobalTemplate', async ({ input }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post(ADMIN_TEMPLATES_PATH, input);
+    return data.data as IWorkflow;
+  } catch (err: unknown) {
+    return rejectWithValue(getApiErrorMessage(err, 'Failed to create global template'));
+  }
+});
+
+export const updateGlobalTemplate = createWorkflowAsyncThunk<
+  IWorkflow,
+  { templateId: string; input: Record<string, unknown> }
+>('workflow/updateGlobalTemplate', async ({ templateId, input }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.patch(`${ADMIN_TEMPLATES_PATH}/${templateId}`, input);
+    return data.data as IWorkflow;
+  } catch (err: unknown) {
+    return rejectWithValue(getApiErrorMessage(err, 'Failed to update global template'));
+  }
+});
+
+export const deleteGlobalTemplate = createWorkflowAsyncThunk<void, { templateId: string }>(
+  'workflow/deleteGlobalTemplate',
+  async ({ templateId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`${ADMIN_TEMPLATES_PATH}/${templateId}`);
+    } catch (err: unknown) {
+      return rejectWithValue(getApiErrorMessage(err, 'Failed to delete global template'));
+    }
+  },
+);
+
 const workflowSlice = createSlice({
   name: 'workflow',
   initialState,
@@ -224,38 +274,30 @@ const workflowSlice = createSlice({
         state.isLoadingTemplates = true;
         state.error = null;
       })
-      .addCase(fetchTemplates.fulfilled, (state, action) => {
-        state.isLoadingTemplates = false;
-        state.templates = action.payload;
-      })
-      .addCase(fetchTemplates.rejected, (state, action) => {
-        state.isLoadingTemplates = false;
-        setWorkflowError(state, action.payload);
-      })
-      .addMatcher(isAnyOf(fetchWorkflows.pending, fetchWorkflow.pending), (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addMatcher(isAnyOf(fetchWorkflows.rejected, fetchWorkflow.rejected), (state, action) => {
+      .addCase(fetchGlobalTemplate.fulfilled, (state, action) => {
+        state.currentWorkflow = action.payload;
         state.isLoading = false;
-        setWorkflowError(state, action.payload);
       })
-      .addMatcher(
-        isAnyOf(updateWorkflow.fulfilled, activateWorkflow.fulfilled, pauseWorkflow.fulfilled),
-        (state, action) => {
-          state.currentWorkflow = action.payload;
-        },
-      )
+      .addCase(createGlobalTemplate.fulfilled, (state, action) => {
+        state.currentWorkflow = action.payload;
+        state.isLoading = false;
+      })
+      .addCase(updateGlobalTemplate.fulfilled, (state, action) => {
+        state.currentWorkflow = action.payload;
+      })
       .addMatcher(
         isAnyOf(
           createWorkflow.rejected,
+          createGlobalTemplate.rejected,
           updateWorkflow.rejected,
+          updateGlobalTemplate.rejected,
           deleteWorkflow.rejected,
           duplicateWorkflow.rejected,
           activateWorkflow.rejected,
           pauseWorkflow.rejected,
           executeWorkflow.rejected,
           createFromTemplate.rejected,
+          fetchGlobalTemplate.rejected,
         ),
         (state, action) => {
           setWorkflowError(state, action.payload);
