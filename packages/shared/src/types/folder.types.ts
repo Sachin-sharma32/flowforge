@@ -15,6 +15,7 @@ export interface IFolder {
   color: string;
   accessControl: IFolderAccessControl;
   workflowCount?: number;
+  memberCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }

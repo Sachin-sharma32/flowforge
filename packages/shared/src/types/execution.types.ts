@@ -55,3 +55,40 @@ export interface IWorkflowExecutionStats {
   avgDurationMs: number;
   successRate: number;
 }
+
+export interface IDashboardWindowStats {
+  total: number;
+  completed: number;
+  failed: number;
+  avgDurationMs: number;
+  p95DurationMs: number;
+  successRate: number;
+}
+
+export interface IDashboardSparklines {
+  executions: number[];
+  successRate: number[];
+  p95Duration: number[];
+  failed: number[];
+}
+
+export interface IDashboardSummary {
+  activeWorkflows: number;
+  totalWorkflows: number;
+  last24h: IDashboardWindowStats;
+  previous24h: IDashboardWindowStats;
+  weekAgo: { successRate: number; p95DurationMs: number };
+  sparklines: IDashboardSparklines;
+}
+
+export interface IWorkflowRecentActivity {
+  workflowId: string;
+  workflowName: string;
+  status: 'active' | 'paused' | 'draft' | 'archived';
+  lastExecutedAt: string | null;
+  total: number;
+  completed: number;
+  failed: number;
+  successRate: number;
+  hourlyBuckets: Array<{ completed: number; failed: number; total: number }>;
+}

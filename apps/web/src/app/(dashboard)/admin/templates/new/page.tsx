@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { TypographyH1, TypographyMuted, TypographySmall } from '@/components/ui/typography';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { TemplateCategory, TEMPLATE_CATEGORY_LABELS } from '@flowforge/shared';
 
 const triggerTypes = [
   {
@@ -47,28 +48,6 @@ const triggerTypes = [
     description: 'Run on time-based intervals for recurring automations.',
   },
 ] as const;
-
-const TemplateCategory = {
-  FEATURED: 'featured',
-  RECOMMENDED: 'recommended',
-  PRODUCTIVITY: 'productivity',
-  MARKETING: 'marketing',
-  SALES: 'sales',
-  OPERATIONS: 'operations',
-  DEVELOPER: 'developer',
-  OTHER: 'other',
-} as const;
-
-const TEMPLATE_CATEGORY_LABELS: Record<string, string> = {
-  featured: 'Featured',
-  recommended: 'Recommended',
-  productivity: 'Productivity',
-  marketing: 'Marketing',
-  sales: 'Sales',
-  operations: 'Operations',
-  developer: 'Developer',
-  other: 'Other',
-};
 
 const categories = Object.values(TemplateCategory).map((key) => ({
   value: key,

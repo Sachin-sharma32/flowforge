@@ -24,6 +24,7 @@ export interface IUserDocument extends Document {
       email?: string;
     };
   };
+  lastActiveAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -60,6 +61,7 @@ const userSchema = new Schema<IUserDocument>(
         email: { type: String },
       },
     },
+    lastActiveAt: { type: Date, default: null, index: true },
   },
   { timestamps: true },
 );

@@ -1,7 +1,14 @@
 import mongoose from 'mongoose';
-import { CreateFolderInput, UpdateFolderInput, RoleType, IFolder } from '@flowforge/shared';
+import {
+  CreateFolderInput,
+  UpdateFolderInput,
+  RoleType,
+  IFolder,
+  ROLE_HIERARCHY,
+} from '@flowforge/shared';
 import { Folder, IFolderDocument } from '../models/folder.model';
 import { Workflow } from '../models/workflow.model';
+import { Workspace } from '../models/workspace.model';
 import { NotFoundError } from '../domain/errors';
 import { assertFolderAccessById, getAccessibleFolderIds } from './folder-access.service';
 
@@ -12,7 +19,7 @@ export interface FolderListQuery {
   limit?: number;
 }
 
-type FolderListItem = IFolder & { workflowCount: number };
+type FolderListItem = IFolder & { workflowCount: number; memberCount: number };
 
 interface FolderListResult {
   data: FolderListItem[];
@@ -103,22 +110,40 @@ export class FolderService {
 
     const countMap = new Map(counts.map((entry) => [String(entry._id), Number(entry.count) || 0]));
 
-    const data = folders.map((folder) => ({
-      id: String(folder._id),
-      workspaceId: String(folder.workspaceId),
-      name: folder.name,
-      slug: folder.slug,
-      description: folder.description,
-      color: folder.color,
-      accessControl: {
-        minViewRole: folder.accessControl.minViewRole,
-        minEditRole: folder.accessControl.minEditRole,
-        minExecuteRole: folder.accessControl.minExecuteRole,
-      },
-      workflowCount: countMap.get(String(folder._id)) || 0,
-      createdAt: folder.createdAt,
-      updatedAt: folder.updatedAt,
-    }));
+    // Resolve member counts derived from workspace member roles vs folder minViewRole.
+    // A workspace member "belongs" to a folder when their role can view it.
+    const workspace = folderIds.length
+      ? await Workspace.findById(workspaceId).select('members.role').lean()
+      : null;
+    const memberRoleLevels: number[] = workspace?.members
+      ? workspace.members
+          .map((member) => ROLE_HIERARCHY[member.role as RoleType])
+          .filter((level): level is number => typeof level === 'number')
+      : [];
+
+    const data = folders.map((folder) => {
+      const minViewRole = folder.accessControl.minViewRole as RoleType;
+      const requiredLevel = ROLE_HIERARCHY[minViewRole] ?? 0;
+      const memberCount = memberRoleLevels.filter((level) => level >= requiredLevel).length;
+
+      return {
+        id: String(folder._id),
+        workspaceId: String(folder.workspaceId),
+        name: folder.name,
+        slug: folder.slug,
+        description: folder.description,
+        color: folder.color,
+        accessControl: {
+          minViewRole: folder.accessControl.minViewRole,
+          minEditRole: folder.accessControl.minEditRole,
+          minExecuteRole: folder.accessControl.minExecuteRole,
+        },
+        workflowCount: countMap.get(String(folder._id)) || 0,
+        memberCount,
+        createdAt: folder.createdAt,
+        updatedAt: folder.updatedAt,
+      };
+    });
 
     return {
       data,

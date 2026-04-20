@@ -115,6 +115,7 @@ export default function FoldersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderDescription, setNewFolderDescription] = useState('');
   const [newFolderColor, setNewFolderColor] = useState<string>(COLOR_OPTIONS[0].value);
   const [pinNewFolder, setPinNewFolder] = useState(false);
   const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<string[]>([]);
@@ -197,7 +198,7 @@ export default function FoldersPage() {
           workspaceId: currentWorkspace.id,
           input: {
             name: newFolderName.trim(),
-            description: '',
+            description: newFolderDescription.trim(),
             color: newFolderColor,
             accessControl: {
               minViewRole: 'viewer',
@@ -240,6 +241,7 @@ export default function FoldersPage() {
       });
 
       setNewFolderName('');
+      setNewFolderDescription('');
       setNewFolderColor(COLOR_OPTIONS[0].value);
       setPinNewFolder(false);
       setSelectedWorkflowIds([]);
@@ -282,11 +284,12 @@ export default function FoldersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-2xl">
           <TypographyH1>Folders</TypographyH1>
           <TypographyMuted className="mt-1.5">
-            Organize workflows with cleaner folder-level permissions.
+            Organize workflows by team, product area, or environment. Permissions inherit from
+            folder.
           </TypographyMuted>
         </div>
         <div className="flex items-center gap-2">
@@ -299,7 +302,7 @@ export default function FoldersPage() {
           />
           <Button onClick={() => setIsCreateOpen(true)} disabled={!canManageFolders}>
             <FolderPlus className="mr-2 h-4 w-4" />
-            New Folder
+            New folder
           </Button>
         </div>
       </div>
@@ -333,33 +336,32 @@ export default function FoldersPage() {
           {sortedFolders.map((folder) => {
             const isPinned = pinnedFolders.includes(folder.id);
             const minRole = folder.accessControl.minViewRole;
+            const workflowCount = workflowCounts.get(folder.id) ?? folder.workflowCount ?? 0;
+            const memberCount = folder.memberCount ?? 0;
 
             return (
               <Card
                 key={folder.id}
-                className="overflow-visible cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
+                className="cursor-pointer transition-all hover:border-primary/30 hover:shadow-md"
                 onClick={() => router.push(`/workflows?folderId=${folder.id}`)}
               >
-                <CardContent className="relative space-y-4 p-4">
-                  <div
-                    className="absolute left-4 top-0 h-3 w-16 -translate-y-1/2 rounded-t-lg border border-border border-b-0"
-                    style={{ backgroundColor: `${folder.color}22` }}
-                  />
-
+                <CardContent className="space-y-3 p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
                       <div
-                        className="flex h-10 w-10 items-center justify-center rounded-xl"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                         style={{ backgroundColor: `${folder.color}33` }}
                       >
                         <Folder className="h-5 w-5" style={{ color: folder.color }} />
                       </div>
-                      <div>
-                        <TypographyMuted className="text-sm font-semibold text-foreground">
+                      <div className="min-w-0">
+                        <TypographyMuted className="truncate text-sm font-semibold text-foreground">
                           {folder.name}
                         </TypographyMuted>
-                        <TypographySmall>
-                          {workflowCounts.get(folder.id) || folder.workflowCount || 0} workflows
+                        <TypographySmall className="line-clamp-2">
+                          {folder.description?.trim()
+                            ? folder.description
+                            : 'No description provided.'}
                         </TypographySmall>
                       </div>
                     </div>
@@ -414,9 +416,28 @@ export default function FoldersPage() {
                     </DropdownMenu>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2 text-xs">
-                    <span className="text-muted-foreground">Minimum role</span>
-                    <span className="font-medium capitalize">{minRole}</span>
+                  <div className="flex items-center gap-2 text-xs tabular-nums text-muted-foreground">
+                    <span>
+                      {workflowCount} {workflowCount === 1 ? 'workflow' : 'workflows'}
+                    </span>
+                    <span
+                      className="inline-block h-1 w-1 rounded-full bg-muted-foreground/60"
+                      aria-hidden
+                    />
+                    <span>
+                      {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                    </span>
+                    {isPinned ? (
+                      <>
+                        <span
+                          className="inline-block h-1 w-1 rounded-full bg-muted-foreground/60"
+                          aria-hidden
+                        />
+                        <span className="inline-flex items-center gap-1">
+                          <Pin className="h-3 w-3" /> Pinned
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
@@ -430,6 +451,7 @@ export default function FoldersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Workflows</TableHead>
+                <TableHead>Members</TableHead>
                 <TableHead>Pinned</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -438,6 +460,8 @@ export default function FoldersPage() {
               {sortedFolders.map((folder) => {
                 const isPinned = pinnedFolders.includes(folder.id);
                 const minRole = folder.accessControl.minViewRole;
+                const workflowCount = workflowCounts.get(folder.id) ?? folder.workflowCount ?? 0;
+                const memberCount = folder.memberCount ?? 0;
 
                 return (
                   <TableRow
@@ -448,17 +472,23 @@ export default function FoldersPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div
-                          className="flex h-8 w-8 items-center justify-center rounded-lg"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                           style={{ backgroundColor: `${folder.color}33` }}
                         >
                           <Folder className="h-4 w-4" style={{ color: folder.color }} />
                         </div>
-                        <span className="font-medium">{folder.name}</span>
+                        <div className="min-w-0">
+                          <span className="font-medium">{folder.name}</span>
+                          {folder.description?.trim() ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {folder.description}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {workflowCounts.get(folder.id) || folder.workflowCount || 0}
-                    </TableCell>
+                    <TableCell className="tabular-nums">{workflowCount}</TableCell>
+                    <TableCell className="tabular-nums">{memberCount}</TableCell>
                     <TableCell>
                       {isPinned ? (
                         <Pin className="h-4 w-4 text-muted-foreground" />
@@ -540,6 +570,16 @@ export default function FoldersPage() {
                 value={newFolderName}
                 onChange={(event) => setNewFolderName(event.target.value)}
                 placeholder="e.g. Sales Ops"
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel>Description</FieldLabel>
+              <Input
+                value={newFolderDescription}
+                onChange={(event) => setNewFolderDescription(event.target.value)}
+                placeholder="Pipeline routing, lead enrichment, CRM sync"
+                maxLength={500}
               />
             </Field>
 

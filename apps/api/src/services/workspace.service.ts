@@ -18,6 +18,7 @@ interface WorkspaceMemberListItem {
     name: string;
     email: string;
     avatar?: string;
+    lastActiveAt?: Date | null;
   } | null;
 }
 
@@ -47,7 +48,7 @@ export class WorkspaceService {
 
   async listMembers(workspaceId: string, page = 1, limit = 20): Promise<WorkspaceMemberListResult> {
     const workspace = await Workspace.findById(workspaceId)
-      .populate('members.userId', 'name email avatar')
+      .populate('members.userId', 'name email avatar lastActiveAt')
       .lean();
     if (!workspace) throw new NotFoundError('Workspace not found');
 
@@ -62,6 +63,7 @@ export class WorkspaceService {
             name?: unknown;
             email?: unknown;
             avatar?: unknown;
+            lastActiveAt?: unknown;
           }
         | string;
       const resolvedId =
@@ -79,6 +81,12 @@ export class WorkspaceService {
                 name: typeof rawUser.name === 'string' ? rawUser.name : '',
                 email: typeof rawUser.email === 'string' ? rawUser.email : '',
                 avatar: typeof rawUser.avatar === 'string' ? rawUser.avatar : undefined,
+                lastActiveAt:
+                  rawUser.lastActiveAt instanceof Date
+                    ? rawUser.lastActiveAt
+                    : typeof rawUser.lastActiveAt === 'string'
+                      ? new Date(rawUser.lastActiveAt)
+                      : null,
               },
       };
     });

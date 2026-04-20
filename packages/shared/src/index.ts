@@ -7,6 +7,7 @@ export {
   hasPermission,
   TemplateCategory,
   TEMPLATE_CATEGORY_LABELS,
+  TEMPLATE_FILTER_CATEGORIES,
 } from './constants/roles';
 export type { RoleType, PermissionType, TemplateCategoryType } from './constants/roles';
 
@@ -43,12 +44,17 @@ export type {
   IWorkflowListItem,
 } from './types/workflow.types';
 export type { IFolder, IFolderAccessControl } from './types/folder.types';
+export type { IConnector, ConnectorType, ConnectorStatus } from './types/connector.types';
 export type {
   IExecution,
   IExecutionStep,
   IExecutionStats,
   IExecutionTimelinePoint,
   IWorkflowExecutionStats,
+  IDashboardSummary,
+  IDashboardWindowStats,
+  IDashboardSparklines,
+  IWorkflowRecentActivity,
 } from './types/execution.types';
 export type {
   IApiResponse,
@@ -119,3 +125,10 @@ export {
   folderListQuerySchema,
 } from './validation/request.schema';
 export type { WorkflowListQueryInput, ExecutionListQueryInput } from './validation/request.schema';
+
+export {
+  createConnectorSchema,
+  updateConnectorSchema,
+  connectorParamsSchema,
+} from './validation/connector.schema';
+export type { CreateConnectorInput, UpdateConnectorInput } from './validation/connector.schema';

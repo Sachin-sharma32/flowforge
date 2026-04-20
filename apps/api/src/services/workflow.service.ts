@@ -479,6 +479,7 @@ export class WorkflowService {
         stepCount: template.steps?.length || 0,
         folderId: template.folderId ? template.folderId.toString() : null,
         lastExecutedAt: template.lastExecutedAt,
+        useCount: template.useCount ?? 0,
         createdAt: template.createdAt || new Date(),
         updatedAt: template.updatedAt || new Date(),
       }));
@@ -609,7 +610,7 @@ export class WorkflowService {
     });
     if (!template) throw new NotFoundError('Template not found');
 
-    return Workflow.create({
+    const created = await Workflow.create({
       workspaceId,
       folderId: null,
       name: `${template.name}`,
@@ -622,5 +623,10 @@ export class WorkflowService {
       createdBy: userId,
       updatedBy: userId,
     });
+
+    // Atomically increment the template's use counter
+    await Workflow.updateOne({ _id: template._id }, { $inc: { useCount: 1 } });
+
+    return created;
   }
 }

@@ -66,12 +66,12 @@ export function hasPermission(role: RoleType, permission: PermissionType): boole
 
 export const TemplateCategory = {
   FEATURED: 'featured',
-  RECOMMENDED: 'recommended',
-  PRODUCTIVITY: 'productivity',
-  MARKETING: 'marketing',
   SALES: 'sales',
+  REVENUE: 'revenue',
+  ENGINEERING: 'engineering',
+  SUPPORT: 'support',
+  GROWTH: 'growth',
   OPERATIONS: 'operations',
-  DEVELOPER: 'developer',
   OTHER: 'other',
 } as const;
 
@@ -79,11 +79,21 @@ export type TemplateCategoryType = (typeof TemplateCategory)[keyof typeof Templa
 
 export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategoryType, string> = {
   [TemplateCategory.FEATURED]: 'Featured',
-  [TemplateCategory.RECOMMENDED]: 'Recommended',
-  [TemplateCategory.PRODUCTIVITY]: 'Productivity',
-  [TemplateCategory.MARKETING]: 'Marketing',
   [TemplateCategory.SALES]: 'Sales',
+  [TemplateCategory.REVENUE]: 'Revenue',
+  [TemplateCategory.ENGINEERING]: 'Engineering',
+  [TemplateCategory.SUPPORT]: 'Support',
+  [TemplateCategory.GROWTH]: 'Growth',
   [TemplateCategory.OPERATIONS]: 'Operations',
-  [TemplateCategory.DEVELOPER]: 'Developer',
   [TemplateCategory.OTHER]: 'Other',
 };
+
+// Tabs shown on the Templates page (excludes "featured" which is a badge, not a filter)
+export const TEMPLATE_FILTER_CATEGORIES: TemplateCategoryType[] = [
+  TemplateCategory.SALES,
+  TemplateCategory.REVENUE,
+  TemplateCategory.ENGINEERING,
+  TemplateCategory.SUPPORT,
+  TemplateCategory.GROWTH,
+  TemplateCategory.OPERATIONS,
+];

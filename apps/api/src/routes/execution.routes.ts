@@ -42,6 +42,18 @@ executionRoutes.get(
   ExecutionController.statsByWorkflow,
 );
 executionRoutes.get(
+  '/stats/summary',
+  validate(workspaceIdParamsSchema, 'params'),
+  requirePermission(Permissions.VIEW_EXECUTIONS),
+  ExecutionController.dashboardSummary,
+);
+executionRoutes.get(
+  '/stats/recent-activity',
+  validate(workspaceIdParamsSchema, 'params'),
+  requirePermission(Permissions.VIEW_EXECUTIONS),
+  ExecutionController.workflowRecentActivity,
+);
+executionRoutes.get(
   '/:id',
   validate(executionParamsSchema, 'params'),
   requirePermission(Permissions.VIEW_EXECUTIONS),

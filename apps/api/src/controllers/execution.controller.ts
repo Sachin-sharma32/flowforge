@@ -89,4 +89,28 @@ export class ExecutionController {
       next(error);
     }
   }
+
+  static async dashboardSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const summary = await executionService.getDashboardSummary(
+        req.params.workspaceId,
+        req.workspaceRole,
+      );
+      res.json({ success: true, data: summary });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async workflowRecentActivity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const activity = await executionService.getWorkflowRecentActivity(
+        req.params.workspaceId,
+        req.workspaceRole,
+      );
+      res.json({ success: true, data: activity });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

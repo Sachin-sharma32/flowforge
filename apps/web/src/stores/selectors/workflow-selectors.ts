@@ -27,3 +27,8 @@ export const selectWorkflowCount = createSelector(
   [selectWorkflows],
   (workflows) => workflows.length,
 );
+
+export const selectTemplates = createSelector(
+  [selectWorkflowState],
+  (workflowState) => workflowState.templates,
+);
