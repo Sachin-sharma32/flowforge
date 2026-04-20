@@ -174,7 +174,7 @@ export class WorkflowService {
     workspaceRole: RoleType | undefined,
     action: 'view' | 'edit' | 'execute',
   ): Promise<void> {
-    if (!workspaceRole || !workflow.folderId) {
+    if (!workspaceRole || !workflow.folderId || !workflow.workspaceId) {
       return;
     }
 

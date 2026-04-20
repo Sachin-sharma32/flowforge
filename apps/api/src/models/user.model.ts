@@ -81,7 +81,7 @@ userSchema.methods.comparePassword = async function (password: string): Promise<
 };
 
 userSchema.set('toJSON', {
-  transform(_doc, ret: Record<string, unknown>) {
+  transform(_doc, ret: Record<string, any>) {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;
