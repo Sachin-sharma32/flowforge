@@ -248,7 +248,7 @@ export default function SettingsPage() {
           <CardDescription>Configure integrations and external services</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/connectors">
+          <Link href="/settings/connectors">
             <Button variant="outline">Manage Connectors</Button>
           </Link>
         </CardContent>
@@ -262,7 +262,7 @@ export default function SettingsPage() {
           <CardDescription>Manage who has access to this workspace</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/members">
+          <Link href="/settings/members">
             <Button variant="outline">Manage Members</Button>
           </Link>
         </CardContent>

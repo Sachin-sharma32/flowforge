@@ -37,16 +37,6 @@ export const selectExecutionWorkflowStats = createSelector(
   (executionState) => executionState.workflowStats,
 );
 
-export const selectDashboardSummary = createSelector(
-  [selectExecutionState],
-  (executionState) => executionState.dashboardSummary,
-);
-
-export const selectWorkflowRecentActivity = createSelector(
-  [selectExecutionState],
-  (executionState) => executionState.workflowRecentActivity,
-);
-
 export const selectExecutionById = createSelector(
   [selectExecutions, (_: RootState, executionId: string) => executionId],
   (executions, executionId) => executions.find((execution) => execution.id === executionId),

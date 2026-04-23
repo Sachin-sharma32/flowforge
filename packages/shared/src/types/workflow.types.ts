@@ -52,7 +52,6 @@ export interface IWorkflowListItem {
   triggerType: TriggerTypeValue;
   stepCount: number;
   lastExecutedAt?: Date;
-  useCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -2,12 +2,10 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/api-error';
 import type {
-  IDashboardSummary,
   IExecution,
   IExecutionStats,
   IExecutionTimelinePoint,
   IWorkflowExecutionStats,
-  IWorkflowRecentActivity,
 } from '@flowforge/shared';
 
 interface ExecutionState {
@@ -16,8 +14,6 @@ interface ExecutionState {
   stats: IExecutionStats | null;
   timeline: IExecutionTimelinePoint[];
   workflowStats: IWorkflowExecutionStats[];
-  dashboardSummary: IDashboardSummary | null;
-  workflowRecentActivity: IWorkflowRecentActivity[];
   isLoading: boolean;
   error: string | null;
   pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -29,8 +25,6 @@ const initialState: ExecutionState = {
   stats: null,
   timeline: [],
   workflowStats: [],
-  dashboardSummary: null,
-  workflowRecentActivity: [],
   isLoading: false,
   error: null,
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
@@ -103,30 +97,6 @@ export const fetchWorkflowExecutionStats = createAsyncThunk(
       return data.data as IWorkflowExecutionStats[];
     } catch (err: unknown) {
       return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflow stats'));
-    }
-  },
-);
-
-export const fetchDashboardSummary = createAsyncThunk(
-  'execution/fetchDashboardSummary',
-  async ({ workspaceId }: { workspaceId: string }, { rejectWithValue }) => {
-    try {
-      const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats/summary`);
-      return data.data as IDashboardSummary;
-    } catch (err: unknown) {
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch dashboard summary'));
-    }
-  },
-);
-
-export const fetchWorkflowRecentActivity = createAsyncThunk(
-  'execution/fetchWorkflowRecentActivity',
-  async ({ workspaceId }: { workspaceId: string }, { rejectWithValue }) => {
-    try {
-      const { data } = await api.get(`/workspaces/${workspaceId}/executions/stats/recent-activity`);
-      return data.data as IWorkflowRecentActivity[];
-    } catch (err: unknown) {
-      return rejectWithValue(getApiErrorMessage(err, 'Failed to fetch workflow recent activity'));
     }
   },
 );
@@ -217,18 +187,6 @@ const executionSlice = createSlice({
         fetchWorkflowExecutionStats.fulfilled,
         (state, action: PayloadAction<IWorkflowExecutionStats[]>) => {
           state.workflowStats = action.payload;
-        },
-      )
-      .addCase(
-        fetchDashboardSummary.fulfilled,
-        (state, action: PayloadAction<IDashboardSummary>) => {
-          state.dashboardSummary = action.payload;
-        },
-      )
-      .addCase(
-        fetchWorkflowRecentActivity.fulfilled,
-        (state, action: PayloadAction<IWorkflowRecentActivity[]>) => {
-          state.workflowRecentActivity = action.payload;
         },
       );
   },

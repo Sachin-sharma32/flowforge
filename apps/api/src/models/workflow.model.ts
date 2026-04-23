@@ -24,7 +24,6 @@ export interface IWorkflowDocument extends Document {
   variables: Array<{ key: string; value: string; isSecret: boolean }>;
   version: number;
   lastExecutedAt?: Date;
-  useCount: number;
   createdBy?: mongoose.Types.ObjectId | null;
   updatedBy?: mongoose.Types.ObjectId | null;
   createdAt: Date;
@@ -82,7 +81,6 @@ const workflowSchema = new Schema<IWorkflowDocument>(
     ],
     version: { type: Number, default: 1 },
     lastExecutedAt: { type: Date },
-    useCount: { type: Number, default: 0, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
